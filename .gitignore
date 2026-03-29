@@ -1,0 +1,8 @@
+_site/
+node_modules/
+package.json
+package-lock.json
+.sass-cache/
+.jekyll-cache/
+.jekyll-metadata
+_preview.html

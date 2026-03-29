@@ -1,0 +1,166 @@
+highlights:
+  - React
+  - C# / .NET
+  - Domain Driven Design
+
+summary:
+  - ".NET/C# since 2005, React since 2023, Angular since 2020, TypeScript"
+  - "Architecture: DDD, Event Sourcing, Microservices, SOLID, DI/IoC"
+  - "Agile practitioner & PSM I certified Scrum Master"
+  - "UX Design diploma — bridging engineering and user experience"
+
+skills:
+  backend:
+    - C# / .NET
+    - ASP.NET Core
+    - Python
+    - Event Sourcing
+    - Domain Driven Design
+    - Microservices
+  frontend:
+    - React
+    - Angular
+    - TypeScript
+    - WPF / Prism
+  practices:
+    - TDD / BDD
+    - SOLID / DI / IoC
+    - Agile / Scrum
+    - CI/CD
+    - Git / Gitflow
+  other:
+    - UX Design & Research
+    - Multithreading / Async
+
+experience:
+  - title: Full Stack Engineer React / .NET
+    company: SwissCaution
+    type: Full-time
+    start: Oct 2022
+    end: Present
+    location: Nyon, Switzerland
+    description: >-
+      Development of the company's public and internal platforms
+      in React.js, TypeScript, Python and C# / .NET.
+
+  - title: Software Engineer
+    company: Vaudoise Assurances
+    type: Full-time
+    start: Apr 2016
+    end: Sep 2022
+    location: Lausanne
+    description: >-
+      Front-end development with TypeScript and Angular since 2020.
+      Previously technical lead on a greenfield microservices platform
+      (ASP.NET Core, Event Sourcing) serving all insurance quotes applications.
+      Evangelized SOLID principles, introduced Event Sourcing company-wide,
+      pushed CI adoption and git/gitflow workflows.
+
+  - title: Software Engineer
+    company: Frontiers
+    type: Full-time
+    start: Jan 2014
+    end: Nov 2015
+    location: Lausanne
+    description: >-
+      Senior Software Engineer building Loop, a social network for researchers.
+      Providing tools and packages for other teams — CI/CD support
+      and third-party API integrations.
+
+  - title: Mobile Application Developer
+    company: Freelance
+    start: Jul 2013
+    end: Apr 2014
+    location: La Tour-De-Peilz
+    description: >-
+      Built a tablet app and CMS (ASP.NET MVC4, RavenDB) for the
+      Swiss Museum of Games. UX research, prototyping, and full delivery.
+
+  - title: Scrum Master
+    company: Pyxis Technologies
+    start: Oct 2013
+    end: Jan 2014
+    location: Geneva
+    description: >-
+      Consultant Scrum Master at RTS (Radio Télévision Suisse).
+      Guided two development teams of 8 and coached Product Owners
+      through agile transition.
+
+  - title: .NET Software Architect
+    company: Liebherr
+    start: May 2011
+    end: Jul 2013
+    location: Bulle, Switzerland
+    description: >-
+      Led architecture for a legacy-to-.NET rewrite (Delphi to C#).
+      Technical coach for the team's .NET transition. Evangelized SOLID,
+      TDD/BDD, and DDD. Stack: MEF, Prism, Caliburn.Micro, PostSharp,
+      Unity, TeamCity CI.
+
+  - title: Software Development Engineer
+    company: polyright SA
+    start: "2010"
+    end: May 2011
+    description: >-
+      C# 4.0, Silverlight, RIA Services, Entity Framework, Prism, MEF.
+      Coached a team of 8 and established the client architecture
+      using DDD, MVVM and DI. Built RFID access card management platform.
+
+  - title: Software Engineer
+    company: Private Bank
+    start: Apr 2010
+    end: Jul 2010
+    description: >-
+      Architecture definition and first iteration of a new project.
+      WPF, Prism, MVVM, Unity, Agile/Scrum.
+
+  - title: Software Developer Engineer
+    company: CASRA/APSS
+    start: Mar 2009
+    end: Apr 2010
+    location: Zürich
+    description: >-
+      Security research applications at the Center for Adaptive Security
+      Research and Applications (University of Zurich).
+      First experience with Scrum.
+
+  - title: C# Developer / WPF Specialist
+    company: Swiss Timing
+    start: Dec 2008
+    end: Feb 2009
+    description: >-
+      WPF specialist helping the team adopt the technology.
+
+  - title: WPF / C# Developer
+    company: ST-Innovation (Swiss Timing)
+    start: Jul 2008
+    end: Dec 2008
+    description: >-
+      WPF consultant in a Swiss Timing subsidiary based in Germany.
+
+  - title: R&D Software Engineer
+    company: Swiss Timing
+    start: Mar 2007
+    end: Jul 2008
+    description: >-
+      R&D software engineering.
+
+education:
+  - school: HE-Arc Ingénierie
+    degree: HES, Software Engineering
+    start: "2002"
+    end: "2006"
+
+certifications:
+  - name: Professional Diploma in UX Design
+    issuer: UX Design Institute
+    date: Jan 2025
+
+  - name: PSM I — Professional Scrum Master
+    issuer: Scrum.org
+
+languages:
+  - name: English
+    level: Native or bilingual
+  - name: French
+    level: Native or bilingual

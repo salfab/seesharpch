@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ site.name }} — {{ site.tagline }}</title>
+  <meta name="description" content="{{ site.name }}, {{ site.tagline }} based in {{ site.location }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0b0c0e;
+      --bg2: #111316;
+      --text: #f0f0f2;
+      --text-body: #c8c9cd;
+      --muted: #8b8f9a;
+      --muted-dim: #5c6070;
+      --accent: #7effd4;
+      --accent2: #ff6b6b;
+      --border: #1e2128;
+      --border-light: #282d37;
+      --display: 'Syne', sans-serif;
+      --mono: 'IBM Plex Mono', monospace;
+    }
+
+    html {
+      font-size: 16px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font-family: var(--mono);
+      font-weight: 300;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Noise grain overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.025;
+    }
+
+    /* Grid background */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 64px 64px;
+      opacity: 0.3;
+      mask-image: radial-gradient(ellipse 60% 50% at 50% 0%, black 0%, transparent 70%);
+      -webkit-mask-image: radial-gradient(ellipse 60% 50% at 50% 0%, black 0%, transparent 70%);
+    }
+
+    ::selection {
+      background: rgba(126,255,212,0.2);
+      color: #fff;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    a:hover { color: #fff; }
+
+    /* ── Animations ─────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up {
+      opacity: 0;
+      animation: fadeUp 0.6s ease forwards;
+    }
+    .delay-1 { animation-delay: 0s; }
+    .delay-2 { animation-delay: 0.08s; }
+    .delay-3 { animation-delay: 0.16s; }
+    .delay-4 { animation-delay: 0.24s; }
+    .delay-5 { animation-delay: 0.32s; }
+    .delay-6 { animation-delay: 0.44s; }
+
+    /* ── Layout ─────────────────────────────────── */
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+      width: 100%;
+    }
+
+    /* ── Header ─────────────────────────────────── */
+    .site-header {
+      padding: 2rem 0;
+      position: relative;
+      z-index: 2;
+    }
+    .site-header .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .site-logo {
+      font-family: var(--mono);
+      font-weight: 400;
+      font-size: 0.8125rem;
+      color: var(--muted);
+      letter-spacing: 0.02em;
+    }
+    .site-logo .hl { color: var(--accent); }
+    .nav-links {
+      display: flex;
+      gap: 0.25rem;
+      align-items: center;
+    }
+    .nav-links a {
+      color: var(--muted);
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .nav-links a:hover {
+      color: var(--accent);
+      border-color: var(--border-light);
+    }
+    .nav-links svg { width: 15px; height: 15px; fill: currentColor; }
+
+    /* ── Hero ───────────────────────────────────── */
+    .hero {
+      padding: 5rem 0 1.5rem;
+      position: relative;
+      z-index: 1;
+    }
+    /* Radial glow behind hero */
+    .hero-glow {
+      position: absolute;
+      top: -80px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 400px;
+      background: radial-gradient(ellipse at center, rgba(126,255,212,0.07) 0%, rgba(126,255,212,0.02) 40%, transparent 70%);
+      pointer-events: none;
+      z-index: -1;
+    }
+    .hero h1 {
+      font-family: var(--display);
+      font-size: 3.25rem;
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+    .hero .tagline {
+      font-family: var(--mono);
+      font-weight: 400;
+      font-size: 0.9375rem;
+      color: var(--text-body);
+      margin-top: 0.75rem;
+    }
+    .hero .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+      margin-top: 1.25rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+      letter-spacing: 0.02em;
+    }
+    .hero .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .hero .meta-item svg {
+      width: 12px;
+      height: 12px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .dot {
+      width: 5px;
+      height: 5px;
+      background: var(--accent);
+      border-radius: 50%;
+      box-shadow: 0 0 6px rgba(126,255,212,0.5);
+    }
+
+    /* ── About ──────────────────────────────────── */
+    .about {
+      padding: 3rem 0 4rem;
+      position: relative;
+      z-index: 1;
+    }
+    .about p {
+      font-size: 0.875rem;
+      font-weight: 300;
+      color: var(--text-body);
+      line-height: 1.9;
+      margin-bottom: 1rem;
+      max-width: 56ch;
+    }
+    .about p:last-child { margin-bottom: 0; }
+    .about strong {
+      font-weight: 400;
+      color: var(--text);
+    }
+
+    /* ── Section chrome ─────────────────────────── */
+    .divider {
+      height: 1px;
+      background: var(--border);
+    }
+    .section-label {
+      font-family: var(--mono);
+      font-weight: 400;
+      font-size: 0.6875rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      padding: 2.5rem 0 1.25rem;
+    }
+
+    /* ── Segmented Toggle ─────────────────────── */
+    .toggle-wrap {
+      position: relative;
+      z-index: 1;
+    }
+    .segment-toggle {
+      display: inline-flex;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 3px;
+      gap: 2px;
+    }
+    .segment-toggle button {
+      font-family: var(--mono);
+      font-size: 0.6875rem;
+      font-weight: 400;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      background: transparent;
+      border: none;
+      padding: 0.4rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: color 0.2s, background 0.2s;
+      white-space: nowrap;
+    }
+    .segment-toggle button:hover {
+      color: var(--text);
+    }
+    .segment-toggle button.active {
+      background: var(--accent);
+      color: var(--bg);
+    }
+
+    /* ── Tab panels ────────────────────────────── */
+    .tab-panel {
+      display: none;
+    }
+    .tab-panel.active {
+      display: block;
+    }
+
+    /* ── Projects ──────────────────────────────── */
+    .projects {
+      padding-bottom: 5rem;
+      position: relative;
+      z-index: 1;
+    }
+    .project-list {
+      display: flex;
+      flex-direction: column;
+    }
+    .project {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1.5rem;
+      padding: 1.25rem 0 1.25rem 1rem;
+      border-top: 1px solid var(--border);
+      text-decoration: none;
+      color: inherit;
+      position: relative;
+      transition: background 0.2s;
+      border-left: 2px solid transparent;
+      margin-left: -1rem;
+    }
+    .project:last-child {
+      border-bottom: 1px solid var(--border);
+    }
+    .project:hover {
+      border-left-color: var(--accent);
+      background: linear-gradient(90deg, rgba(126,255,212,0.03) 0%, transparent 60%);
+    }
+    .project-info { flex: 1; min-width: 0; }
+    .project-name {
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: 1.0625rem;
+      color: var(--text);
+      letter-spacing: -0.01em;
+      transition: color 0.2s;
+    }
+    .project-desc {
+      font-size: 0.8125rem;
+      font-weight: 300;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-top: 0.3rem;
+    }
+    .project-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.6rem;
+    }
+    .project-tags span {
+      font-size: 0.625rem;
+      font-weight: 400;
+      color: var(--muted-dim);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .project::after {
+      content: '\2197';
+      font-size: 0.875rem;
+      color: var(--border-light);
+      margin-top: 0.15rem;
+      flex-shrink: 0;
+      transition: color 0.2s, transform 0.2s;
+    }
+    .project:hover::after {
+      color: var(--accent);
+      transform: translate(2px, -2px);
+    }
+    .project:hover .project-name {
+      color: var(--accent);
+    }
+
+    /* ── Inline CV ─────────────────────────────── */
+    .cv-inline {
+      padding-bottom: 5rem;
+      position: relative;
+      z-index: 1;
+    }
+    .cv-section-title {
+      font-family: var(--mono);
+      font-weight: 400;
+      font-size: 0.6875rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      margin-bottom: 1.25rem;
+    }
+    .cv-block {
+      padding: 2rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .cv-block:last-child { border-bottom: none; }
+
+    /* Highlights */
+    .cv-highlights {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      padding: 1.5rem 0 0.5rem;
+    }
+    .cv-highlight {
+      font-family: var(--mono);
+      font-size: 0.6875rem;
+      font-weight: 400;
+      color: var(--accent);
+      border: 1px solid rgba(126,255,212,0.25);
+      background: rgba(126,255,212,0.06);
+      padding: 0.3rem 0.75rem;
+      border-radius: 4px;
+      letter-spacing: 0.03em;
+    }
+
+    /* Skills grid */
+    .skills-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1.5rem;
+    }
+    .skill-group h3 {
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: 0.8125rem;
+      color: var(--text);
+      margin-bottom: 0.4rem;
+      text-transform: capitalize;
+    }
+    .skill-group ul { list-style: none; }
+    .skill-group li {
+      font-size: 0.75rem;
+      color: var(--muted);
+      line-height: 1.9;
+    }
+
+    /* Experience */
+    .job {
+      margin-bottom: 1.5rem;
+    }
+    .job:last-child { margin-bottom: 0; }
+    .job-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 0.25rem 1rem;
+    }
+    .job-title {
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: 0.9375rem;
+      color: var(--text);
+    }
+    .job-dates {
+      font-size: 0.6875rem;
+      color: var(--muted-dim);
+      white-space: nowrap;
+    }
+    .job-company {
+      font-size: 0.8125rem;
+      color: var(--muted);
+      margin-top: 0.1rem;
+    }
+    .job-location {
+      font-size: 0.6875rem;
+      color: var(--muted-dim);
+    }
+    .job-desc {
+      font-size: 0.8125rem;
+      color: var(--text-body);
+      line-height: 1.75;
+      margin-top: 0.4rem;
+      max-width: 60ch;
+    }
+
+    /* Education / Certs / Languages */
+    .edu-item, .cert-item { margin-bottom: 0.75rem; }
+    .edu-item:last-child, .cert-item:last-child { margin-bottom: 0; }
+    .edu-name, .cert-name {
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: 0.875rem;
+      color: var(--text);
+    }
+    .edu-detail, .cert-detail {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 0.1rem;
+    }
+    .lang-list {
+      display: flex;
+      gap: 2rem;
+    }
+    .lang-name {
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: 0.875rem;
+      color: var(--text);
+    }
+    .lang-level {
+      font-size: 0.6875rem;
+      color: var(--muted);
+    }
+
+    .cv-print-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-top: 1.5rem;
+      font-size: 0.6875rem;
+      font-weight: 400;
+      color: var(--bg);
+      background: var(--accent);
+      padding: 0.4rem 0.9rem;
+      border-radius: 5px;
+      letter-spacing: 0.02em;
+      transition: transform 0.2s, background 0.2s;
+    }
+    .cv-print-link:hover {
+      transform: translateY(-1px);
+      background: #fff;
+      color: var(--bg);
+    }
+
+    /* ── Footer ─────────────────────────────────── */
+    .site-footer {
+      margin-top: auto;
+      padding: 2.5rem 0;
+      border-top: 1px solid var(--border);
+      position: relative;
+      z-index: 1;
+    }
+    .site-footer .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.6875rem;
+      color: var(--muted-dim);
+      letter-spacing: 0.02em;
+    }
+
+    /* ── Responsive ─────────────────────────────── */
+    @media (max-width: 600px) {
+      .hero { padding: 3.5rem 0 1rem; }
+      .hero h1 { font-size: 2.25rem; }
+      .hero-glow { width: 350px; height: 250px; }
+      .about { padding: 2rem 0 3rem; }
+      .skills-grid { grid-template-columns: 1fr 1fr; }
+      .lang-list { flex-direction: column; gap: 0.75rem; }
+      .job-header { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="site-header fade-up delay-1">
+    <div class="container">
+      <a href="/" class="site-logo">see<span class="hl">sharp</span>.ch</a>
+      <nav class="nav-links">
+        <a href="https://github.com/{{ site.github }}" title="GitHub" target="_blank" rel="noopener">
+          <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        </a>
+        <a href="https://linkedin.com/in/{{ site.linkedin }}" title="LinkedIn" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-glow"></div>
+      <div class="container">
+        <h1 class="fade-up delay-2">{{ site.name }}</h1>
+        <p class="tagline fade-up delay-3">{{ site.tagline }}</p>
+        <div class="meta fade-up delay-4">
+          <span class="meta-item">
+            <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            {{ site.location }}
+          </span>
+          <span class="meta-item">
+            <span class="dot"></span>
+            {{ site.employer }}
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <section class="about fade-up delay-5">
+      <div class="container">
+        {{ content }}
+      </div>
+    </section>
+
+    <section class="toggle-wrap fade-up delay-6">
+      <div class="container">
+        <div class="divider"></div>
+        <div style="padding: 2rem 0 1.25rem;">
+          <div class="segment-toggle" role="tablist">
+            <button role="tab" aria-selected="true" class="active" data-tab="projects">Recent Projects</button>
+            <button role="tab" aria-selected="false" data-tab="cv">CV</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    {% if site.data.projects.size > 0 %}
+    <section id="panel-projects" class="projects tab-panel active fade-up delay-6">
+      <div class="container">
+        <div class="project-list">
+          {% for project in site.data.projects %}
+          <a href="{{ project.url }}" class="project" target="_blank" rel="noopener">
+            <div class="project-info">
+              <div class="project-name">{{ project.title }}</div>
+              <div class="project-desc">{{ project.description }}</div>
+              {% if project.tags %}
+              <div class="project-tags">
+                {% for tag in project.tags %}
+                <span>{{ tag }}</span>
+                {% endfor %}
+              </div>
+              {% endif %}
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+    {% endif %}
+
+    <section id="panel-cv" class="cv-inline tab-panel fade-up delay-6">
+      <div class="container">
+
+        {% if site.data.cv.highlights %}
+        <div class="cv-highlights">
+          {% for h in site.data.cv.highlights %}
+          <span class="cv-highlight">{{ h }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Skills -->
+        <div class="cv-block">
+          <div class="cv-section-title">Skills</div>
+          <div class="skills-grid">
+            {% for group in site.data.cv.skills %}
+            <div class="skill-group">
+              <h3>{{ group[0] }}</h3>
+              <ul>
+                {% for skill in group[1] %}
+                <li>{{ skill }}</li>
+                {% endfor %}
+              </ul>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Experience -->
+        <div class="cv-block">
+          <div class="cv-section-title">Experience</div>
+          {% for job in site.data.cv.experience %}
+          <div class="job">
+            <div class="job-header">
+              <span class="job-title">{{ job.title }}</span>
+              <span class="job-dates">{{ job.start }} — {{ job.end }}</span>
+            </div>
+            <div class="job-company">
+              {{ job.company }}{% if job.location %} · <span class="job-location">{{ job.location }}</span>{% endif %}
+            </div>
+            {% if job.description %}
+            <p class="job-desc">{{ job.description }}</p>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+
+        <!-- Education -->
+        <div class="cv-block">
+          <div class="cv-section-title">Education</div>
+          {% for edu in site.data.cv.education %}
+          <div class="edu-item">
+            <div class="edu-name">{{ edu.school }}</div>
+            <div class="edu-detail">{{ edu.degree }} · {{ edu.start }}–{{ edu.end }}</div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <!-- Certifications -->
+        <div class="cv-block">
+          <div class="cv-section-title">Certifications</div>
+          {% for cert in site.data.cv.certifications %}
+          <div class="cert-item">
+            <div class="cert-name">{{ cert.name }}</div>
+            <div class="cert-detail">{{ cert.issuer }}{% if cert.date %} · {{ cert.date }}{% endif %}</div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <!-- Languages -->
+        <div class="cv-block">
+          <div class="cv-section-title">Languages</div>
+          <div class="lang-list">
+            {% for lang in site.data.cv.languages %}
+            <div>
+              <div class="lang-name">{{ lang.name }}</div>
+              <div class="lang-level">{{ lang.level }}</div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <a href="/cv/fabio-salvalai-cv.pdf" class="cv-print-link" download>Download PDF</a>
+
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>&copy; {{ 'now' | date: '%Y' }} {{ site.name }}</span>
+      <span>{{ site.domain }}</span>
+    </div>
+  </footer>
+
+  <script>
+    (function() {
+      var btns = document.querySelectorAll('.segment-toggle button');
+      var panels = document.querySelectorAll('.tab-panel');
+
+      function activate(tab) {
+        btns.forEach(function(b) {
+          var isActive = b.getAttribute('data-tab') === tab;
+          b.classList.toggle('active', isActive);
+          b.setAttribute('aria-selected', isActive);
+        });
+        panels.forEach(function(p) {
+          p.classList.toggle('active', p.id === 'panel-' + tab);
+        });
+      }
+
+      btns.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var tab = btn.getAttribute('data-tab');
+          activate(tab);
+          history.replaceState(null, '', '#' + tab);
+        });
+      });
+
+      // Activate from hash on load
+      var hash = location.hash.replace('#', '');
+      if (hash === 'cv' || hash === 'projects') {
+        activate(hash);
+      }
+    })();
+  </script>
+
+</body>
+</html>
