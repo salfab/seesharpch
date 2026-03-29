@@ -1,4 +1,5 @@
 const puppeteer = require("puppeteer");
+const fs = require("fs");
 
 (async () => {
   const browser = await puppeteer.launch({
@@ -10,6 +11,7 @@ const puppeteer = require("puppeteer");
     waitUntil: "networkidle0",
     timeout: 30000,
   });
+  fs.mkdirSync("_site/cv", { recursive: true });
   await page.pdf({
     path: "_site/cv/fabio-salvalai-cv.pdf",
     format: "A4",
