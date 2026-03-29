@@ -1,19 +1,26 @@
+- title: mappy-hour
+  description: Calculate sunshine windows for parks and terraces in Swiss cities — powered by 3D building models and terrain data.
+  repo: https://github.com/salfab/mappy-hour
+  tags: [TypeScript, Next.js, GIS, swisstopo]
+
+- title: whodunit-party
+  description: A party game where an investigator has to find the culprit — roleplaying fun for groups.
+  url: https://whodunit.seesharp.ch
+  repo: https://github.com/salfab/whodunit-party
+  tags: [TypeScript, Next.js, Party Game]
+
 - title: PhotoBooze
   description: A photobooth solution that lets guests send pictures from their phone to a photowall on a smart TV or shared screen.
   url: https://github.com/salfab/PhotoBooze
   tags: [TypeScript, Next.js, Photobooth]
 
-- title: whodunit-party
-  description: A party game where an investigator has to find the culprit — roleplaying fun for groups.
-  url: https://github.com/salfab/whodunit-party
-  tags: [TypeScript, Party Game]
+- title: foodget-me-not
+  description: Scan food product expiry dates with your phone camera using OCR — never let groceries expire unnoticed.
+  url: https://foodget-me-not.netlify.app
+  repo: https://github.com/salfab/foodget-me-not
+  tags: [TypeScript, React, OpenCV, OCR]
 
 - title: unboreify
   description: Fights the boredom caused by Spotify's recommendation algorithm.
   url: https://github.com/salfab/unboreify
-  tags: [Spotify, Music Discovery]
-
-- title: foodget-me-not
-  description: Scan food product expiry dates with your phone camera using OCR — never let groceries expire unnoticed.
-  url: https://github.com/salfab/foodget-me-not
-  tags: [TypeScript, React, OpenCV, OCR]
+  tags: [TypeScript, React, Spotify API]
