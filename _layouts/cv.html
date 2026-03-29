@@ -425,12 +425,6 @@
       <div class="cv-container">
         <h1>{{ site.name }}</h1>
         <p class="subtitle">{{ site.tagline }}</p>
-        <div class="meta">
-          <span>{{ site.location }}</span>
-          <span>{{ site.employer }}</span>
-          <a href="https://github.com/{{ site.github }}">github.com/{{ site.github }}</a>
-          <a href="https://linkedin.com/in/{{ site.linkedin }}">linkedin.com/in/{{ site.linkedin }}</a>
-        </div>
         {% if site.data.cv.highlights %}
         <div class="cv-highlights">
           {% for h in site.data.cv.highlights %}
@@ -438,6 +432,12 @@
           {% endfor %}
         </div>
         {% endif %}
+        <div class="meta">
+          <span>{{ site.location }}</span>
+          <span>{{ site.employer }}</span>
+          <a href="https://github.com/{{ site.github }}">github.com/{{ site.github }}</a>
+          <a href="https://linkedin.com/in/{{ site.linkedin }}">linkedin.com/in/{{ site.linkedin }}</a>
+        </div>
         <a href="/cv/fabio-salvalai-cv.pdf" class="print-btn" download>Download PDF</a>
       </div>
     </section>
