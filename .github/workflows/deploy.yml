@@ -33,10 +33,14 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Generate CV PDF
+      - name: Generate OG image
         run: |
           npm init -y --silent
           npm install puppeteer --silent
+          node generate-og-image.js
+
+      - name: Generate CV PDF
+        run: |
           npx serve _site -p 4000 &
           sleep 3
           node generate-pdf.js

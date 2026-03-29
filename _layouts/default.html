@@ -5,6 +5,49 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ site.name }} — {{ site.tagline }}</title>
   <meta name="description" content="{{ site.name }}, {{ site.tagline }} based in {{ site.location }}">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="{{ site.name }} — {{ site.tagline }}">
+  <meta property="og:description" content="{{ site.tagline }} based in {{ site.location }}. .NET/C# since 2005, React, TypeScript, DDD, Event Sourcing.">
+  <meta property="og:url" content="https://www.seesharp.ch{{ page.url }}">
+  <meta property="og:site_name" content="seesharp.ch">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://www.seesharp.ch/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{ site.name }} — {{ site.tagline }}">
+  <meta name="twitter:description" content="{{ site.tagline }} based in {{ site.location }}">
+  <meta name="twitter:image" content="https://www.seesharp.ch/og-image.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "name": "{{ site.name }}",
+    "url": "https://www.seesharp.ch",
+    "jobTitle": "{{ site.tagline }}",
+    "worksFor": {
+      "@type": "Organization",
+      "name": "{{ site.employer }}"
+    },
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Lausanne",
+      "addressCountry": "CH"
+    },
+    "sameAs": [
+      "https://github.com/{{ site.github }}",
+      "https://linkedin.com/in/{{ site.linkedin }}"
+    ],
+    "knowsAbout": ["C#", ".NET", "React", "TypeScript", "Domain Driven Design", "Event Sourcing", "Microservices"]
+  }
+  </script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
@@ -318,6 +361,20 @@
       text-decoration: none;
       color: inherit;
     }
+    /* Typed animation */
+    .typed-cursor {
+      display: inline-block;
+      width: 2px;
+      background: var(--accent);
+      margin-left: 2px;
+      animation: blink 0.8s step-end infinite;
+      vertical-align: baseline;
+    }
+    .tagline .typed-cursor { height: 1.1em; }
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+
     .project:last-child {
       border-bottom: 1px solid var(--border);
     }
@@ -603,7 +660,7 @@
       <div class="hero-glow"></div>
       <div class="container">
         <h1 class="fade-up delay-2">{{ site.name }}</h1>
-        <p class="tagline fade-up delay-3">{{ site.tagline }}</p>
+        <p class="tagline fade-up delay-3"><span id="typed-tagline"></span><span class="typed-cursor"></span></p>
         <div class="meta fade-up delay-4">
           <span class="meta-item">
             <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
@@ -768,6 +825,27 @@
   </footer>
 
   <script>
+    // Typed animation
+    (function() {
+      var text = '{{ site.tagline }}';
+      var el = document.getElementById('typed-tagline');
+      var cursor = el.nextElementSibling;
+      var i = 0;
+      var delay = 600; // initial delay before typing starts
+      setTimeout(function type() {
+        if (i < text.length) {
+          el.textContent += text.charAt(i);
+          i++;
+          setTimeout(type, 40 + Math.random() * 40);
+        } else {
+          // Stop cursor blinking after 2s
+          setTimeout(function() { cursor.style.display = 'none'; }, 2000);
+        }
+      }, delay);
+    })();
+  </script>
+
+  <script>
     (function() {
       var btns = document.querySelectorAll('.segment-toggle button');
       var panels = document.querySelectorAll('.tab-panel');
@@ -798,6 +876,11 @@
       }
     })();
   </script>
+
+  <!-- GoatCounter analytics — free, no cookies, GDPR-friendly -->
+  {% if site.goatcounter %}
+  <script data-goatcounter="https://{{ site.goatcounter }}.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+  {% endif %}
 
 </body>
 </html>
