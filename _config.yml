@@ -9,4 +9,6 @@ domain: seesharp.ch
 url: "https://seesharp.ch"
 baseurl: ""
 
+goatcounter: seesharpch
+
 markdown: kramdown

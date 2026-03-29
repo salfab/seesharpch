@@ -671,6 +671,13 @@
             {{ site.employer }}
           </span>
         </div>
+        {% if site.data.cv.highlights %}
+        <div class="cv-highlights fade-up delay-4">
+          {% for h in site.data.cv.highlights %}
+          <span class="cv-highlight">{{ h }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
       </div>
     </section>
 
@@ -731,14 +738,6 @@
 
     <section id="panel-cv" class="cv-inline tab-panel fade-up delay-6">
       <div class="container">
-
-        {% if site.data.cv.highlights %}
-        <div class="cv-highlights">
-          {% for h in site.data.cv.highlights %}
-          <span class="cv-highlight">{{ h }}</span>
-          {% endfor %}
-        </div>
-        {% endif %}
 
         <!-- Skills -->
         <div class="cv-block">
