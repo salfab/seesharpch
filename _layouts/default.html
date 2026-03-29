@@ -367,6 +367,16 @@
       color: var(--accent);
     }
 
+    .more-projects {
+      display: inline-block;
+      margin-top: 1.5rem;
+      font-size: 0.75rem;
+      font-weight: 400;
+      color: var(--muted);
+      transition: color 0.2s;
+    }
+    .more-projects:hover { color: var(--accent); }
+
     /* ── Inline CV ─────────────────────────────── */
     .cv-inline {
       padding-bottom: 5rem;
@@ -619,6 +629,7 @@
           </a>
           {% endfor %}
         </div>
+        <a href="https://github.com/{{ site.github }}?tab=repositories" class="more-projects" target="_blank" rel="noopener">All repositories &rarr;</a>
       </div>
     </section>
     {% endif %}
