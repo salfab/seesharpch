@@ -70,12 +70,12 @@
 
     var sun = new THREE.DirectionalLight(0xffe8c0, 1.8);
     sun.castShadow = true;
-    sun.shadow.mapSize.width = 2048;
-    sun.shadow.mapSize.height = 2048;
+    sun.shadow.mapSize.width = 4096;
+    sun.shadow.mapSize.height = 4096;
     var sc = sun.shadow.camera;
-    sc.left = -120; sc.right = 120; sc.top = 120; sc.bottom = -120;
-    sc.near = 1; sc.far = 300;
-    sun.shadow.bias = -0.001;
+    sc.left = -200; sc.right = 200; sc.top = 200; sc.bottom = -200;
+    sc.near = 1; sc.far = 800;
+    sun.shadow.bias = -0.0005;
     scene.add(sun);
 
     // ── Materials ────────────────────────────────────────────────────
@@ -271,8 +271,9 @@
     // ── Sun ──────────────────────────────────────────────────────────
     function setSunPosition(azDeg, altDeg) {
       var azRad = azDeg * Math.PI / 180;
-      var altRad = altDeg * Math.PI / 180;
-      var dist = 120;
+      var altRad = Math.max(altDeg, 0.5) * Math.PI / 180;
+      // Large distance for parallel rays (like real sunlight)
+      var dist = 400;
       // Azimuth: 0°=N, 90°=E, 180°=S, 270°=W
       // Three.js coords: +X=east, +Z=south (because z = -northing)
       sun.position.set(
@@ -280,6 +281,8 @@
         Math.sin(altRad) * dist,
         -Math.cos(azRad) * Math.cos(altRad) * dist
       );
+      // Shadow camera must follow the light to cover the scene
+      sun.shadow.camera.updateProjectionMatrix();
     }
     setSunPosition(252.9, 9.1); // 17h30 exact from SunCalc
 
@@ -324,7 +327,7 @@
       while (sunRayGroup.children.length) sunRayGroup.remove(sunRayGroup.children[0]);
       var dir = sun.position.clone().normalize();
       var center = new THREE.Vector3(0, 0.2, 0);
-      var start = center.clone().add(dir.clone().multiplyScalar(100));
+      var start = center.clone().add(dir.clone().multiplyScalar(120));
       sunRayGroup.add(new THREE.Line(
         new THREE.BufferGeometry().setFromPoints([start, center]),
         new THREE.LineBasicMaterial({ color: 0xffe066, transparent: true, opacity: 0.35 })
