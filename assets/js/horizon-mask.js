@@ -38,8 +38,9 @@
   controls.target.set(0, 10, 0);
   controls.update();
 
-  scene.add(new THREE.AmbientLight(0x556677, 0.8));
-  var dirLight = new THREE.DirectionalLight(0xffeedd, 0.6);
+  scene.add(new THREE.AmbientLight(0x8899aa, 1.4));
+  scene.add(new THREE.HemisphereLight(0xaabbcc, 0x444466, 0.6));
+  var dirLight = new THREE.DirectionalLight(0xffeedd, 0.8);
   dirLight.position.set(30, 50, 20);
   scene.add(dirLight);
 
@@ -121,7 +122,7 @@
   // ── Ground disk ────────────────────────────────────────────────────
   var groundGeo = new THREE.CircleGeometry(displayRadius + 5, 64);
   groundGeo.rotateX(-Math.PI / 2);
-  var groundMat = new THREE.MeshLambertMaterial({ color: 0x1a1c22 });
+  var groundMat = new THREE.MeshLambertMaterial({ color: 0x2a2d35 });
   scene.add(new THREE.Mesh(groundGeo, groundMat));
 
   // ── Observer marker ────────────────────────────────────────────────
@@ -184,7 +185,7 @@
     flatShading: true,
     side: THREE.DoubleSide,
     transparent: true,
-    opacity: 0.7,
+    opacity: 0.85,
   });
   scene.add(new THREE.Mesh(wallGeo, wallMat));
 
