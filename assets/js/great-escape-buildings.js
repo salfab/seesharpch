@@ -273,10 +273,12 @@
       var azRad = azDeg * Math.PI / 180;
       var altRad = altDeg * Math.PI / 180;
       var dist = 120;
+      // Azimuth: 0°=N, 90°=E, 180°=S, 270°=W
+      // Three.js coords: +X=east, +Z=south (because z = -northing)
       sun.position.set(
-        -Math.sin(azRad) * Math.cos(altRad) * dist,
+        Math.sin(azRad) * Math.cos(altRad) * dist,
         Math.sin(altRad) * dist,
-        Math.cos(azRad) * Math.cos(altRad) * dist
+        -Math.cos(azRad) * Math.cos(altRad) * dist
       );
     }
     setSunPosition(252, 15);
