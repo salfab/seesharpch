@@ -78,6 +78,7 @@ title: Blog
 {% if site.posts.size > 0 %}
 <ul class="blog-list">
   {% for post in site.posts %}
+  {% unless post.unlisted %}
   <li class="blog-item">
     <a href="{{ post.url }}" class="blog-item-link">
       <div class="blog-item-title">{{ post.title }}{% if post.draft %} <span class="draft-pill">DRAFT</span>{% endif %}</div>
@@ -87,6 +88,7 @@ title: Blog
       {% endif %}
     </a>
   </li>
+  {% endunless %}
   {% endfor %}
 </ul>
 {% else %}

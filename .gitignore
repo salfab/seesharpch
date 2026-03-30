@@ -1,6 +1,7 @@
 _site/
 _site_prod/
 _site_drafts/
+_site_test/
 node_modules/
 package.json
 package-lock.json
