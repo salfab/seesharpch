@@ -92,43 +92,93 @@
     var matMismatch    = new THREE.MeshBasicMaterial({ color: 0xff6b6b, transparent: true, opacity: 0.6 });
     var matSunPoint    = new THREE.MeshBasicMaterial({ color: 0x7effd4, transparent: true, opacity: 0.6 });
 
-    // ── Ground + Esplanade ────────────────────────────────────────────
-    var ground = new THREE.Mesh(new THREE.PlaneGeometry(300, 300), matGround);
-    ground.rotation.x = -Math.PI / 2;
-    ground.receiveShadow = true;
-    scene.add(ground);
+    // ── Terrain elevation ──────────────────────────────────────────────
+    // Build a heightmap from building minZ values (ground elevation).
+    // Reference altitude = terrace level (~490m). Everything is relative.
+    var refAltitude = 490;
+
+    // Sample ground elevation at a point by interpolating from nearby buildings
+    var elevationSamples = [];
+    buildings.forEach(function (b) {
+      var c = toLocal(b.centerX, b.centerY);
+      elevationSamples.push({ x: c.x, z: c.z, elev: b.minZ - refAltitude });
+    });
+
+    function sampleElevation(x, z) {
+      // Inverse-distance weighted interpolation from nearby building ground levels
+      var totalWeight = 0;
+      var totalElev = 0;
+      var count = 0;
+      for (var i = 0; i < elevationSamples.length; i++) {
+        var s = elevationSamples[i];
+        var dx = s.x - x;
+        var dz = s.z - z;
+        var dist = Math.sqrt(dx * dx + dz * dz);
+        if (dist < 1) return s.elev;
+        if (dist < 80) {
+          var w = 1 / (dist * dist);
+          totalWeight += w;
+          totalElev += s.elev * w;
+          count++;
+        }
+      }
+      if (count === 0 || totalWeight === 0) return 0;
+      return totalElev / totalWeight;
+    }
+
+    // ── Ground (terrain mesh) ────────────────────────────────────────
+    var terrainRes = 60; // grid resolution
+    var terrainSize = 300; // meters
+    var terrainGeo = new THREE.PlaneGeometry(terrainSize, terrainSize, terrainRes - 1, terrainRes - 1);
+    terrainGeo.rotateX(-Math.PI / 2);
+
+    var terrainPos = terrainGeo.attributes.position;
+    for (var i = 0; i < terrainPos.count; i++) {
+      var tx = terrainPos.getX(i);
+      var tz = terrainPos.getZ(i);
+      terrainPos.setY(i, sampleElevation(tx, tz));
+    }
+    terrainGeo.computeVertexNormals();
+
+    var terrain = new THREE.Mesh(terrainGeo, matGround);
+    terrain.receiveShadow = true;
+    scene.add(terrain);
+
+    // ── Coordinate helpers (now elevation-aware) ─────────────────────
+    function groundY(localX, localZ) {
+      return sampleElevation(localX, localZ);
+    }
 
     // Esplanade: the open area between Great Escape and Palais de Rumine
-    // ~50m (E-W) x 35m (N-S), from analysis bbox
     var matEsplanade = new THREE.MeshLambertMaterial({ color: 0x353840 });
+    var esplY = groundY(2, -11.5);
     var esplanade = new THREE.Mesh(new THREE.PlaneGeometry(50, 35), matEsplanade);
     esplanade.rotation.x = -Math.PI / 2;
-    esplanade.position.set(2, 0.03, -11.5);
+    esplanade.position.set(2, esplY + 0.15, -11.5);
     esplanade.receiveShadow = true;
     scene.add(esplanade);
 
-    // Esplanade border
     var esplanadeEdge = new THREE.LineSegments(
       new THREE.EdgesGeometry(new THREE.BoxGeometry(50, 0.02, 35)),
       new THREE.LineBasicMaterial({ color: 0x3a3e4a })
     );
-    esplanadeEdge.position.set(2, 0.04, -11.5);
+    esplanadeEdge.position.set(2, esplY + 0.16, -11.5);
     scene.add(esplanadeEdge);
 
-    // Terrace (Great Escape outdoor seating, east side of Rue Madeleine)
-    // Adjacent to buildings obs-24690/obs-27126/obs-28693 at ~(-25E, 12Z)
+    // Terrace (Great Escape outdoor seating)
+    var terrY = groundY(-12, 12);
     var terrace = new THREE.Mesh(new THREE.PlaneGeometry(12, 10), matTerrace);
     terrace.rotation.x = -Math.PI / 2;
-    terrace.position.set(-12, 0.06, 12);
+    terrace.position.set(-12, terrY + 0.2, 12);
     terrace.receiveShadow = true;
     scene.add(terrace);
 
     var te = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(12, 0.05, 10)), matTerraceEdge);
-    te.position.set(-12, 0.06, 12);
+    te.position.set(-12, terrY + 0.2, 12);
     scene.add(te);
 
-    addLabel(scene, 'TERRASSE', -12, 3, 12, '#7effd4');
-    addLabel(scene, 'ESPLANADE', 2, 2, -11.5, '#3a3e4a');
+    addLabel(scene, 'TERRASSE', -12, terrY + 4, 12, '#7effd4');
+    addLabel(scene, 'ESPLANADE', 2, esplY + 3, -11.5, '#3a3e4a');
 
     // ── Index meshes by ID ───────────────────────────────────────────
     var meshById = {};
@@ -160,6 +210,8 @@
       var geo = new THREE.ExtrudeGeometry(shape, { depth: b.height, bevelEnabled: false });
       geo.rotateX(-Math.PI / 2);
       var mesh = new THREE.Mesh(geo, mat);
+      // Place building at its real ground elevation
+      mesh.position.y = b.minZ - refAltitude;
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       return mesh;
@@ -172,9 +224,10 @@
       var d = Math.abs(c2.z - c1.z);
       var cx = (c1.x + c2.x) / 2;
       var cz = (c1.z + c2.z) / 2;
+      var baseY = b.minZ - refAltitude;
       var geo = new THREE.BoxGeometry(w, b.height, d);
       var box = new THREE.Mesh(geo, mat);
-      box.position.set(cx, b.height / 2, cz);
+      box.position.set(cx, baseY + b.height / 2, cz);
       box.castShadow = true;
       box.receiveShadow = true;
       return box;
@@ -187,11 +240,12 @@
       var d = Math.abs(c2.z - c1.z);
       var cx = (c1.x + c2.x) / 2;
       var cz = (c1.z + c2.z) / 2;
+      var baseY = b.minZ - refAltitude;
       var geo = new THREE.BoxGeometry(w, b.height, d);
       var ghost = new THREE.Mesh(geo, matPrismGhost);
-      ghost.position.set(cx, b.height / 2, cz);
+      ghost.position.set(cx, baseY + b.height / 2, cz);
       var wire = new THREE.LineSegments(new THREE.EdgesGeometry(geo), matPrismWire);
-      wire.position.set(cx, b.height / 2, cz);
+      wire.position.set(cx, baseY + b.height / 2, cz);
       return { ghost: ghost, wire: wire };
     }
 
@@ -201,7 +255,8 @@
         for (var i = 0; i < 3; i++) {
           var v = tri[i];
           var local = toLocal(v.x, v.y);
-          positions.push(local.x, v.z, local.z);
+          // v.z is absolute elevation, shift to scene coords
+          positions.push(local.x, v.z - refAltitude, local.z);
         }
       });
       var geo = new THREE.BufferGeometry();
@@ -218,8 +273,9 @@
       for (var e = 2538188; e <= 2538200; e++) {
         for (var n = 1152712; n <= 1152713; n++) {
           var p = toLocal(e, n);
+          var y = groundY(p.x, p.z);
           var dot = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.15, 0.9), mat);
-          dot.position.set(p.x, 0.1, p.z);
+          dot.position.set(p.x, y + 0.15, p.z);
           group.add(dot);
         }
       }
@@ -279,21 +335,21 @@
       var bMain = buildings.find(function (o) { return o.id === blockerIds.main; });
       if (bMain) {
         var cMain = toLocal(bMain.centerX, bMain.centerY);
-        addLabel(scene, bMain.id + ' (82% faux positifs)', cMain.x, bMain.height + 5, cMain.z, '#ff6b6b');
+        addLabel(scene, bMain.id + ' (82% faux positifs)', cMain.x, (bMain.minZ - refAltitude) + bMain.height + 5, cMain.z, '#ff6b6b');
       }
     }
     if (blockerIds.secondary) {
       var bSec = buildings.find(function (o) { return o.id === blockerIds.secondary; });
       if (bSec) {
         var cSec = toLocal(bSec.centerX, bSec.centerY);
-        addLabel(scene, bSec.id, cSec.x, bSec.height + 5, cSec.z, '#c8c9cd');
+        addLabel(scene, bSec.id, cSec.x, (bSec.minZ - refAltitude) + bSec.height + 5, cSec.z, '#c8c9cd');
       }
     }
     if (blockerIds.rumine) {
       var bRum = buildings.find(function (o) { return o.id === blockerIds.rumine; });
       if (bRum) {
         var cRum = toLocal(bRum.centerX, bRum.centerY);
-        addLabel(scene, 'Palais de Rumine', cRum.x, bRum.height + 5, cRum.z, '#c8c9cd');
+        addLabel(scene, 'Palais de Rumine', cRum.x, (bRum.minZ - refAltitude) + bRum.height + 5, cRum.z, '#c8c9cd');
       }
     }
 
@@ -302,7 +358,7 @@
       var c = toLocal(b.centerX, b.centerY);
       var dist = Math.sqrt(c.x * c.x + c.z * c.z);
       if (dist < 70 && b.height > 5) {
-        addLabel(scene, b.id, c.x, b.height + 2, c.z, '#666');
+        addLabel(scene, b.id, c.x, (b.minZ - refAltitude) + b.height + 2, c.z, '#666');
       }
     });
 
