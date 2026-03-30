@@ -241,9 +241,11 @@
 
   function footprintToShape(fp) {
     var shape = new THREE.Shape();
-    shape.moveTo(fp[0].x, fp[0].z);
-    for (var i = 1; i < fp.length; i++) shape.lineTo(fp[i].x, fp[i].z);
-    shape.lineTo(fp[0].x, fp[0].z);
+    // Negate Z because rotateX(-PI/2) will negate it back,
+    // keeping the final scene Z aligned with our coordinate system.
+    shape.moveTo(fp[0].x, -fp[0].z);
+    for (var i = 1; i < fp.length; i++) shape.lineTo(fp[i].x, -fp[i].z);
+    shape.lineTo(fp[0].x, -fp[0].z);
     return shape;
   }
 
