@@ -149,36 +149,29 @@
       return sampleElevation(localX, localZ);
     }
 
-    // Esplanade: the open area between Great Escape and Palais de Rumine
-    var matEsplanade = new THREE.MeshLambertMaterial({ color: 0x353840 });
-    var esplY = groundY(2, -11.5);
-    var esplanade = new THREE.Mesh(new THREE.PlaneGeometry(50, 35), matEsplanade);
-    esplanade.rotation.x = -Math.PI / 2;
-    esplanade.position.set(2, esplY + 0.15, -11.5);
-    esplanade.receiveShadow = true;
-    scene.add(esplanade);
-
-    var esplanadeEdge = new THREE.LineSegments(
-      new THREE.EdgesGeometry(new THREE.BoxGeometry(50, 0.02, 35)),
-      new THREE.LineBasicMaterial({ color: 0x3a3e4a })
-    );
-    esplanadeEdge.position.set(2, esplY + 0.16, -11.5);
-    scene.add(esplanadeEdge);
-
-    // Terrace (Great Escape outdoor seating)
-    var terrY = groundY(-12, 12);
-    var terrace = new THREE.Mesh(new THREE.PlaneGeometry(12, 10), matTerrace);
+    // Terrasse: the full open area between the Madeleine buildings (W)
+    // and the Palais de Rumine (NE). This is where the Great Escape
+    // terrace is — the whole esplanade between the two building fronts.
+    // Roughly from x=-15 to x=40, z=-40 to z=15 (local coords)
+    var terrCenterX = 10;
+    var terrCenterZ = -15;
+    var terrW = 60;
+    var terrD = 60;
+    var terrY = groundY(terrCenterX, terrCenterZ);
+    var terrace = new THREE.Mesh(new THREE.PlaneGeometry(terrW, terrD), matTerrace);
     terrace.rotation.x = -Math.PI / 2;
-    terrace.position.set(-12, terrY + 0.2, 12);
+    terrace.position.set(terrCenterX, terrY + 0.2, terrCenterZ);
     terrace.receiveShadow = true;
     scene.add(terrace);
 
-    var te = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(12, 0.05, 10)), matTerraceEdge);
-    te.position.set(-12, terrY + 0.2, 12);
+    var te = new THREE.LineSegments(
+      new THREE.EdgesGeometry(new THREE.BoxGeometry(terrW, 0.05, terrD)),
+      matTerraceEdge
+    );
+    te.position.set(terrCenterX, terrY + 0.2, terrCenterZ);
     scene.add(te);
 
-    addLabel(scene, 'TERRASSE', -12, terrY + 4, 12, '#7effd4');
-    addLabel(scene, 'ESPLANADE', 2, esplY + 3, -11.5, '#3a3e4a');
+    addLabel(scene, 'TERRASSE', terrCenterX, terrY + 4, terrCenterZ, '#7effd4');
 
     // ── Index meshes by ID ───────────────────────────────────────────
     var meshById = {};
