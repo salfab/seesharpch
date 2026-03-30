@@ -1,277 +1,388 @@
 /**
- * Canvas visualization: Horizon mask (360° polar chart)
- * Shows the elevation angle per azimuth degree as seen from The Great Escape terrace.
- * Synthetic but realistic data for Lausanne (Jura to the NW, Alps to the SE, buildings nearby).
+ * Three.js visualization: Horizon mask explained
+ *
+ * Shows how the horizon mask works:
+ * - Observer at center (Great Escape terrace)
+ * - 360 rays cast outward along the ground
+ * - Each ray samples terrain elevation every 250m up to 120km
+ * - The max elevation angle per azimuth forms the "mask"
+ * - Rendered as a 3D wall/ridge around the observer
+ * - Sun path arc overlaid — when sun dips below the ridge = shadow
+ *
+ * Data: synthetic but calibrated for Lausanne
+ *   (Jura NW 8-12°, Alps SE 10-18°, buildings as sharp spikes)
  */
 (function () {
+  'use strict';
   var container = document.getElementById('viz-horizon');
   if (!container) return;
 
-  var WIDTH = Math.min(container.clientWidth, 600);
-  var HEIGHT = WIDTH;
-  var canvas = document.createElement('canvas');
-  canvas.width = WIDTH * 2;
-  canvas.height = HEIGHT * 2;
-  canvas.style.width = WIDTH + 'px';
-  canvas.style.height = HEIGHT + 'px';
-  container.appendChild(canvas);
+  var WIDTH = container.clientWidth;
+  var HEIGHT = 450;
 
-  var ctx = canvas.getContext('2d');
-  ctx.scale(2, 2);
+  var scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0b0c0e);
 
-  var cx = WIDTH / 2;
-  var cy = HEIGHT / 2;
-  var maxRadius = WIDTH / 2 - 40;
-  var maxElevation = 35; // max degrees shown
+  var camera = new THREE.PerspectiveCamera(50, WIDTH / HEIGHT, 0.1, 500);
+  camera.position.set(0, 60, 100);
+  camera.lookAt(0, 10, 0);
 
-  // --- Generate synthetic horizon data ---
-  // 360 bins, one per degree of azimuth (0=North, 90=East, 180=South, 270=West)
+  var renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(WIDTH, HEIGHT);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  container.appendChild(renderer.domElement);
+
+  var controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.05;
+  controls.target.set(0, 10, 0);
+  controls.update();
+
+  scene.add(new THREE.AmbientLight(0x556677, 0.8));
+  var dirLight = new THREE.DirectionalLight(0xffeedd, 0.6);
+  dirLight.position.set(30, 50, 20);
+  scene.add(dirLight);
+
+  // ── Horizon mask data (360 bins) ───────────────────────────────────
+  // Synthetic but calibrated for Lausanne:
+  // - Jura (NW, ~290-340°): gentle ridge 6-10°
+  // - Alps (SE-E, ~60-160°): higher ridge 8-16°
+  // - South (~170-210°): low, open toward Lac Léman ~2-3°
+  // - Buildings: sharp spikes at specific azimuths
   var horizon = [];
   for (var i = 0; i < 360; i++) {
-    var elev = 2; // base: mostly flat urban horizon
+    var elev = 1.5 + Math.sin(i * 0.017) * 0.3; // base urban horizon
 
-    // Jura mountains (NW, roughly 290-340 degrees from Lausanne)
+    // Jura (NW)
     if (i >= 280 && i <= 350) {
       var t = (i - 280) / 70;
-      elev += 8 * Math.sin(t * Math.PI) + 2 * Math.sin(t * Math.PI * 3) + Math.random() * 0.5;
+      elev += 7 * Math.sin(t * Math.PI) + 2 * Math.sin(t * Math.PI * 3.2) + Math.sin(t * Math.PI * 7) * 0.8;
     }
 
-    // Alps (SE to E, roughly 60-160 degrees)
-    if (i >= 50 && i <= 170) {
-      var t = (i - 50) / 120;
-      elev += 12 * Math.sin(t * Math.PI) + 4 * Math.sin(t * Math.PI * 2.5) + 2 * Math.sin(t * Math.PI * 7) * Math.random();
+    // Alps (SE to E)
+    if (i >= 40 && i <= 165) {
+      var t = (i - 40) / 125;
+      elev += 14 * Math.sin(t * Math.PI) + 3 * Math.sin(t * Math.PI * 2.7) + 2 * Math.sin(t * Math.PI * 6.3);
     }
 
-    // Nearby buildings (various directions, sharp spikes)
-    // Building across street (W ~260°)
-    if (i >= 255 && i <= 270) {
-      var t = (i - 255) / 15;
+    // Lac Léman gap (S-SW, ~190-240°): lower horizon
+    if (i >= 190 && i <= 240) {
+      var t = (i - 190) / 50;
+      elev = Math.max(0.8, elev - 3 * Math.sin(t * Math.PI));
+    }
+
+    // Building spikes (sharp, narrow)
+    // obs-29918 (main blocker, ~NW of terrace, az ~310°)
+    if (i >= 306 && i <= 314) {
+      var t = (i - 306) / 8;
       elev = Math.max(elev, 28 * Math.sin(t * Math.PI));
     }
-    // North block (~350-10°)
-    if (i >= 345 || i <= 15) {
-      var a = i >= 345 ? i - 345 : i + 15;
-      elev = Math.max(elev, 25 * Math.sin((a / 30) * Math.PI));
+    // Palais de Rumine (NE, az ~20-40°)
+    if (i >= 18 && i <= 42) {
+      var t = (i - 18) / 24;
+      elev = Math.max(elev, 22 * Math.sin(t * Math.PI));
     }
-    // South building (~175-195°)
-    if (i >= 175 && i <= 195) {
-      var t = (i - 175) / 20;
-      elev = Math.max(elev, 20 * Math.sin(t * Math.PI));
-    }
-
-    horizon.push(Math.min(elev, maxElevation));
-  }
-
-  // --- Sun path for a summer day (approximate for Lausanne, June) ---
-  var sunPath = [];
-  for (var hour = 6; hour <= 21; hour += 0.5) {
-    var t = (hour - 12) / 6;
-    var azDeg = 90 + t * 135; // east to west sweep
-    var altDeg = (1 - t * t) * 60; // parabolic altitude
-    if (altDeg > 0) {
-      sunPath.push({ hour: hour, az: azDeg, alt: altDeg });
-    }
-  }
-
-  // --- Draw functions ---
-
-  function elevToRadius(elev) {
-    return (elev / maxElevation) * maxRadius;
-  }
-
-  function azToXY(azDeg, radius) {
-    var rad = (azDeg - 90) * Math.PI / 180; // 0°=North=top
-    return { x: cx + Math.cos(rad) * radius, y: cy + Math.sin(rad) * radius };
-  }
-
-  function draw(highlightHour) {
-    ctx.clearRect(0, 0, WIDTH, HEIGHT);
-
-    // Background
-    ctx.fillStyle = '#0b0c0e';
-    ctx.fillRect(0, 0, WIDTH, HEIGHT);
-
-    // Grid circles
-    ctx.strokeStyle = '#1e2128';
-    ctx.lineWidth = 0.5;
-    for (var e = 5; e <= maxElevation; e += 5) {
-      ctx.beginPath();
-      ctx.arc(cx, cy, elevToRadius(e), 0, Math.PI * 2);
-      ctx.stroke();
-
-      // Label
-      ctx.fillStyle = '#555';
-      ctx.font = '10px IBM Plex Mono, monospace';
-      ctx.fillText(e + '°', cx + 3, cy - elevToRadius(e) + 12);
+    // Building south (~185°)
+    if (i >= 180 && i <= 190) {
+      var t = (i - 180) / 10;
+      elev = Math.max(elev, 18 * Math.sin(t * Math.PI));
     }
 
-    // Cardinal directions
-    ctx.fillStyle = '#777';
-    ctx.font = 'bold 13px IBM Plex Mono, monospace';
+    horizon.push(Math.max(elev, 0));
+  }
+
+  // ── Sun path (March 8, 2026, SunCalc data) ────────────────────────
+  var sunPath = [
+    {h:7.25,az:99,alt:1.5},{h:8,az:107.3,alt:9.1},{h:9,az:119.2,alt:18.5},
+    {h:10,az:132.6,alt:26.9},{h:11,az:148.2,alt:33.5},{h:12,az:165.9,alt:37.6},
+    {h:12.75,az:180.1,alt:38.5},{h:14,az:203.4,alt:35.9},{h:15,az:220.1,alt:30.5},
+    {h:16,az:234.5,alt:22.9},{h:17,az:247.1,alt:13.9},{h:17.5,az:252.9,alt:9.1},
+    {h:18,az:258.5,alt:4.1},{h:18.25,az:261.3,alt:1.5}
+  ];
+
+  // ── Geometry parameters ────────────────────────────────────────────
+  // The mask is rendered as a wall at a fixed display radius.
+  // Elevation angle → wall height. We exaggerate for readability.
+  var displayRadius = 50; // meters from center in scene
+  var elevScale = 1.8;    // degrees → scene units
+
+  function azToRad(azDeg) { return (azDeg - 90) * Math.PI / 180; } // 0°=N → -Z in scene
+
+  function azElevToPos(azDeg, elevDeg, radius) {
+    var r = radius || displayRadius;
+    var rad = azToRad(azDeg);
+    return new THREE.Vector3(
+      Math.cos(rad) * r,
+      elevDeg * elevScale,
+      -Math.sin(rad) * r
+    );
+  }
+
+  // ── Ground disk ────────────────────────────────────────────────────
+  var groundGeo = new THREE.CircleGeometry(displayRadius + 5, 64);
+  groundGeo.rotateX(-Math.PI / 2);
+  var groundMat = new THREE.MeshLambertMaterial({ color: 0x1a1c22 });
+  scene.add(new THREE.Mesh(groundGeo, groundMat));
+
+  // ── Observer marker ────────────────────────────────────────────────
+  var obs = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.8, 0.8, 2, 16),
+    new THREE.MeshPhongMaterial({ color: 0x7effd4 })
+  );
+  obs.position.set(0, 1, 0);
+  scene.add(obs);
+
+  // ── Horizon mask wall ──────────────────────────────────────────────
+  // Build as a triangle strip: for each azimuth, bottom vertex (ground) + top vertex (elevation)
+  var wallPositions = [];
+  var wallColors = [];
+  var wallIndices = [];
+
+  for (var i = 0; i <= 360; i++) {
+    var az = i % 360;
+    var elev = horizon[az];
+    var rad = azToRad(az);
+    var x = Math.cos(rad) * displayRadius;
+    var z = -Math.sin(rad) * displayRadius;
+
+    // Bottom vertex
+    wallPositions.push(x, 0, z);
+    // Top vertex
+    wallPositions.push(x, elev * elevScale, z);
+
+    // Color based on what's causing the obstruction
+    var r, g, b;
+    if (elev > 15) {
+      // Building spike — red/orange
+      r = 1.0; g = 0.42; b = 0.42;
+    } else if ((az >= 280 && az <= 350) || (az >= 40 && az <= 165)) {
+      // Mountain range — teal
+      r = 0.5; g = 0.8; b = 0.7;
+    } else {
+      // Urban/flat horizon — gray
+      r = 0.3; g = 0.32; b = 0.36;
+    }
+    wallColors.push(r, g, b);
+    wallColors.push(r, g, b);
+
+    if (i > 0) {
+      var base = (i - 1) * 2;
+      // Two triangles per segment
+      wallIndices.push(base, base + 1, base + 2);
+      wallIndices.push(base + 1, base + 3, base + 2);
+    }
+  }
+
+  var wallGeo = new THREE.BufferGeometry();
+  wallGeo.setAttribute('position', new THREE.Float32BufferAttribute(wallPositions, 3));
+  wallGeo.setAttribute('color', new THREE.Float32BufferAttribute(wallColors, 3));
+  wallGeo.setIndex(wallIndices);
+  wallGeo.computeVertexNormals();
+
+  var wallMat = new THREE.MeshPhongMaterial({
+    vertexColors: true,
+    flatShading: true,
+    side: THREE.DoubleSide,
+    transparent: true,
+    opacity: 0.7,
+  });
+  scene.add(new THREE.Mesh(wallGeo, wallMat));
+
+  // ── Horizon outline (top edge) ─────────────────────────────────────
+  var outlinePoints = [];
+  for (var i = 0; i <= 360; i++) {
+    var az = i % 360;
+    outlinePoints.push(azElevToPos(az, horizon[az]));
+  }
+  var outlineGeo = new THREE.BufferGeometry().setFromPoints(outlinePoints);
+  scene.add(new THREE.Line(outlineGeo, new THREE.LineBasicMaterial({ color: 0x7effd4, linewidth: 2 })));
+
+  // ── Azimuth labels ─────────────────────────────────────────────────
+  var labels = [
+    { az: 0, text: 'N' }, { az: 90, text: 'E' },
+    { az: 180, text: 'S' }, { az: 270, text: 'W' },
+    { az: 315, text: 'Jura' }, { az: 110, text: 'Alpes' },
+    { az: 215, text: 'Lac' },
+  ];
+
+  labels.forEach(function (l) {
+    var c = document.createElement('canvas');
+    c.width = 128; c.height = 48;
+    var ctx = c.getContext('2d');
+    ctx.font = 'bold 28px IBM Plex Mono, monospace';
+    ctx.fillStyle = l.text.length <= 1 ? '#888' : '#7effd4';
     ctx.textAlign = 'center';
-    ctx.fillText('N', cx, cy - maxRadius - 10);
-    ctx.fillText('S', cx, cy + maxRadius + 18);
-    ctx.fillText('E', cx + maxRadius + 16, cy + 5);
-    ctx.fillText('W', cx - maxRadius - 16, cy + 5);
+    ctx.fillText(l.text, 64, 34);
+    var tex = new THREE.CanvasTexture(c);
+    var sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true }));
+    var pos = azElevToPos(l.az, 0, displayRadius + 8);
+    sp.position.set(pos.x, l.text.length <= 1 ? 2 : (horizon[l.az] || 5) * elevScale + 5, pos.z);
+    sp.scale.set(8, 3, 1);
+    scene.add(sp);
+  });
 
-    // Direction lines
-    ctx.strokeStyle = '#1e2128';
-    ctx.lineWidth = 0.5;
-    for (var d = 0; d < 360; d += 45) {
-      var p = azToXY(d, maxRadius);
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(p.x, p.y);
-      ctx.stroke();
+  // ── Sample rays (show a few to illustrate the method) ──────────────
+  var sampleAzimuths = [0, 45, 90, 135, 180, 225, 270, 315];
+  var rayMat = new THREE.LineBasicMaterial({ color: 0x333840, transparent: true, opacity: 0.3 });
+
+  sampleAzimuths.forEach(function (az) {
+    var rad = azToRad(az);
+    var points = [new THREE.Vector3(0, 0.5, 0)];
+    // Show sampling points along the ray
+    for (var d = 5; d <= displayRadius; d += 5) {
+      var x = Math.cos(rad) * d;
+      var z = -Math.sin(rad) * d;
+      // Interpolate horizon height along the ray for visualization
+      var t = d / displayRadius;
+      var h = horizon[az] * t * t * elevScale; // quadratic rise toward horizon
+      points.push(new THREE.Vector3(x, h * 0.3, z));
     }
+    points.push(azElevToPos(az, horizon[az]));
+    scene.add(new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints(points),
+      rayMat
+    ));
 
-    // Horizon fill
-    ctx.beginPath();
-    for (var i = 0; i < 360; i++) {
-      var p = azToXY(i, elevToRadius(horizon[i]));
-      if (i === 0) ctx.moveTo(p.x, p.y);
-      else ctx.lineTo(p.x, p.y);
+    // Sampling dots along the ray
+    for (var d = 10; d <= displayRadius; d += 10) {
+      var x = Math.cos(rad) * d;
+      var z = -Math.sin(rad) * d;
+      var dot = new THREE.Mesh(
+        new THREE.SphereGeometry(0.3, 6, 6),
+        new THREE.MeshBasicMaterial({ color: 0x556677 })
+      );
+      dot.position.set(x, 0.3, z);
+      scene.add(dot);
     }
-    ctx.closePath();
-    ctx.fillStyle = 'rgba(126, 255, 212, 0.08)';
-    ctx.fill();
+  });
 
-    // Horizon line
-    ctx.beginPath();
-    for (var i = 0; i < 360; i++) {
-      var p = azToXY(i, elevToRadius(horizon[i]));
-      if (i === 0) ctx.moveTo(p.x, p.y);
-      else ctx.lineTo(p.x, p.y);
-    }
-    ctx.closePath();
-    ctx.strokeStyle = '#7effd4';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
+  // ── Sun path arc ───────────────────────────────────────────────────
+  var sunArcPoints = [];
+  sunPath.forEach(function (sp) {
+    sunArcPoints.push(azElevToPos(sp.az, sp.alt, displayRadius - 2));
+  });
+  scene.add(new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints(sunArcPoints),
+    new THREE.LineBasicMaterial({ color: 0xffe066 })
+  ));
 
-    // Label zones
-    ctx.font = '10px IBM Plex Mono, monospace';
-    ctx.textAlign = 'center';
+  // Sun position markers
+  var sunGroup = new THREE.Group();
+  scene.add(sunGroup);
+  var currentHour = 17.5;
 
-    // Jura label
-    var juraP = azToXY(315, elevToRadius(horizon[315]) + 18);
-    ctx.fillStyle = '#7effd4';
-    ctx.fillText('Jura', juraP.x, juraP.y);
+  function updateSunMarker(hour) {
+    while (sunGroup.children.length) sunGroup.remove(sunGroup.children[0]);
 
-    // Alps label
-    var alpsP = azToXY(110, elevToRadius(horizon[110]) + 18);
-    ctx.fillStyle = '#7effd4';
-    ctx.fillText('Alpes', alpsP.x, alpsP.y);
-
-    // Building labels
-    var bldgP = azToXY(262, elevToRadius(horizon[262]) + 14);
-    ctx.fillStyle = '#ff6b6b';
-    ctx.font = '9px IBM Plex Mono, monospace';
-    ctx.fillText('immeuble W', bldgP.x, bldgP.y);
-
-    var bldgN = azToXY(0, elevToRadius(horizon[0]) + 14);
-    ctx.fillText('bloc nord', bldgN.x, bldgN.y);
-
-    // Sun path
-    ctx.beginPath();
-    ctx.strokeStyle = 'rgba(255, 224, 102, 0.5)';
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([4, 4]);
-    sunPath.forEach(function (sp, idx) {
-      // Clamp to our maxElevation for display
-      var dispAlt = Math.min(sp.alt, maxElevation);
-      var p = azToXY(sp.az, elevToRadius(dispAlt));
-      if (idx === 0) ctx.moveTo(p.x, p.y);
-      else ctx.lineTo(p.x, p.y);
-    });
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // Sun position dot for highlighted hour
-    if (highlightHour !== undefined) {
-      var sp = sunPath.find(function (s) { return Math.abs(s.hour - highlightHour) < 0.3; });
-      if (sp) {
-        var dispAlt = Math.min(sp.alt, maxElevation);
-        var p = azToXY(sp.az, elevToRadius(dispAlt));
-
-        // Check if below horizon
-        var azIdx = Math.round(sp.az) % 360;
-        var blocked = sp.alt < horizon[azIdx];
-
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
-        ctx.fillStyle = blocked ? '#ff6b6b' : '#ffe066';
-        ctx.fill();
-        ctx.strokeStyle = blocked ? '#ff6b6b' : '#ffe066';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        // Time label
-        var h = Math.floor(highlightHour);
-        var m = Math.round((highlightHour - h) * 60);
-        ctx.fillStyle = blocked ? '#ff6b6b' : '#ffe066';
-        ctx.font = 'bold 12px IBM Plex Mono, monospace';
-        ctx.fillText(h + 'h' + (m < 10 ? '0' : '') + m, p.x, p.y - 12);
-
-        if (blocked) {
-          ctx.fillStyle = '#ff6b6b';
-          ctx.font = '10px IBM Plex Mono, monospace';
-          ctx.fillText('OMBRE', p.x, p.y + 18);
-        }
+    // Interpolate sun position
+    var sp = null;
+    for (var i = 0; i < sunPath.length - 1; i++) {
+      if (hour >= sunPath[i].h && hour <= sunPath[i + 1].h) {
+        var t = (hour - sunPath[i].h) / (sunPath[i + 1].h - sunPath[i].h);
+        sp = {
+          az: sunPath[i].az + t * (sunPath[i + 1].az - sunPath[i].az),
+          alt: sunPath[i].alt + t * (sunPath[i + 1].alt - sunPath[i].alt),
+        };
+        break;
       }
     }
+    if (!sp) return;
 
-    // Sun path hour markers
-    ctx.fillStyle = 'rgba(255, 224, 102, 0.7)';
-    ctx.font = '9px IBM Plex Mono, monospace';
-    sunPath.forEach(function (sp) {
-      if (sp.hour % 2 === 0) {
-        var dispAlt = Math.min(sp.alt, maxElevation);
-        var p = azToXY(sp.az, elevToRadius(dispAlt));
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillText(sp.hour + 'h', p.x + 8, p.y - 4);
-      }
+    var pos = azElevToPos(sp.az, sp.alt, displayRadius - 2);
+
+    // Check if below horizon
+    var azIdx = Math.round(sp.az) % 360;
+    var blocked = sp.alt < horizon[azIdx];
+
+    var sunSphere = new THREE.Mesh(
+      new THREE.SphereGeometry(1.5, 16, 16),
+      new THREE.MeshBasicMaterial({ color: blocked ? 0xff6b6b : 0xffe066 })
+    );
+    sunSphere.position.copy(pos);
+    sunGroup.add(sunSphere);
+
+    // Line from observer to sun
+    var lineMat = new THREE.LineBasicMaterial({
+      color: blocked ? 0xff6b6b : 0xffe066,
+      transparent: true,
+      opacity: 0.4,
     });
+    sunGroup.add(new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 1, 0), pos]),
+      lineMat
+    ));
 
-    // Legend
-    ctx.textAlign = 'left';
-    ctx.font = '11px IBM Plex Mono, monospace';
-
-    ctx.fillStyle = '#7effd4';
-    ctx.fillRect(10, HEIGHT - 55, 12, 2);
-    ctx.fillText('Masque d\'horizon', 28, HEIGHT - 50);
-
-    ctx.fillStyle = '#ffe066';
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    ctx.moveTo(10, HEIGHT - 35);
-    ctx.lineTo(22, HEIGHT - 35);
-    ctx.strokeStyle = '#ffe066';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillText('Trajectoire solaire (juin)', 28, HEIGHT - 31);
-
-    ctx.fillStyle = '#ff6b6b';
-    ctx.beginPath();
-    ctx.arc(16, HEIGHT - 16, 4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillText('Soleil sous l\'horizon = ombre', 28, HEIGHT - 12);
+    // If blocked, show the wall point that blocks
+    if (blocked) {
+      var wallPos = azElevToPos(sp.az, horizon[azIdx]);
+      var blockDot = new THREE.Mesh(
+        new THREE.SphereGeometry(1, 12, 12),
+        new THREE.MeshBasicMaterial({ color: 0xff6b6b })
+      );
+      blockDot.position.copy(wallPos);
+      sunGroup.add(blockDot);
+    }
   }
 
-  draw(15);
+  updateSunMarker(currentHour);
 
-  // --- Time slider interaction ---
+  // Hour markers on sun arc
+  sunPath.forEach(function (sp) {
+    if (sp.h % 1 === 0 && sp.h >= 8 && sp.h <= 18) {
+      var pos = azElevToPos(sp.az, sp.alt, displayRadius - 2);
+      var c = document.createElement('canvas');
+      c.width = 64; c.height = 32;
+      var ctx = c.getContext('2d');
+      ctx.font = '18px IBM Plex Mono, monospace';
+      ctx.fillStyle = '#ffe066';
+      ctx.textAlign = 'center';
+      ctx.fillText(sp.h + 'h', 32, 22);
+      var tex = new THREE.CanvasTexture(c);
+      var label = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true }));
+      label.position.set(pos.x, pos.y + 3, pos.z);
+      label.scale.set(5, 2.5, 1);
+      scene.add(label);
+    }
+  });
+
+  // ── UI ─────────────────────────────────────────────────────────────
+  var infoDiv = document.createElement('div');
+  infoDiv.className = 'viz-ui';
+  infoDiv.innerHTML =
+    '<div class="viz-info">' +
+    '<span class="viz-info-title">Masque d\'horizon (360 deg)</span>' +
+    '<span class="viz-info-desc">Pour chaque degre d\'azimut, un rayon est lance le long du sol jusqu\'a 120 km. Tous les 250 m, on echantillonne l\'altitude du terrain (DEM Copernicus 30 m) et on corrige pour la courbure terrestre et la refraction atmospherique. L\'angle d\'elevation max forme le masque (mur vert). Quand le soleil (jaune) passe sous le masque, la terrasse est a l\'ombre (rouge).</span>' +
+    '</div>';
+  container.appendChild(infoDiv);
+
+  // ── Animate ────────────────────────────────────────────────────────
+  (function animate() {
+    requestAnimationFrame(animate);
+    controls.update();
+    renderer.render(scene, camera);
+  })();
+
+  // ── Slider interaction ─────────────────────────────────────────────
   var slider = document.getElementById('horizon-slider');
   var timeLabel = document.getElementById('horizon-time');
   if (slider) {
+    slider.min = '7.25';
+    slider.max = '18.25';
+    slider.step = '0.25';
+    slider.value = '17.5';
     slider.addEventListener('input', function () {
       var hour = parseFloat(this.value);
       var h = Math.floor(hour);
       var m = Math.round((hour - h) * 60);
       timeLabel.textContent = h + 'h' + (m < 10 ? '0' : '') + m;
-      draw(hour);
+      updateSunMarker(hour);
     });
   }
+
+  window.addEventListener('resize', function () {
+    var w = container.clientWidth;
+    camera.aspect = w / HEIGHT;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, HEIGHT);
+  });
 })();
