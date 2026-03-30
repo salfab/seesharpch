@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ page.title }} — {{ site.name }}</title>
+  <meta name="description" content="{{ page.excerpt | strip_html | truncate: 160 }}">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="{{ page.title }}">
+  <meta property="og:description" content="{{ page.excerpt | strip_html | truncate: 160 }}">
+  <meta property="og:url" content="https://www.seesharp.ch{{ page.url }}">
+  <meta property="og:site_name" content="seesharp.ch">
+  <meta property="og:type" content="article">
+  <meta property="og:image" content="https://www.seesharp.ch/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <!-- Favicon -->
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+
+  <!-- JSON-LD Article -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "{{ page.title }}",
+    "author": { "@type": "Person", "name": "{{ site.name }}" },
+    "datePublished": "{{ page.date | date_to_xmlschema }}",
+    "url": "https://www.seesharp.ch{{ page.url }}"
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0b0c0e;
+      --bg2: #111316;
+      --text: #f0f0f2;
+      --text-body: #c8c9cd;
+      --muted: #8b8f9a;
+      --muted-dim: #5c6070;
+      --accent: #7effd4;
+      --accent2: #ff6b6b;
+      --border: #1e2128;
+      --border-light: #282d37;
+      --display: 'Syne', sans-serif;
+      --mono: 'IBM Plex Mono', monospace;
+    }
+
+    html {
+      font-size: 16px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font-family: var(--mono);
+      font-weight: 300;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.025;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 64px 64px;
+      opacity: 0.3;
+      mask-image: radial-gradient(ellipse 60% 50% at 50% 0%, black 0%, transparent 70%);
+      -webkit-mask-image: radial-gradient(ellipse 60% 50% at 50% 0%, black 0%, transparent 70%);
+    }
+
+    ::selection {
+      background: rgba(126,255,212,0.2);
+      color: #fff;
+    }
+
+    a { color: var(--accent); text-decoration: none; transition: color 0.2s; }
+    a:hover { color: #fff; }
+
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+      width: 100%;
+    }
+
+    /* ── Header ─────────────────────────────────── */
+    .site-header {
+      padding: 2rem 0;
+      position: relative;
+      z-index: 2;
+    }
+    .site-header .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .site-logo {
+      font-family: var(--mono);
+      font-weight: 400;
+      font-size: 0.8125rem;
+      color: var(--muted);
+      letter-spacing: 0.02em;
+    }
+    .site-logo .hl { color: var(--accent); }
+    .nav-links {
+      display: flex;
+      gap: 0.25rem;
+      align-items: center;
+    }
+    .nav-links a {
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      padding: 0.4rem 0.6rem;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .nav-links a:hover {
+      color: var(--accent);
+      border-color: var(--border-light);
+    }
+
+    /* ── Post ───────────────────────────────────── */
+    .post-header {
+      padding: 4rem 0 2rem;
+    }
+    .post-back {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 2rem;
+      display: inline-block;
+    }
+    .post-back:hover { color: var(--accent); }
+    .post-title {
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: clamp(1.75rem, 5vw, 2.5rem);
+      letter-spacing: -1px;
+      line-height: 1.15;
+      margin-bottom: 0.75rem;
+    }
+    .post-meta {
+      font-size: 0.75rem;
+      color: var(--muted-dim);
+      letter-spacing: 0.04em;
+    }
+    .post-tags {
+      display: flex;
+      gap: 0.4rem;
+      margin-top: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .post-tag {
+      font-size: 0.625rem;
+      color: var(--accent);
+      border: 1px solid rgba(126,255,212,0.25);
+      background: rgba(126,255,212,0.06);
+      padding: 0.15rem 0.5rem;
+      border-radius: 3px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    /* ── Article content ────────────────────────── */
+    .post-content {
+      padding: 0 0 4rem;
+      color: var(--text-body);
+      font-size: 0.9375rem;
+      line-height: 1.8;
+    }
+    .post-content h2 {
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: 1.35rem;
+      color: var(--text);
+      margin: 2.5rem 0 1rem;
+      letter-spacing: -0.5px;
+    }
+    .post-content h3 {
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--text);
+      margin: 2rem 0 0.75rem;
+    }
+    .post-content p {
+      margin-bottom: 1.25rem;
+    }
+    .post-content ul, .post-content ol {
+      margin-bottom: 1.25rem;
+      padding-left: 1.5rem;
+    }
+    .post-content li {
+      margin-bottom: 0.4rem;
+    }
+    .post-content blockquote {
+      border-left: 2px solid var(--accent);
+      padding: 0.5rem 0 0.5rem 1.25rem;
+      margin: 1.5rem 0;
+      color: var(--muted);
+      font-style: italic;
+    }
+    .post-content code {
+      font-family: var(--mono);
+      font-size: 0.85em;
+      background: rgba(126,255,212,0.06);
+      border: 1px solid var(--border-light);
+      padding: 0.15em 0.35em;
+      border-radius: 3px;
+      color: var(--accent);
+    }
+    .post-content pre {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1.25rem;
+      margin: 1.5rem 0;
+      overflow-x: auto;
+      line-height: 1.5;
+    }
+    .post-content pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: var(--text-body);
+      font-size: 0.8125rem;
+    }
+    .post-content img {
+      max-width: 100%;
+      border-radius: 6px;
+      margin: 1.5rem 0;
+    }
+    .post-content a {
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      text-decoration-color: rgba(126,255,212,0.3);
+    }
+    .post-content a:hover {
+      text-decoration-color: var(--accent);
+    }
+    .post-content hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 2.5rem 0;
+    }
+
+    .draft-pill {
+      font-family: var(--mono);
+      font-size: 0.625rem;
+      font-weight: 400;
+      color: var(--accent2);
+      border: 1px solid rgba(255,107,107,0.3);
+      background: rgba(255,107,107,0.08);
+      padding: 0.1rem 0.5rem;
+      border-radius: 3px;
+      letter-spacing: 0.06em;
+      vertical-align: middle;
+    }
+
+    /* Mermaid diagrams */
+    .mermaid {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1.25rem;
+      margin: 1.5rem 0;
+      text-align: center;
+    }
+
+    /* ── Footer ─────────────────────────────────── */
+    .site-footer {
+      margin-top: auto;
+      padding: 2rem 0;
+      border-top: 1px solid var(--border);
+    }
+    .site-footer .container {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.6875rem;
+      color: var(--muted-dim);
+    }
+
+    @media (max-width: 600px) {
+      .post-header { padding: 2.5rem 0 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="container">
+      <a href="/" class="site-logo">see<span class="hl">sharp</span>.ch</a>
+      <nav class="nav-links">
+        <a href="/">Home</a>
+        <a href="/blog">Blog</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <article>
+      <div class="container">
+        <header class="post-header">
+          <a href="/blog" class="post-back">&larr; Back to blog</a>
+          <h1 class="post-title">{{ page.title }}{% if page.draft %} <span class="draft-pill">DRAFT</span>{% endif %}</h1>
+          <div class="post-meta">{{ page.date | date: "%B %d, %Y" }}{% if page.readtime %} · {{ page.readtime }} min read{% endif %}</div>
+          {% if page.tags.size > 0 %}
+          <div class="post-tags">
+            {% for tag in page.tags %}
+            <span class="post-tag">{{ tag }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </header>
+        <div class="post-content">
+          {{ content }}
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>&copy; {{ 'now' | date: '%Y' }} {{ site.name }}</span>
+      <span>{{ site.domain }}</span>
+    </div>
+  </footer>
+
+  <!-- Mermaid support -->
+  <script>
+    (function() {
+      var mermaids = document.querySelectorAll('pre code.language-mermaid');
+      if (mermaids.length === 0) return;
+      mermaids.forEach(function(code) {
+        var pre = code.parentElement;
+        var div = document.createElement('div');
+        div.className = 'mermaid';
+        div.textContent = code.textContent;
+        pre.parentElement.replaceChild(div, pre);
+      });
+      var s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js';
+      s.onload = function() {
+        mermaid.initialize({
+          theme: 'dark',
+          themeVariables: {
+            darkMode: true,
+            background: '#111316',
+            primaryColor: '#1e2128',
+            primaryTextColor: '#f0f0f2',
+            primaryBorderColor: '#282d37',
+            lineColor: '#7effd4',
+            secondaryColor: '#1e2128',
+            tertiaryColor: '#1e2128',
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: '13px'
+          }
+        });
+      };
+      document.head.appendChild(s);
+    })();
+  </script>
+
+  {% if site.goatcounter %}
+  <script data-goatcounter="https://{{ site.goatcounter }}.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+  {% endif %}
+
+</body>
+</html>

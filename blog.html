@@ -1,0 +1,94 @@
+---
+layout: default
+title: Blog
+---
+
+<style>
+  .blog-header {
+    padding: 2rem 0 1rem;
+  }
+  .blog-title {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 2rem;
+    letter-spacing: -1px;
+  }
+  .blog-list {
+    list-style: none;
+    padding: 1rem 0 4rem;
+  }
+  .blog-item {
+    padding: 1.25rem 0;
+    border-top: 1px solid var(--border);
+  }
+  .blog-item:last-child {
+    border-bottom: 1px solid var(--border);
+  }
+  .blog-item-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
+  .blog-item-link:hover .blog-item-title {
+    color: var(--accent);
+  }
+  .blog-item-title {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 1.1rem;
+    letter-spacing: -0.3px;
+    transition: color 0.2s;
+    margin-bottom: 0.25rem;
+  }
+  .blog-item-meta {
+    font-size: 0.6875rem;
+    color: var(--muted-dim);
+    letter-spacing: 0.04em;
+  }
+  .blog-item-excerpt {
+    font-size: 0.8125rem;
+    color: var(--muted);
+    margin-top: 0.4rem;
+    line-height: 1.6;
+  }
+  .draft-pill {
+    font-family: var(--mono);
+    font-size: 0.5rem;
+    font-weight: 400;
+    color: var(--accent2);
+    border: 1px solid rgba(255,107,107,0.3);
+    background: rgba(255,107,107,0.08);
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+    letter-spacing: 0.06em;
+    vertical-align: middle;
+    margin-left: 0.4rem;
+  }
+  .blog-empty {
+    color: var(--muted-dim);
+    font-size: 0.875rem;
+    padding: 2rem 0;
+  }
+</style>
+
+<div class="blog-header">
+  <h1 class="blog-title">Blog</h1>
+</div>
+
+{% if site.posts.size > 0 %}
+<ul class="blog-list">
+  {% for post in site.posts %}
+  <li class="blog-item">
+    <a href="{{ post.url }}" class="blog-item-link">
+      <div class="blog-item-title">{{ post.title }}{% if post.draft %} <span class="draft-pill">DRAFT</span>{% endif %}</div>
+      <div class="blog-item-meta">{{ post.date | date: "%B %d, %Y" }}{% if post.tags.size > 0 %} · {{ post.tags | join: ", " }}{% endif %}</div>
+      {% if post.excerpt %}
+      <div class="blog-item-excerpt">{{ post.excerpt | strip_html | truncate: 160 }}</div>
+      {% endif %}
+    </a>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="blog-empty">No posts yet. Stay tuned.</p>
+{% endif %}
