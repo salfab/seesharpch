@@ -281,7 +281,42 @@
         -Math.cos(azRad) * Math.cos(altRad) * dist
       );
     }
-    setSunPosition(252, 15);
+    setSunPosition(252.9, 9.1); // 17h30 exact from SunCalc
+
+    // Real sun positions for March 8, 2026 at Great Escape (46.5225°N, 6.6332°E)
+    // Computed with SunCalc, CET (UTC+1)
+    var sunTable = [
+      {h:7.25,az:99,alt:1.5},{h:7.5,az:101.7,alt:4.1},{h:7.75,az:104.5,alt:6.6},
+      {h:8,az:107.3,alt:9.1},{h:8.25,az:110.2,alt:11.5},{h:8.5,az:113.1,alt:13.9},
+      {h:8.75,az:116.1,alt:16.3},{h:9,az:119.2,alt:18.5},{h:9.25,az:122.4,alt:20.8},
+      {h:9.5,az:125.7,alt:22.9},{h:9.75,az:129.1,alt:25},{h:10,az:132.6,alt:26.9},
+      {h:10.25,az:136.3,alt:28.8},{h:10.5,az:140.1,alt:30.5},{h:10.75,az:144.1,alt:32.1},
+      {h:11,az:148.2,alt:33.5},{h:11.25,az:152.4,alt:34.8},{h:11.5,az:156.8,alt:35.9},
+      {h:11.75,az:161.3,alt:36.8},{h:12,az:165.9,alt:37.6},{h:12.25,az:170.6,alt:38.1},
+      {h:12.5,az:175.3,alt:38.4},{h:12.75,az:180.1,alt:38.5},{h:13,az:184.9,alt:38.4},
+      {h:13.25,az:189.6,alt:38.1},{h:13.5,az:194.3,alt:37.6},{h:13.75,az:198.9,alt:36.8},
+      {h:14,az:203.4,alt:35.9},{h:14.25,az:207.8,alt:34.8},{h:14.5,az:212,alt:33.5},
+      {h:14.75,az:216.1,alt:32.1},{h:15,az:220.1,alt:30.5},{h:15.25,az:223.9,alt:28.8},
+      {h:15.5,az:227.6,alt:26.9},{h:15.75,az:231.1,alt:25},{h:16,az:234.5,alt:22.9},
+      {h:16.25,az:237.8,alt:20.8},{h:16.5,az:241,alt:18.6},{h:16.75,az:244.1,alt:16.3},
+      {h:17,az:247.1,alt:13.9},{h:17.25,az:250.1,alt:11.5},{h:17.5,az:252.9,alt:9.1},
+      {h:17.75,az:255.8,alt:6.6},{h:18,az:258.5,alt:4.1},{h:18.25,az:261.3,alt:1.5}
+    ];
+
+    function interpolateSun(hour) {
+      if (hour <= sunTable[0].h) return { az: sunTable[0].az, alt: 0 };
+      if (hour >= sunTable[sunTable.length - 1].h) return { az: sunTable[sunTable.length - 1].az, alt: 0 };
+      for (var i = 0; i < sunTable.length - 1; i++) {
+        if (hour >= sunTable[i].h && hour <= sunTable[i + 1].h) {
+          var t = (hour - sunTable[i].h) / (sunTable[i + 1].h - sunTable[i].h);
+          return {
+            az: sunTable[i].az + t * (sunTable[i + 1].az - sunTable[i].az),
+            alt: sunTable[i].alt + t * (sunTable[i + 1].alt - sunTable[i].alt)
+          };
+        }
+      }
+      return { az: 180, alt: 0 };
+    }
 
     var sunRayGroup = new THREE.Group();
     scene.add(sunRayGroup);
@@ -351,14 +386,14 @@
     var sliderDiv = document.createElement('div');
     sliderDiv.innerHTML =
       '<div class="viz-slider">' +
-      '<label>Soleil : <span id="sun-time">17h30</span> — 8 mars 2026</label>' +
-      '<input type="range" min="8" max="20" step="0.25" value="17.5" id="sun-slider">' +
+      '<label>Soleil : <span id="sun-time">17h30</span> — 8 mars 2026, Lausanne</label>' +
+      '<input type="range" min="7.25" max="18.25" step="0.25" value="17.5" id="sun-slider">' +
       '</div>';
     container.appendChild(sliderDiv);
     container.querySelector('#sun-slider').addEventListener('input', function () {
       var hour = parseFloat(this.value);
-      var t = (hour - 12) / 6.5;
-      setSunPosition(180 + t * 90, Math.max(0, (1 - t * t) * 38));
+      var sp = interpolateSun(hour);
+      setSunPosition(sp.az, sp.alt);
       updateSunRays();
       var h = Math.floor(hour);
       var m = Math.round((hour - h) * 60);
