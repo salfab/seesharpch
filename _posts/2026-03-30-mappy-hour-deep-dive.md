@@ -35,12 +35,12 @@ Le contexte d'évaluation — bâtiments candidats, profil de terrain, masque d'
 
 ## Le masque d'horizon
 
-Pour chaque zone, je précalcule un masque d'horizon à 360 degrés : un bin par degré d'azimut, chaque bin stocke l'angle d'élévation maximal dans cette direction. Le raycast porte jusqu'à 120 km avec correction de réfraction atmosphérique — parce que oui, le Jura français projette des ombres sur Lausanne en fin de journée.
+Pour chaque zone, je précalcule un masque d'horizon à 360 degrés : un tableau de 360 cases, une par degré d'azimut (0° = nord, 90° = est, etc.). Pour chaque direction, un rayon est lancé le long du sol jusqu'à 120 km. Tous les 250 mètres, on échantillonne l'altitude du terrain (DEM Copernicus à 30 m de résolution), on corrige pour la courbure terrestre et la réfraction atmosphérique, et on garde l'angle d'élévation maximal. Le résultat : un profil d'obstruction complet autour du point. Si le soleil est en-dessous de cet angle pour un azimut donné, il est masqué par le relief — et oui, le Jura français à 80 km projette des ombres sur Lausanne en fin de journée.
 
-<div id="viz-horizon" style="width: 100%; max-width: 600px; margin: 2rem auto; display: flex; flex-direction: column; align-items: center;"></div>
+<div id="viz-horizon" style="width: 100%; margin: 2rem 0; border-radius: 6px; overflow: hidden; background: var(--bg2); border: 1px solid var(--border); position: relative;"></div>
 <div style="text-align: center; margin: 0.5rem 0 1.5rem;">
-  <label style="color: var(--text-body); font-family: var(--mono); font-size: 0.85rem;">Heure : <span id="horizon-time">15h00</span></label><br>
-  <input type="range" min="6" max="20" step="0.5" value="15" id="horizon-slider" style="width: 80%; max-width: 400px; margin-top: 0.5rem; accent-color: var(--accent);">
+  <label style="color: var(--text-body); font-family: var(--mono); font-size: 0.85rem;">Heure : <span id="horizon-time">17h30</span></label><br>
+  <input type="range" min="7.25" max="18.25" step="0.25" value="17.5" id="horizon-slider" style="width: 80%; max-width: 400px; margin-top: 0.5rem; accent-color: var(--accent);">
 </div>
 
 Le diagramme polaire ci-dessus montre le masque d'horizon vu depuis la terrasse du Great Escape. Les pics en vert correspondent aux bâtiments proches (immeuble ouest, bloc nord) et aux reliefs lointains (Jura au nord-ouest, Alpes au sud-est). Quand le soleil (point jaune) passe sous la ligne verte, la terrasse est à l'ombre.
