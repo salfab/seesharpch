@@ -115,18 +115,19 @@
     esplanadeEdge.position.set(2, 0.04, -11.5);
     scene.add(esplanadeEdge);
 
-    // Terrace (the specific Great Escape outdoor seating, SW corner of esplanade)
-    var terrace = new THREE.Mesh(new THREE.PlaneGeometry(10, 8), matTerrace);
+    // Terrace (Great Escape outdoor seating, east side of Rue Madeleine)
+    // Adjacent to buildings obs-24690/obs-27126/obs-28693 at ~(-25E, 12Z)
+    var terrace = new THREE.Mesh(new THREE.PlaneGeometry(12, 10), matTerrace);
     terrace.rotation.x = -Math.PI / 2;
-    terrace.position.set(-12, 0.06, 0);
+    terrace.position.set(-12, 0.06, 12);
     terrace.receiveShadow = true;
     scene.add(terrace);
 
-    var te = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(10, 0.05, 8)), matTerraceEdge);
-    te.position.set(-12, 0.06, 0);
+    var te = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(12, 0.05, 10)), matTerraceEdge);
+    te.position.set(-12, 0.06, 12);
     scene.add(te);
 
-    addLabel(scene, 'TERRASSE', -12, 3, 0, '#7effd4');
+    addLabel(scene, 'TERRASSE', -12, 3, 12, '#7effd4');
     addLabel(scene, 'ESPLANADE', 2, 2, -11.5, '#3a3e4a');
 
     // ── Index meshes by ID ───────────────────────────────────────────
@@ -134,13 +135,18 @@
     meshes.forEach(function (m) { meshById[m.obstacleId] = m; });
 
     // ── Identify key blockers ────────────────────────────────────────
-    var blockerIds = { main: null, secondary: null, rumine: null };
+    var blockerIds = { main: null, secondary: null, rumine: [] };
     buildings.forEach(function (b) {
       var w = Math.round(b.maxX - b.minX);
       var d = Math.round(b.maxY - b.minY);
       if (w === 46 && d === 25 && b.height > 28) blockerIds.main = b.id;
       if (w === 31 && d === 25 && b.footprint && b.footprint.length === 4) blockerIds.secondary = b.id;
-      if (w === 86 && d === 105) blockerIds.rumine = b.id;
+      // Palais de Rumine = cluster of buildings NE of terrace (~55E, -90Z)
+      var dx = b.centerX - (originE + 55);
+      var dy = b.centerY - (originN + 90); // +90 northing = -90Z in scene
+      if (Math.sqrt(dx * dx + dy * dy) < 60 && b.height > 20) {
+        blockerIds.rumine.push(b.id);
+      }
     });
 
     // ── Geometry builders ────────────────────────────────────────────
@@ -231,9 +237,11 @@
       return Math.sqrt(dx * dx + dy * dy) < 120;
     });
 
+    function isRumine(id) { return blockerIds.rumine.indexOf(id) >= 0; }
+
     function getMat(b) {
       if (b.id === blockerIds.main) return matBlocker;
-      if (b.id === blockerIds.rumine) return matRumine;
+      if (isRumine(b.id)) return matRumine;
       return matBuilding;
     }
 
@@ -261,7 +269,7 @@
         var ext2 = createExtruded(b, mat);
         if (ext2) groups.twoLevel.add(ext2);
       }
-      if (b.id === blockerIds.main || b.id === blockerIds.secondary || b.id === blockerIds.rumine) {
+      if (b.id === blockerIds.main || b.id === blockerIds.secondary || isRumine(b.id)) {
         var gw = createPrismGhostWire(b);
         groups.twoLevel.add(gw.ghost);
         groups.twoLevel.add(gw.wire);
@@ -273,15 +281,23 @@
     groups.twoLevel.add(createMismatchGrid(matSunPoint));
 
     // Labels
-    [blockerIds.main, blockerIds.secondary, blockerIds.rumine].forEach(function (id) {
-      if (!id) return;
-      var b = buildings.find(function (ob) { return ob.id === id; });
-      if (!b) return;
-      var c = toLocal(b.centerX, b.centerY);
-      var label = id === blockerIds.rumine ? 'Palais de Rumine' :
-                  id === blockerIds.main ? b.id + ' (82% faux positifs)' : b.id;
-      addLabel(scene, label, c.x, b.height + 5, c.z, id === blockerIds.main ? '#ff6b6b' : '#c8c9cd');
-    });
+    if (blockerIds.main) {
+      var bMain = buildings.find(function (o) { return o.id === blockerIds.main; });
+      if (bMain) {
+        var cMain = toLocal(bMain.centerX, bMain.centerY);
+        addLabel(scene, bMain.id + ' (82% faux positifs)', cMain.x, bMain.height + 5, cMain.z, '#ff6b6b');
+      }
+    }
+    if (blockerIds.secondary) {
+      var bSec = buildings.find(function (o) { return o.id === blockerIds.secondary; });
+      if (bSec) {
+        var cSec = toLocal(bSec.centerX, bSec.centerY);
+        addLabel(scene, bSec.id, cSec.x, bSec.height + 5, cSec.z, '#c8c9cd');
+      }
+    }
+    if (blockerIds.rumine.length > 0) {
+      addLabel(scene, 'Palais de Rumine', 55, 42, -90, '#c8c9cd');
+    }
 
     Object.keys(groups).forEach(function (k) {
       groups[k].visible = (k === 'detailed');
