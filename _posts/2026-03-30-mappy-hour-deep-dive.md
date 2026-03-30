@@ -102,9 +102,25 @@ Le ray-tracing des bâtiments a évolué en trois itérations, chacune toujours 
 
 **Prism** — Le footprint 2D extrudé en hauteur. Rapide, mais les toits complexes et les formes irrégulières génèrent des faux positifs. Le bâtiment en L du Great Escape ? Le prisme le voit comme un rectangle plein. Résultat : la terrasse est déclarée à l'ombre alors qu'elle ne l'est pas.
 
-**Two-level** — Le prisme tourne en premier. Si le soleil est dans les 2 degrés autour du seuil d'ombre, on passe au mesh 3D pour vérification, avec max 3 passes de raffinement. Le fantôme rouge montre la bounding box du prisme, le mesh détaillé corrige à l'intérieur. Le meilleur compromis vitesse/précision.
+**Two-level** — Le prisme tourne en premier. Si le prisme dit "ombre", on regarde la marge : de combien de degrés le sommet du prisme dépasse-t-il le soleil ? Si la marge est faible (< 2°), c'est un cas douteux — on vérifie avec le mesh 3D. Si la marge est grande, on fait confiance au prisme sans vérifier. Le fantôme rouge montre la bounding box du prisme, le mesh détaillé corrige à l'intérieur.
 
 **Detailed** — Mesh 3D complet, 32 passes de raffinement. Le plus précis, et le défaut actuel. Les optimisations du corridor et de la grille rendent ce mode viable en temps réel.
+
+## Pourquoi le mode detailed a gagné
+
+Le two-level a l'air d'un bon compromis, mais il garde des faux positifs. Le problème : quand un bâtiment a un fill ratio faible (le bâtiment en L ne remplit que 33% de sa bounding box), le prisme peut être **confiant et faux** en même temps. Le soleil passe dans le vide du L, mais le prisme voit un rectangle plein et dit "ombre avec 5° de marge". Comme la marge est au-dessus du seuil, le two-level ne vérifie jamais avec le mesh.
+
+Concrètement, sur la zone du Great Escape à 17h30 :
+
+| Seuil two-level | Vérifications mesh | Faux positifs restants |
+|---|---|---|
+| 0.25° | 22 / 4897 | 161 |
+| 1° | 86 / 4897 | 114 |
+| 2° | 169 / 4897 | 65 |
+| 3° | 259 / 4897 | 38 |
+| ∞ (= detailed) | 4897 / 4897 | **0** |
+
+Même à 3° de seuil, il reste 38 faux positifs. Pour les éliminer tous, il faudrait monter le seuil tellement haut qu'on vérifierait presque tout avec le mesh — autant l'utiliser directement. Et les optimisations (grille spatiale, corridor, contexte partagé) ont rendu le mesh suffisamment rapide : le speedup du two-level par rapport au detailed n'est que de 1.02x à 1.07x. Pas assez pour justifier 38 terrasses déclarées à l'ombre à tort.
 
 ## Le pipeline de données
 
