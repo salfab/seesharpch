@@ -135,18 +135,14 @@
     meshes.forEach(function (m) { meshById[m.obstacleId] = m; });
 
     // ── Identify key blockers ────────────────────────────────────────
-    var blockerIds = { main: null, secondary: null, rumine: [] };
+    var blockerIds = { main: null, secondary: null, rumine: null };
     buildings.forEach(function (b) {
       var w = Math.round(b.maxX - b.minX);
       var d = Math.round(b.maxY - b.minY);
       if (w === 46 && d === 25 && b.height > 28) blockerIds.main = b.id;
       if (w === 31 && d === 25 && b.footprint && b.footprint.length === 4) blockerIds.secondary = b.id;
-      // Palais de Rumine = cluster of buildings NE of terrace (~55E, -90Z)
-      var dx = b.centerX - (originE + 55);
-      var dy = b.centerY - (originN + 90); // +90 northing = -90Z in scene
-      if (Math.sqrt(dx * dx + dy * dy) < 60 && b.height > 20) {
-        blockerIds.rumine.push(b.id);
-      }
+      // Palais de Rumine: single largest building NE of terrace (93x139m)
+      if (w === 93 && d === 139) blockerIds.rumine = b.id;
     });
 
     // ── Geometry builders ────────────────────────────────────────────
@@ -237,11 +233,9 @@
       return Math.sqrt(dx * dx + dy * dy) < 120;
     });
 
-    function isRumine(id) { return blockerIds.rumine.indexOf(id) >= 0; }
-
     function getMat(b) {
       if (b.id === blockerIds.main) return matBlocker;
-      if (isRumine(b.id)) return matRumine;
+      if (b.id === blockerIds.rumine) return matRumine;
       return matBuilding;
     }
 
@@ -269,7 +263,7 @@
         var ext2 = createExtruded(b, mat);
         if (ext2) groups.twoLevel.add(ext2);
       }
-      if (b.id === blockerIds.main || b.id === blockerIds.secondary || isRumine(b.id)) {
+      if (b.id === blockerIds.main || b.id === blockerIds.secondary || b.id === blockerIds.rumine) {
         var gw = createPrismGhostWire(b);
         groups.twoLevel.add(gw.ghost);
         groups.twoLevel.add(gw.wire);
@@ -295,8 +289,12 @@
         addLabel(scene, bSec.id, cSec.x, bSec.height + 5, cSec.z, '#c8c9cd');
       }
     }
-    if (blockerIds.rumine.length > 0) {
-      addLabel(scene, 'Palais de Rumine', 55, 42, -90, '#c8c9cd');
+    if (blockerIds.rumine) {
+      var bRum = buildings.find(function (o) { return o.id === blockerIds.rumine; });
+      if (bRum) {
+        var cRum = toLocal(bRum.centerX, bRum.centerY);
+        addLabel(scene, 'Palais de Rumine', cRum.x, bRum.height + 5, cRum.z, '#c8c9cd');
+      }
     }
 
     Object.keys(groups).forEach(function (k) {
