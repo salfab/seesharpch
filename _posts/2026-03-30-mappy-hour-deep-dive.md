@@ -35,7 +35,7 @@ Le contexte d'évaluation — bâtiments candidats, profil de terrain, masque d'
 
 ## Le masque d'horizon
 
-Pour chaque zone, je précalcule un masque d'horizon à 360 degrés : un tableau de 360 cases, une par degré d'azimut (0° = nord, 90° = est, etc.). Pour chaque direction, un rayon est lancé le long du sol jusqu'à 120 km. Tous les 250 mètres, on échantillonne l'altitude du terrain (DEM Copernicus à 30 m de résolution), on corrige pour la courbure terrestre et la réfraction atmosphérique, et on garde l'angle d'élévation maximal. Le résultat : un profil d'obstruction complet autour du point. Si le soleil est en-dessous de cet angle pour un azimut donné, il est masqué par le relief — et oui, le Jura français à 80 km projette des ombres sur Lausanne en fin de journée.
+Pour chaque zone, je précalcule un masque d'horizon à 360 degrés : un tableau de 360 cases, une par degré d'azimut (l'angle de la boussole : 0° = nord, 90° = est, 180° = sud, 270° = ouest). Pour chaque direction, un rayon est lancé le long du sol jusqu'à 120 km. Tous les 250 mètres, on échantillonne l'altitude du terrain (DEM Copernicus à 30 m de résolution), on corrige pour la courbure terrestre et la réfraction atmosphérique, et on garde l'angle d'élévation maximal. Le résultat : un profil d'obstruction complet autour du point. Si le soleil est en-dessous de cet angle pour un azimut donné, il est masqué par le relief — et oui, le Jura français à 80 km projette des ombres sur Lausanne en fin de journée.
 
 <div id="viz-horizon" style="width: 100%; margin: 2rem 0; border-radius: 6px; overflow: hidden; background: var(--bg2); border: 1px solid var(--border); position: relative;"></div>
 <div style="text-align: center; margin: 0.5rem 0 1.5rem;">
