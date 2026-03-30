@@ -297,6 +297,15 @@
       }
     }
 
+    // Label all nearby buildings with their IDs for identification
+    nearBuildings.forEach(function (b) {
+      var c = toLocal(b.centerX, b.centerY);
+      var dist = Math.sqrt(c.x * c.x + c.z * c.z);
+      if (dist < 70 && b.height > 5) {
+        addLabel(scene, b.id, c.x, b.height + 2, c.z, '#666');
+      }
+    });
+
     Object.keys(groups).forEach(function (k) {
       groups[k].visible = (k === 'detailed');
       scene.add(groups[k]);
