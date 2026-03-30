@@ -66,9 +66,10 @@
     controls.maxPolarAngle = Math.PI / 2.1;
     controls.update();
 
-    scene.add(new THREE.AmbientLight(0x334455, 0.6));
+    scene.add(new THREE.AmbientLight(0x8899aa, 1.2));
+    scene.add(new THREE.HemisphereLight(0xaabbcc, 0x444466, 0.6));
 
-    var sun = new THREE.DirectionalLight(0xffe8c0, 1.8);
+    var sun = new THREE.DirectionalLight(0xffe8c0, 1.5);
     sun.castShadow = true;
     sun.shadow.mapSize.width = 4096;
     sun.shadow.mapSize.height = 4096;
@@ -79,13 +80,13 @@
     scene.add(sun);
 
     // ── Materials ────────────────────────────────────────────────────
-    var matGround      = new THREE.MeshLambertMaterial({ color: 0x1a1c22 });
-    var matTerrace     = new THREE.MeshLambertMaterial({ color: 0x7effd4, transparent: true, opacity: 0.45 });
+    var matGround      = new THREE.MeshLambertMaterial({ color: 0x2a2d35 });
+    var matTerrace     = new THREE.MeshLambertMaterial({ color: 0x7effd4, transparent: true, opacity: 0.5 });
     var matTerraceEdge = new THREE.LineBasicMaterial({ color: 0x7effd4 });
-    var matBuilding    = new THREE.MeshPhongMaterial({ color: 0x3a3e4a, flatShading: true });
-    var matBlocker     = new THREE.MeshPhongMaterial({ color: 0x5a4050, flatShading: true });
-    var matRumine      = new THREE.MeshPhongMaterial({ color: 0x5a5a3a, flatShading: true });
-    var matMesh3D      = new THREE.MeshPhongMaterial({ color: 0x6a7a8a, flatShading: true, side: THREE.DoubleSide });
+    var matBuilding    = new THREE.MeshPhongMaterial({ color: 0x6a7080, flatShading: true });
+    var matBlocker     = new THREE.MeshPhongMaterial({ color: 0x8a6878, flatShading: true });
+    var matRumine      = new THREE.MeshPhongMaterial({ color: 0x8a8a6a, flatShading: true });
+    var matMesh3D      = new THREE.MeshPhongMaterial({ color: 0x8a9aaa, flatShading: true, side: THREE.DoubleSide });
     var matPrismGhost  = new THREE.MeshPhongMaterial({ color: 0xff6b6b, transparent: true, opacity: 0.12, flatShading: true, depthWrite: false });
     var matPrismWire   = new THREE.LineBasicMaterial({ color: 0xff6b6b, transparent: true, opacity: 0.45 });
     var matMismatch    = new THREE.MeshBasicMaterial({ color: 0xff6b6b, transparent: true, opacity: 0.6 });
@@ -99,7 +100,7 @@
 
     // Esplanade: the open area between Great Escape and Palais de Rumine
     // ~50m (E-W) x 35m (N-S), from analysis bbox
-    var matEsplanade = new THREE.MeshLambertMaterial({ color: 0x252830 });
+    var matEsplanade = new THREE.MeshLambertMaterial({ color: 0x353840 });
     var esplanade = new THREE.Mesh(new THREE.PlaneGeometry(50, 35), matEsplanade);
     esplanade.rotation.x = -Math.PI / 2;
     esplanade.position.set(2, 0.03, -11.5);

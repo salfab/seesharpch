@@ -31,8 +31,9 @@
   controls.update();
 
   // Lights
-  scene.add(new THREE.AmbientLight(0x334455, 0.5));
-  var dirLight = new THREE.DirectionalLight(0xffe8c0, 1.2);
+  scene.add(new THREE.AmbientLight(0x8899aa, 1.2));
+  scene.add(new THREE.HemisphereLight(0xaabbcc, 0x444466, 0.5));
+  var dirLight = new THREE.DirectionalLight(0xffe8c0, 1.0);
   dirLight.position.set(-20, 30, -10);
   scene.add(dirLight);
 
