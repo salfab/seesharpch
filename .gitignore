@@ -8,3 +8,4 @@ package-lock.json
 .jekyll-cache/
 .jekyll-metadata
 _preview.html
+_screenshot.js
