@@ -1,0 +1,3 @@
+# Drafts preview config — inherits from _config.yml and overrides baseurl
+# Usage: jekyll serve --config _config.yml,_config_drafts.yml --drafts --port 4001
+baseurl: "/preview"
