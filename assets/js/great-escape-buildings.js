@@ -91,23 +91,42 @@
     var matMismatch    = new THREE.MeshBasicMaterial({ color: 0xff6b6b, transparent: true, opacity: 0.6 });
     var matSunPoint    = new THREE.MeshBasicMaterial({ color: 0x7effd4, transparent: true, opacity: 0.6 });
 
-    // ── Ground + Terrace ─────────────────────────────────────────────
+    // ── Ground + Esplanade ────────────────────────────────────────────
     var ground = new THREE.Mesh(new THREE.PlaneGeometry(300, 300), matGround);
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     scene.add(ground);
 
-    var terrace = new THREE.Mesh(new THREE.PlaneGeometry(8, 6), matTerrace);
+    // Esplanade: the open area between Great Escape and Palais de Rumine
+    // ~50m (E-W) x 35m (N-S), from analysis bbox
+    var matEsplanade = new THREE.MeshLambertMaterial({ color: 0x252830 });
+    var esplanade = new THREE.Mesh(new THREE.PlaneGeometry(50, 35), matEsplanade);
+    esplanade.rotation.x = -Math.PI / 2;
+    esplanade.position.set(2, 0.03, -11.5);
+    esplanade.receiveShadow = true;
+    scene.add(esplanade);
+
+    // Esplanade border
+    var esplanadeEdge = new THREE.LineSegments(
+      new THREE.EdgesGeometry(new THREE.BoxGeometry(50, 0.02, 35)),
+      new THREE.LineBasicMaterial({ color: 0x3a3e4a })
+    );
+    esplanadeEdge.position.set(2, 0.04, -11.5);
+    scene.add(esplanadeEdge);
+
+    // Terrace (the specific Great Escape outdoor seating, SW corner of esplanade)
+    var terrace = new THREE.Mesh(new THREE.PlaneGeometry(10, 8), matTerrace);
     terrace.rotation.x = -Math.PI / 2;
-    terrace.position.set(0, 0.06, 0);
+    terrace.position.set(-12, 0.06, 0);
     terrace.receiveShadow = true;
     scene.add(terrace);
 
-    var te = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(8, 0.05, 6)), matTerraceEdge);
-    te.position.set(0, 0.06, 0);
+    var te = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(10, 0.05, 8)), matTerraceEdge);
+    te.position.set(-12, 0.06, 0);
     scene.add(te);
 
-    addLabel(scene, 'TERRASSE  GREAT ESCAPE', 0, 3, 0, '#7effd4');
+    addLabel(scene, 'TERRASSE', -12, 3, 0, '#7effd4');
+    addLabel(scene, 'ESPLANADE', 2, 2, -11.5, '#3a3e4a');
 
     // ── Index meshes by ID ───────────────────────────────────────────
     var meshById = {};
