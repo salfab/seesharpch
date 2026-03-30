@@ -12,3 +12,17 @@ baseurl: ""
 goatcounter: seesharpch
 
 markdown: kramdown
+
+exclude:
+  - Dockerfile
+  - docker-compose.yml
+  - generate-og-image.js
+  - generate-pdf.js
+  - CLAUDE.md
+  - README.md
+  - _config_drafts.yml
+  - _screenshot.js
+  - node_modules
+  - package.json
+  - package-lock.json
+  - "*.sh"
