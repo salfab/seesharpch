@@ -37,13 +37,14 @@
   Promise.all([
     fetch('/assets/data/great-escape-buildings.json').then(function (r) { return r.json(); }),
     fetch('/assets/data/great-escape-meshes.json').then(function (r) { return r.json(); }),
+    fetch('/assets/data/great-escape-terrain.json').then(function (r) { return r.json(); }),
   ]).then(function (data) {
-    init(data[0], data[1]);
+    init(data[0], data[1], data[2]);
   }).catch(function (err) {
     container.innerHTML = '<p style="color:#ff6b6b;padding:2rem;">Erreur chargement: ' + err.message + '</p>';
   });
 
-  function init(buildings, meshes) {
+  function init(buildings, meshes, terrainDEM) {
     var scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0b0c0e);
     scene.fog = new THREE.FogExp2(0x0b0c0e, 0.003);
@@ -92,42 +93,29 @@
     var matMismatch    = new THREE.MeshBasicMaterial({ color: 0xff6b6b, transparent: true, opacity: 0.6 });
     var matSunPoint    = new THREE.MeshBasicMaterial({ color: 0x7effd4, transparent: true, opacity: 0.6 });
 
-    // ── Terrain elevation ──────────────────────────────────────────────
-    // Build a heightmap from building minZ values (ground elevation).
-    // Reference altitude = terrace level (~490m). Everything is relative.
-    var refAltitude = 490;
-
-    // Sample ground elevation at a point by interpolating from nearby buildings
-    var elevationSamples = [];
-    buildings.forEach(function (b) {
-      var c = toLocal(b.centerX, b.centerY);
-      elevationSamples.push({ x: c.x, z: c.z, elev: b.minZ - refAltitude });
-    });
+    // ── Terrain elevation (real SwissALTI3D DEM) ──────────────────────
+    // Reference altitude = esplanade level (~508.6m)
+    var refAltitude = 508.6;
+    var terrainData = terrainDEM || null;
 
     function sampleElevation(x, z) {
-      // Inverse-distance weighted interpolation from nearby building ground levels
-      var totalWeight = 0;
-      var totalElev = 0;
-      var count = 0;
-      for (var i = 0; i < elevationSamples.length; i++) {
-        var s = elevationSamples[i];
-        var dx = s.x - x;
-        var dz = s.z - z;
-        var dist = Math.sqrt(dx * dx + dz * dz);
-        if (dist < 1) return s.elev;
-        if (dist < 80) {
-          var w = 1 / (dist * dist);
-          totalWeight += w;
-          totalElev += s.elev * w;
-          count++;
-        }
-      }
-      if (count === 0 || totalWeight === 0) return 0;
-      return totalElev / totalWeight;
+      // x = easting offset from origin, z = -(northing offset) in scene
+      if (!terrainData) return 0;
+      var easting = originE + x;
+      var northing = originN + (-z); // z is negated northing
+      var col = Math.round((easting - terrainData.origin.easting) / terrainData.resolution);
+      var row = Math.round((terrainData.origin.northing + terrainData.size.rows * terrainData.resolution - northing) / terrainData.resolution);
+      if (col < 0 || col >= terrainData.size.cols || row < 0 || row >= terrainData.size.rows) return 0;
+      var elev = terrainData.elevations[row * terrainData.size.cols + col];
+      return (elev || refAltitude) - refAltitude;
     }
 
-    // ── Ground (terrain mesh) ────────────────────────────────────────
-    var terrainRes = 60; // grid resolution
+    function groundY(localX, localZ) {
+      return sampleElevation(localX, localZ);
+    }
+
+    // ── Ground (terrain mesh from real SwissALTI3D DEM) ─────────────
+    var terrainRes = 150; // match DEM resolution (300m / 2m = 150)
     var terrainSize = 300; // meters
     var terrainGeo = new THREE.PlaneGeometry(terrainSize, terrainSize, terrainRes - 1, terrainRes - 1);
     terrainGeo.rotateX(-Math.PI / 2);
@@ -143,11 +131,6 @@
     var terrain = new THREE.Mesh(terrainGeo, matGround);
     terrain.receiveShadow = true;
     scene.add(terrain);
-
-    // ── Coordinate helpers (now elevation-aware) ─────────────────────
-    function groundY(localX, localZ) {
-      return sampleElevation(localX, localZ);
-    }
 
     // Terrasse: the open area between the Madeleine buildings (W/SW)
     // and the Palais de Rumine (NE). Centered on the mismatch zone
