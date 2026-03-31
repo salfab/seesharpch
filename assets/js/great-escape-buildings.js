@@ -149,12 +149,11 @@
       return sampleElevation(localX, localZ);
     }
 
-    // Terrasse: the full open area between the Madeleine buildings (W)
-    // and the Palais de Rumine (NE). This is where the Great Escape
-    // terrace is — the whole esplanade between the two building fronts.
-    // Roughly from x=-15 to x=40, z=-40 to z=15 (local coords)
-    var terrCenterX = 10;
-    var terrCenterZ = -15;
+    // Terrasse: the open area between the Madeleine buildings (W/SW)
+    // and the Palais de Rumine (NE). Centered on the mismatch zone
+    // from the analysis report (E 2538188-2538200, N 1152710-1152720).
+    var terrCenterX = 0;
+    var terrCenterZ = -13;
     var terrW = 60;
     var terrD = 60;
     var terrY = groundY(terrCenterX, terrCenterZ);
