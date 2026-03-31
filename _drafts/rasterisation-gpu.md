@@ -11,11 +11,28 @@ En construisant les visualisations interactives de l'article précédent, une qu
 
 ## Ce qu'est la rasterisation
 
-La rasterisation, c'est transformer un objet géométrique (un triangle, un polygone, une ligne) en pixels sur une grille régulière. Ton écran est une grille de pixels. Le GPU prend chaque triangle de la scène 3D, calcule quels pixels il couvre, et remplit ces pixels avec la bonne couleur.
+La rasterisation, c'est transformer un objet géométrique (un triangle, un polygone, une ligne) en pixels sur une grille régulière. On parcourt la grille, et pour chaque cellule on demande : "est-ce que ce pixel est à l'intérieur du polygone ?" Si oui, on stocke une valeur — une hauteur, une couleur, une profondeur.
 
-C'est le principe fondamental du rendu 3D temps réel depuis les années 90. Pas besoin de suivre des rayons lumineux — on projette les triangles sur l'écran un par un, à une vitesse phénoménale. Un GPU moderne rasterise des milliards de triangles par seconde.
+<div id="viz-rasterization" style="width: 100%; margin: 1.5rem 0; border-radius: 6px; overflow: hidden; background: var(--bg2); border: 1px solid var(--border);"></div>
 
-Le shadow mapping — la technique qu'utilise Three.js pour les ombres — est lui aussi de la rasterisation : on rend la scène une deuxième fois depuis le point de vue du soleil, et on stocke la profondeur de chaque pixel. Ensuite, pour chaque pixel de la vue normale, on vérifie s'il est "plus loin" que ce que le soleil voit. Si oui, il est dans l'ombre.
+C'est le principe fondamental du rendu 3D temps réel depuis les années 90. Ton écran est une grille de pixels. Le GPU prend chaque triangle de la scène, calcule quels pixels il couvre, et les remplit. Un GPU moderne rasterise des milliards de triangles par seconde. Pas besoin de suivre des rayons lumineux — on projette les triangles sur la grille un par un.
+
+Le shadow mapping — la technique qu'utilise Three.js pour les ombres — est lui aussi de la rasterisation : on rend la scène une deuxième fois depuis le point de vue du soleil, et on stocke la profondeur de chaque pixel dans une texture. Ensuite, pour chaque pixel de la vue normale, on vérifie s'il est "plus loin" que ce que le soleil voit. Si oui, il est dans l'ombre.
+
+## Ce qu'est le ray-tracing
+
+Le ray-tracing fait l'inverse : au lieu de projeter des triangles sur une grille, on lance un **rayon** depuis un point dans une direction, et on cherche ce qu'il touche.
+
+<div id="viz-raytracing" style="width: 100%; margin: 1.5rem 0; border-radius: 6px; overflow: hidden; background: var(--bg2); border: 1px solid var(--border);"></div>
+<div style="text-align: center; margin: 0 0 1.5rem;">
+  <label style="color: var(--text-body); font-family: var(--mono); font-size: 0.85rem;">Altitude du soleil : <span id="raytracing-alt">15°</span></label><br>
+  <input type="range" min="2" max="45" step="1" value="15" id="raytracing-slider" style="width: 60%; max-width: 300px; margin-top: 0.5rem; accent-color: var(--accent);"
+    oninput="document.getElementById('raytracing-alt').textContent=this.value+'°'">
+</div>
+
+La formule est simple : **P(t) = O + t × D**, où O est l'observateur, D la direction vers le soleil, et t la distance. On avance le long du rayon et on teste chaque obstacle. Si le rayon intersecte un triangle du mesh 3D d'un bâtiment avant d'atteindre le soleil, le point est à l'ombre. Sinon, il est au soleil.
+
+Bougez le slider pour voir comment l'altitude du soleil change le résultat : un soleil bas (fin de journée) est bloqué par le bâtiment, un soleil haut (midi) passe au-dessus.
 
 ## Où on l'utilise déjà (et on ne s'en rendait pas compte)
 
@@ -96,3 +113,7 @@ La piste d'optimisation réaliste : un **mode hybride raster-first**. Lancer le 
 ## Conclusion
 
 La rasterisation est omniprésente dans Mappy Hour — pour le terrain, la végétation, l'horizon. Le seul calcul qui résiste, c'est les bâtiments : trop fins, trop verticaux, trop irréguliers pour une grille. Mais swissSURFACE3D offre un raccourci possible pour les cas simples. Le GPU pourrait accélérer le tout via des compute shaders, mais le gain dépend du profiling réel. Et pour un service qui répond "soleil ou ombre ?" via une API REST, la réponse doit être un booléen exact, pas une image approximative — le raster seul ne suffit pas.
+
+<!-- Visualizations -->
+<script src="/assets/js/explain-rasterization.js"></script>
+<script src="/assets/js/explain-raytracing.js"></script>
