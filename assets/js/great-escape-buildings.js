@@ -132,29 +132,6 @@
     terrain.receiveShadow = true;
     scene.add(terrain);
 
-    // Terrasse: the open area between the Madeleine buildings (W/SW)
-    // and the Palais de Rumine (NE). Centered on the mismatch zone
-    // from the analysis report (E 2538188-2538200, N 1152710-1152720).
-    var terrCenterX = 0;
-    var terrCenterZ = -13;
-    var terrW = 60;
-    var terrD = 60;
-    var terrY = groundY(terrCenterX, terrCenterZ);
-    var terrace = new THREE.Mesh(new THREE.PlaneGeometry(terrW, terrD), matTerrace);
-    terrace.rotation.x = -Math.PI / 2;
-    terrace.position.set(terrCenterX, terrY + 0.2, terrCenterZ);
-    terrace.receiveShadow = true;
-    scene.add(terrace);
-
-    var te = new THREE.LineSegments(
-      new THREE.EdgesGeometry(new THREE.BoxGeometry(terrW, 0.05, terrD)),
-      matTerraceEdge
-    );
-    te.position.set(terrCenterX, terrY + 0.2, terrCenterZ);
-    scene.add(te);
-
-    addLabel(scene, 'TERRASSE', terrCenterX, terrY + 4, terrCenterZ, '#7effd4');
-
     // ── Index meshes by ID ───────────────────────────────────────────
     var meshById = {};
     meshes.forEach(function (m) { meshById[m.obstacleId] = m; });
