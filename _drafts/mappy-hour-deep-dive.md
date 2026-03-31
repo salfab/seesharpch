@@ -25,6 +25,10 @@ Pour chaque rayon solaire, je construis un corridor — une bounding box aligné
 
 Le corridor réduit les candidats, mais il faut encore les trouver vite. J'ai découpé la ville en cellules de 64m x 64m. Chaque cellule maintient un index des bâtiments qui la touchent.
 
+<div id="viz-corridor" style="width: 100%; margin: 2rem 0; border-radius: 6px; overflow: hidden; background: var(--bg2); border: 1px solid var(--border); position: relative;"></div>
+
+La carte ci-dessus montre les 225 bâtiments réels (données SwissBUILDINGS3D) autour de la terrasse du Great Escape. Le rayon jaune pointe vers le soleil. Le corridor (rectangle en pointillé) délimite la zone de recherche. Les cellules de 64m surlignées sont les seules consultées dans la grille spatiale. Les bâtiments turquoise sont les candidats retenus — tout le reste est ignoré. Bougez le slider pour voir comment le nombre de candidats change avec la direction du soleil.
+
 Sans grille : 962 obstacles testés par rayon. Avec grille : environ 1. Le corridor + la grille ensemble donnent un **speedup de 4.25x** (Lot A).
 
 ## Le contexte partagé par tuile
@@ -161,3 +165,4 @@ Le plus efficace dans tout ça : mesurer d'abord, optimiser ensuite. Chaque lot 
 <script src="/assets/js/great-escape-buildings.js"></script>
 <script src="/assets/js/horizon-mask.js"></script>
 <script src="/assets/js/vegetation-raster.js"></script>
+<script src="/assets/js/corridor-grid.js"></script>
