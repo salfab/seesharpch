@@ -19,7 +19,9 @@ Il fallait passer de "techniquement correct" à "utilisable en temps réel". Spo
 
 Premier réflexe d'optimisation : pourquoi tester un bâtiment à 2 km à l'est quand le soleil vient du sud ?
 
-Pour chaque rayon solaire, je construis un corridor — un rectangle englobant aligné sur les axes (AABB, pour "Axis-Aligned Bounding Box" : un rectangle toujours horizontal/vertical, jamais tourné, ce qui le rend extrêmement rapide à calculer). Ce rectangle entoure le rayon avec un padding qui inclut la demi-diagonale du plus gros bâtiment plus 64 mètres de marge. Tout bâtiment dont le centre est hors de ce rectangle est ignoré sans même un test d'intersection.
+Pour chaque rayon solaire, je construis un corridor — un rectangle englobant aligné sur les axes (AABB, pour "Axis-Aligned Bounding Box" : un rectangle toujours horizontal/vertical, jamais tourné, ce qui le rend extrêmement rapide à calculer). Ce rectangle entoure le rayon avec un padding qui inclut la demi-diagonale du plus gros bâtiment plus 64 mètres de marge. Ensuite, un filtre par dot product (produit scalaire : on projette la position du bâtiment sur la direction du rayon — si le résultat est négatif, le bâtiment est derrière l'observateur et on l'ignore) élimine tout ce qui est dans le mauvais sens.
+
+Le rectangle AABB est volontairement large — quand le rayon part à 45°, il couvre presque le double de la zone utile. On pourrait le remplacer par un rectangle orienté le long du rayon (OBB), mais les benchmarks montrent que ça ne change rien : **1.02x de speedup**. La raison : les bâtiments éliminés par un corridor plus serré sont ceux qui ne bloquent pas le rayon de toute façon. Le ray-tracing mesh (le calcul coûteux) n'est jamais déclenché pour eux.
 
 ## La grille spatiale 64m
 
