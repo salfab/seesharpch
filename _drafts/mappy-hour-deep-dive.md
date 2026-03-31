@@ -19,9 +19,15 @@ Il fallait passer de "techniquement correct" à "utilisable en temps réel". Spo
 
 Premier réflexe d'optimisation : pourquoi tester un bâtiment à 2 km à l'est quand le soleil vient du sud ?
 
-Pour chaque rayon solaire, je construis un corridor — un rectangle englobant aligné sur les axes (AABB, pour "Axis-Aligned Bounding Box" : un rectangle toujours horizontal/vertical, jamais tourné, ce qui le rend extrêmement rapide à calculer). Ce rectangle entoure le rayon avec un padding qui inclut la demi-diagonale du plus gros bâtiment plus 64 mètres de marge. Ensuite, un filtre par dot product (produit scalaire : on projette la position du bâtiment sur la direction du rayon — si le résultat est négatif, le bâtiment est derrière l'observateur et on l'ignore) élimine tout ce qui est dans le mauvais sens.
+Le filtrage se fait en trois étapes, de la plus grossière à la plus fine :
 
-Le rectangle AABB est volontairement large — quand le rayon part à 45°, il couvre presque le double de la zone utile. On pourrait le remplacer par un rectangle orienté le long du rayon (OBB), mais les benchmarks montrent que ça ne change rien : **1.02x de speedup**. La raison : les bâtiments éliminés par un corridor plus serré sont ceux qui ne bloquent pas le rayon de toute façon. Le ray-tracing mesh (le calcul coûteux) n'est jamais déclenché pour eux.
+1. **AABB + grille spatiale** — Un rectangle englobant aligné sur les axes (AABB, pour "Axis-Aligned Bounding Box" : un rectangle toujours horizontal/vertical, jamais tourné, ce qui le rend extrêmement rapide à calculer) entoure le rayon avec un large padding. Tous les bâtiments indexés dans les cellules de 64m qui touchent ce rectangle sont retenus. Le reste — la grande majorité — est éliminé sans aucun calcul. C'est un filtre grossier : l'AABB est volontairement large, il garde des bâtiments qui ne sont pas sur le chemin du rayon.
+
+2. **Dot product (produit scalaire)** — On projette la position de chaque bâtiment sur la direction du rayon. Si le résultat est négatif, le bâtiment est derrière l'observateur — éliminé.
+
+3. **Test d'élévation / ray-tracing** — Pour chaque candidat restant, on calcule si le sommet du bâtiment est au-dessus de la ligne de visée vers le soleil. C'est seulement ici qu'on vérifie si le bâtiment **bloque réellement** le rayon. En mode prisme, c'est une comparaison d'angle (quasi-instantanée). En mode mesh, c'est une intersection rayon-triangle (plus coûteuse, mais précise).
+
+L'AABB est donc une enveloppe de recherche, pas un test de blocage — comme chercher dans un annuaire par code postal avant de vérifier l'adresse exacte. On pourrait le remplacer par un rectangle orienté le long du rayon (OBB), mais les benchmarks montrent que ça ne change rien : **1.02x de speedup**. Les bâtiments éliminés par un corridor plus serré ne déclenchent jamais le ray-tracing de toute façon.
 
 ## La grille spatiale 64m
 
@@ -29,7 +35,7 @@ Le corridor réduit les candidats, mais il faut encore les trouver vite. J'ai d�
 
 <div id="viz-corridor" style="width: 100%; margin: 2rem 0; border-radius: 6px; overflow: hidden; background: var(--bg2); border: 1px solid var(--border); position: relative;"></div>
 
-La carte ci-dessus montre les 225 bâtiments réels (données SwissBUILDINGS3D) autour de la terrasse du Great Escape. Le rayon jaune pointe vers le soleil. Le corridor (rectangle en pointillé) délimite la zone de recherche. Les cellules de 64m surlignées sont les seules consultées dans la grille spatiale. Les bâtiments turquoise sont les candidats retenus — tout le reste est ignoré. Bougez le slider pour voir comment le nombre de candidats change avec la direction du soleil.
+La carte ci-dessus montre les 225 bâtiments réels (données SwissBUILDINGS3D) autour de la terrasse du Great Escape. Chaque bâtiment est coloré selon l'étape qui l'élimine : gris foncé = hors AABB, orange = éliminé par le dot product (derrière l'observateur), turquoise = candidat retenu pour le ray-tracing. Bougez le slider pour voir comment le filtrage change avec la direction du soleil.
 
 Sans grille : 962 obstacles testés par rayon. Avec grille : environ 1. Le corridor + la grille ensemble donnent un **speedup de 4.25x** (Lot A).
 
