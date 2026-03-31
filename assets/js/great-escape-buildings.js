@@ -91,7 +91,6 @@
     var matPrismGhost  = new THREE.MeshPhongMaterial({ color: 0xff6b6b, transparent: true, opacity: 0.12, flatShading: true, depthWrite: false });
     var matPrismWire   = new THREE.LineBasicMaterial({ color: 0xff6b6b, transparent: true, opacity: 0.45 });
     var matMismatch    = new THREE.MeshBasicMaterial({ color: 0xff6b6b, transparent: true, opacity: 0.6 });
-    var matSunPoint    = new THREE.MeshBasicMaterial({ color: 0x7effd4, transparent: true, opacity: 0.6 });
 
     // ── Terrain elevation (real SwissALTI3D DEM) ──────────────────────
     // Reference altitude = esplanade level (~508.6m)
@@ -220,19 +219,6 @@
       return mesh;
     }
 
-    function createMismatchGrid(mat) {
-      var group = new THREE.Group();
-      for (var e = 2538188; e <= 2538200; e++) {
-        for (var n = 1152712; n <= 1152713; n++) {
-          var p = toLocal(e, n);
-          var y = groundY(p.x, p.z);
-          var dot = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.15, 0.9), mat);
-          dot.position.set(p.x, y + 0.15, p.z);
-          group.add(dot);
-        }
-      }
-      return group;
-    }
 
     // ── Filter buildings ─────────────────────────────────────────────
     var nearBuildings = buildings.filter(function (b) {
@@ -278,9 +264,6 @@
       }
     });
 
-    groups.prism.add(createMismatchGrid(matMismatch));
-    groups.detailed.add(createMismatchGrid(matSunPoint));
-    groups.twoLevel.add(createMismatchGrid(matSunPoint));
 
     // Labels
     if (blockerIds.main) {
@@ -377,7 +360,9 @@
     function updateSunRays() {
       while (sunRayGroup.children.length) sunRayGroup.remove(sunRayGroup.children[0]);
       var dir = sun.position.clone().normalize();
-      var center = new THREE.Vector3(0, 0.2, 0);
+      // Point toward the esplanade (E 2538193, N 1152712 → local 0, -11)
+      var esplY = sampleElevation(0, -11);
+      var center = new THREE.Vector3(0, esplY + 1.5, -11);
       var start = center.clone().add(dir.clone().multiplyScalar(120));
       sunRayGroup.add(new THREE.Line(
         new THREE.BufferGeometry().setFromPoints([start, center]),
