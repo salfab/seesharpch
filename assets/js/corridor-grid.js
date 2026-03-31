@@ -30,8 +30,9 @@
     var ctx = canvas.getContext('2d');
     ctx.scale(dpr, dpr);
 
-    var originE = 2538193;
-    var originN = 1152701;
+    // Observer point = esplanade between Great Escape and Palais de Rumine
+    var observerE = 2538193;
+    var observerN = 1152712;
 
     // View: show ~500m around the terrace
     var viewSize = 500; // meters
@@ -41,8 +42,8 @@
 
     function toScreen(e, n) {
       return {
-        x: cx + (e - originE) * scale,
-        y: cy - (n - originN) * scale // Y flipped (north = up)
+        x: cx + (e - observerE) * scale,
+        y: cy - (n - observerN) * scale // Y flipped (north = up)
       };
     }
 
@@ -111,14 +112,14 @@
       var solarAltTan = Math.tan(sunAltDeg * Math.PI / 180);
       var cellHalfDiag = Math.sqrt(2) * cellSize / 2;
 
-      var endE = originE + dirX * maxDistance;
-      var endN = originN + dirY * maxDistance;
+      var endE = observerE + dirX * maxDistance;
+      var endN = observerN + dirY * maxDistance;
 
       // Corridor AABB
-      var corrMinE = Math.min(originE, endE) - corridorPadding;
-      var corrMaxE = Math.max(originE, endE) + corridorPadding;
-      var corrMinN = Math.min(originN, endN) - corridorPadding;
-      var corrMaxN = Math.max(originN, endN) + corridorPadding;
+      var corrMinE = Math.min(observerE, endE) - corridorPadding;
+      var corrMaxE = Math.max(observerE, endE) + corridorPadding;
+      var corrMinN = Math.min(observerN, endN) - corridorPadding;
+      var corrMaxN = Math.max(observerN, endN) + corridorPadding;
 
       var cellMinX = Math.floor(corrMinE / cellSize);
       var cellMaxX = Math.floor(corrMaxE / cellSize);
@@ -141,8 +142,8 @@
 
           var cellCenterE = (cx2 + 0.5) * cellSize;
           var cellCenterN = (cy2 + 0.5) * cellSize;
-          var cdx = cellCenterE - originE;
-          var cdy = cellCenterN - originN;
+          var cdx = cellCenterE - observerE;
+          var cdy = cellCenterN - observerN;
 
           // 1. Dot product: cell behind observer?
           var cellDot = cdx * dirX + cdy * dirY;
@@ -181,8 +182,8 @@
       var filtered = [];
       rawCandidates.forEach(function (idx) {
         var b = buildings[idx];
-        var dx = b.centerX - originE;
-        var dy = b.centerY - originN;
+        var dx = b.centerX - observerE;
+        var dy = b.centerY - observerN;
         var dot = dx * dirX + dy * dirY;
         if (dot < -b.halfDiagonal) { dotEliminated.add(idx); return; }
         var lateral = Math.abs(dx * dirY - dy * dirX);
@@ -225,10 +226,10 @@
       ctx.fillRect(0, 0, W, H);
 
       // ── All 64m grid cells (subtle) ────────────────────────────────
-      var viewMinE = originE - viewSize / 2;
-      var viewMaxE = originE + viewSize / 2;
-      var viewMinN = originN - viewSize / 2;
-      var viewMaxN = originN + viewSize / 2;
+      var viewMinE = observerE - viewSize / 2;
+      var viewMaxE = observerE + viewSize / 2;
+      var viewMinN = observerN - viewSize / 2;
+      var viewMaxN = observerN + viewSize / 2;
 
       var gMinX = Math.floor(viewMinE / cellSize);
       var gMaxX = Math.floor(viewMaxE / cellSize);
@@ -328,7 +329,7 @@
       });
 
       // ── Sun ray ────────────────────────────────────────────────────
-      var p0 = toScreen(originE, originN);
+      var p0 = toScreen(observerE, observerN);
       var p1 = toScreen(corridor.endE, corridor.endN);
       ctx.beginPath();
       ctx.moveTo(p0.x, p0.y);
