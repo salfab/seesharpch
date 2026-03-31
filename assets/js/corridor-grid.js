@@ -57,8 +57,9 @@
     });
     var corridorPadding = maxHalfDiag + cellSize;
 
-    // Build spatial grid (same logic as mappy-hour)
-    var grid = {};
+    // Build spatial grid + cellMaxZ (same logic as mappy-hour)
+    var grid = {};       // key → [building indices]
+    var cellMaxZ = {};   // key → max roof altitude in this cell
     buildings.forEach(function (b, idx) {
       var cMinX = Math.floor(b.minX / cellSize);
       var cMaxX = Math.floor(b.maxX / cellSize);
@@ -69,9 +70,35 @@
           var key = cx2 + ':' + cy2;
           if (!grid[key]) grid[key] = [];
           grid[key].push(idx);
+          if (!cellMaxZ[key] || b.maxZ > cellMaxZ[key]) {
+            cellMaxZ[key] = b.maxZ;
+          }
         }
       }
     });
+
+    // Observer elevation (esplanade ~508.6m)
+    var observerElevation = 508.6;
+
+    // Sun altitude table (March 8, SunCalc)
+    var sunTable = [
+      {h:7.25,az:99,alt:1.5},{h:8,az:107.3,alt:9.1},{h:9,az:119.2,alt:18.5},
+      {h:10,az:132.6,alt:26.9},{h:11,az:148.2,alt:33.5},{h:12,az:165.9,alt:37.6},
+      {h:12.75,az:180.1,alt:38.5},{h:14,az:203.4,alt:35.9},{h:15,az:220.1,alt:30.5},
+      {h:16,az:234.5,alt:22.9},{h:17,az:247.1,alt:13.9},{h:17.5,az:252.9,alt:9.1},
+      {h:18,az:258.5,alt:4.1},{h:18.25,az:261.3,alt:1.5}
+    ];
+
+    function azimuthToAltitude(azDeg) {
+      // Find the altitude for a given azimuth from the sun table
+      for (var i = 0; i < sunTable.length - 1; i++) {
+        if (azDeg >= sunTable[i].az && azDeg <= sunTable[i + 1].az) {
+          var t = (azDeg - sunTable[i].az) / (sunTable[i + 1].az - sunTable[i].az);
+          return sunTable[i].alt + t * (sunTable[i + 1].alt - sunTable[i].alt);
+        }
+      }
+      return 15; // fallback
+    }
 
     // Current sun azimuth
     var currentAzimuth = 252;
@@ -80,40 +107,57 @@
       var azRad = azDeg * Math.PI / 180;
       var dirX = Math.sin(azRad);
       var dirY = Math.cos(azRad);
+      var sunAltDeg = azimuthToAltitude(azDeg);
+      var solarAltTan = Math.tan(sunAltDeg * Math.PI / 180);
+      var cellHalfDiag = Math.sqrt(2) * cellSize / 2;
 
       var endE = originE + dirX * maxDistance;
       var endN = originN + dirY * maxDistance;
 
-      // Corridor AABB — same logic as mappy-hour buildings-shadow.ts
-      // A simple axis-aligned rectangle around the ray, padded by
-      // maxHalfDiagonal + cellSize. Fast to compute, fast to intersect.
+      // Corridor AABB
       var corrMinE = Math.min(originE, endE) - corridorPadding;
       var corrMaxE = Math.max(originE, endE) + corridorPadding;
       var corrMinN = Math.min(originN, endN) - corridorPadding;
       var corrMaxN = Math.max(originN, endN) + corridorPadding;
 
-      // Grid cells inside the AABB
       var cellMinX = Math.floor(corrMinE / cellSize);
       var cellMaxX = Math.floor(corrMaxE / cellSize);
       var cellMinY = Math.floor(corrMinN / cellSize);
       var cellMaxY = Math.floor(corrMaxN / cellSize);
 
-      var corridorCells = [];
+      // Per-cell classification
+      var corridorCells = [];       // all cells in AABB
+      var altitudeCulledCells = {}; // cells skipped by altitude culling
       var rawCandidates = new Set();
+
       for (var cy2 = cellMinY; cy2 <= cellMaxY; cy2++) {
         for (var cx2 = cellMinX; cx2 <= cellMaxX; cx2++) {
-          corridorCells.push({ cx: cx2, cy: cy2 });
           var key = cx2 + ':' + cy2;
+          corridorCells.push({ cx: cx2, cy: cy2 });
+
+          // Altitude culling: is the tallest building in this cell
+          // high enough to block the sun at this distance?
+          if (cellMaxZ[key] !== undefined && sunAltDeg > 0) {
+            var cellCenterE = (cx2 + 0.5) * cellSize;
+            var cellCenterN = (cy2 + 0.5) * cellSize;
+            var cdx = cellCenterE - originE;
+            var cdy = cellCenterN - originN;
+            var cellDot = cdx * dirX + cdy * dirY;
+            var minRayDist = Math.max(0, cellDot - cellHalfDiag);
+            var requiredTop = observerElevation + minRayDist * solarAltTan;
+            if (cellMaxZ[key] < requiredTop) {
+              altitudeCulledCells[key] = true;
+              continue; // skip this cell entirely
+            }
+          }
+
           if (grid[key]) {
             grid[key].forEach(function (idx) { rawCandidates.add(idx); });
           }
         }
       }
 
-      // Classify each building by which filter stage eliminates it
-      // Stage 0: not even in AABB grid cells (dark gray)
-      // Stage 1: in AABB but eliminated by dot product (orange)
-      // Stage 2: passed all filters = candidate for ray-tracing (turquoise)
+      // Classify buildings
       var dotEliminated = new Set();
       var filtered = [];
       rawCandidates.forEach(function (idx) {
@@ -130,8 +174,10 @@
       return {
         dirX: dirX, dirY: dirY,
         endE: endE, endN: endN,
+        sunAltDeg: sunAltDeg,
         minE: corrMinE, maxE: corrMaxE, minN: corrMinN, maxN: corrMaxN,
         corridorCells: corridorCells,
+        altitudeCulledCells: altitudeCulledCells,
         candidateCount: filtered.length,
         candidateIndices: new Set(filtered),
         inAABB: rawCandidates,
@@ -180,11 +226,22 @@
       ctx.setLineDash([]);
 
       // ── Grid cells inside the AABB ─────────────────────────────────
+      var altCulledCount = 0;
       corridor.corridorCells.forEach(function (cell) {
+        var key = cell.cx + ':' + cell.cy;
         var tl = toScreen(cell.cx * cellSize, (cell.cy + 1) * cellSize);
-        ctx.fillStyle = 'rgba(255, 224, 102, 0.06)';
-        ctx.fillRect(tl.x, tl.y, cellSize * scale, cellSize * scale);
-        ctx.strokeStyle = 'rgba(255, 224, 102, 0.2)';
+        var isCulled = corridor.altitudeCulledCells[key];
+        if (isCulled) {
+          altCulledCount++;
+          // Altitude-culled: buildings too low → purple/magenta
+          ctx.fillStyle = 'rgba(180, 100, 220, 0.1)';
+          ctx.fillRect(tl.x, tl.y, cellSize * scale, cellSize * scale);
+          ctx.strokeStyle = 'rgba(180, 100, 220, 0.25)';
+        } else {
+          ctx.fillStyle = 'rgba(255, 224, 102, 0.06)';
+          ctx.fillRect(tl.x, tl.y, cellSize * scale, cellSize * scale);
+          ctx.strokeStyle = 'rgba(255, 224, 102, 0.2)';
+        }
         ctx.lineWidth = 0.5;
         ctx.strokeRect(tl.x, tl.y, cellSize * scale, cellSize * scale);
       });
@@ -263,13 +320,13 @@
       ctx.fillText('W', 12, cy + 4);
 
       // ── Legend ─────────────────────────────────────────────────────
-      var ly = H - 100;
+      var ly = H - 120;
       ctx.font = '11px IBM Plex Mono, monospace';
       ctx.textAlign = 'left';
 
       ctx.fillStyle = '#ffe066';
       ctx.fillRect(12, ly, 16, 3);
-      ctx.fillText('Rayon solaire (az ' + Math.round(azDeg) + '°)', 34, ly + 4);
+      ctx.fillText('Rayon solaire (az ' + Math.round(azDeg) + '°, alt ' + Math.round(corridor.sunAltDeg) + '°)', 34, ly + 4);
 
       ly += 18;
       ctx.strokeStyle = 'rgba(255, 224, 102, 0.4)';
@@ -299,7 +356,13 @@
       ctx.strokeStyle = 'rgba(255, 224, 102, 0.3)';
       ctx.strokeRect(12, ly - 4, 12, 8);
       ctx.fillStyle = '#ffe066';
-      ctx.fillText(corridor.corridorCells.length + ' cellules 64m dans l\'AABB', 34, ly + 4);
+      ctx.fillText((corridor.corridorCells.length - altCulledCount) + ' cellules actives / ' + corridor.corridorCells.length + ' dans l\'AABB', 34, ly + 4);
+
+      ly += 18;
+      ctx.fillStyle = 'rgba(180, 100, 220, 0.4)';
+      ctx.fillRect(12, ly - 4, 12, 8);
+      ctx.fillStyle = '#b464dc';
+      ctx.fillText(altCulledCount + ' cellules eliminees (batiments trop bas pour le soleil)', 34, ly + 4);
 
       ly += 18;
       ctx.fillStyle = 'rgba(60, 65, 80, 0.5)';
