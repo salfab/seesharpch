@@ -19,6 +19,18 @@ L'avantage : pour connaître l'altitude à n'importe quel point, un seul accès 
 
 L'inconvénient : les bords du bâtiment sont arrondis aux pixels. Un mur qui tombe entre deux cellules est soit dedans, soit dehors — pas de demi-mesure. Plus la grille est fine (0.5m au lieu de 2m), plus la perte est faible, mais plus la mémoire explose.
 
+## Le shadow mapping : la rasterisation au service des ombres
+
+OK, mais comment passer d'une "grille de hauteurs" à "ce point est-il à l'ombre" ? C'est le **shadow mapping**, la technique qu'utilisent Three.js et tous les jeux vidéo. Le principe en deux étapes :
+
+1. **On rend la scène depuis le point de vue du soleil** — le résultat est un "depth buffer" : pour chaque pixel, la distance entre le soleil et le premier objet touché. Si le soleil voit un toit, la distance est courte. S'il voit le sol directement, la distance est longue.
+
+2. **Pour chaque point au sol**, on calcule sa distance au soleil et on la compare au depth buffer. Si ma distance est plus grande que celle stockée dans le buffer → il y a un objet entre moi et le soleil → **ombre**. Sinon → **soleil**.
+
+<div id="viz-shadowmap" style="width: 100%; margin: 1.5rem 0; border-radius: 6px; overflow: hidden; background: var(--bg2); border: 1px solid var(--border);"></div>
+
+Survolez les points au sol pour voir le test en action : le rayon vers le soleil est-il bloqué par le bâtiment ? Le depth buffer en bas montre ce que le soleil "voit" — les pixels jaunes sont le toit (distance courte), les gris sont le sol (distance longue).
+
 ## Ce qu'est le ray-tracing
 
 Le ray-tracing fait l'inverse : au lieu de projeter des triangles sur une grille, on lance un **rayon** depuis un point dans une direction, et on cherche ce qu'il touche.
@@ -116,4 +128,5 @@ La rasterisation est omniprésente dans Mappy Hour — pour le terrain, la vég�
 
 <!-- Visualizations -->
 <script src="/assets/js/explain-rasterization.js"></script>
+<script src="/assets/js/explain-shadowmap.js"></script>
 <script src="/assets/js/explain-raytracing.js"></script>
