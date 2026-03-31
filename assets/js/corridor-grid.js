@@ -110,17 +110,20 @@
         }
       }
 
-      // Filter: dot product (not behind observer) + max distance
-      // This is the exact same logic as collectCandidateObstacleIndices
+      // Classify each building by which filter stage eliminates it
+      // Stage 0: not even in AABB grid cells (dark gray)
+      // Stage 1: in AABB but eliminated by dot product (orange)
+      // Stage 2: passed all filters = candidate for ray-tracing (turquoise)
+      var dotEliminated = new Set();
       var filtered = [];
       rawCandidates.forEach(function (idx) {
         var b = buildings[idx];
         var dx = b.centerX - originE;
         var dy = b.centerY - originN;
         var dot = dx * dirX + dy * dirY;
-        if (dot < -b.halfDiagonal) return;
+        if (dot < -b.halfDiagonal) { dotEliminated.add(idx); return; }
         var dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist > maxDistance + b.halfDiagonal) return;
+        if (dist > maxDistance + b.halfDiagonal) { dotEliminated.add(idx); return; }
         filtered.push(idx);
       });
 
@@ -131,6 +134,8 @@
         corridorCells: corridorCells,
         candidateCount: filtered.length,
         candidateIndices: new Set(filtered),
+        inAABB: rawCandidates,
+        dotEliminated: dotEliminated,
         corridorPadding: corridorPadding,
       };
     }
@@ -184,26 +189,39 @@
         ctx.strokeRect(tl.x, tl.y, cellSize * scale, cellSize * scale);
       });
 
-      // ── Buildings ──────────────────────────────────────────────────
+      // ── Buildings (colored by filter stage) ─────────────────────────
+      // Three categories:
+      // - Dark gray: hors AABB (not even in the corridor rectangle)
+      // - Orange: in AABB but eliminated by dot product (behind observer / too far)
+      // - Turquoise: passed all filters → candidate for ray-tracing
       buildings.forEach(function (b, idx) {
         if (!b.footprint || b.footprint.length < 3) return;
-        var inCorridor = corridor.candidateIndices.has(idx);
 
         ctx.beginPath();
-        var p0 = toScreen(b.footprint[0].x, b.footprint[0].y);
-        ctx.moveTo(p0.x, p0.y);
+        var fp0 = toScreen(b.footprint[0].x, b.footprint[0].y);
+        ctx.moveTo(fp0.x, fp0.y);
         for (var i = 1; i < b.footprint.length; i++) {
-          var p = toScreen(b.footprint[i].x, b.footprint[i].y);
-          ctx.lineTo(p.x, p.y);
+          var fp = toScreen(b.footprint[i].x, b.footprint[i].y);
+          ctx.lineTo(fp.x, fp.y);
         }
         ctx.closePath();
 
-        if (inCorridor) {
+        if (corridor.candidateIndices.has(idx)) {
+          // Stage 2: candidate for ray-tracing
           ctx.fillStyle = 'rgba(126, 255, 212, 0.35)';
           ctx.strokeStyle = 'rgba(126, 255, 212, 0.6)';
+        } else if (corridor.dotEliminated.has(idx)) {
+          // Stage 1: in AABB but eliminated by dot product
+          ctx.fillStyle = 'rgba(255, 160, 60, 0.3)';
+          ctx.strokeStyle = 'rgba(255, 160, 60, 0.5)';
+        } else if (corridor.inAABB.has(idx)) {
+          // In AABB cells but eliminated by distance
+          ctx.fillStyle = 'rgba(255, 160, 60, 0.2)';
+          ctx.strokeStyle = 'rgba(255, 160, 60, 0.35)';
         } else {
-          ctx.fillStyle = 'rgba(80, 85, 100, 0.4)';
-          ctx.strokeStyle = 'rgba(80, 85, 100, 0.5)';
+          // Stage 0: hors AABB (not tested at all)
+          ctx.fillStyle = 'rgba(60, 65, 80, 0.3)';
+          ctx.strokeStyle = 'rgba(60, 65, 80, 0.4)';
         }
         ctx.fill();
         ctx.lineWidth = 0.5;
@@ -245,7 +263,7 @@
       ctx.fillText('W', 12, cy + 4);
 
       // ── Legend ─────────────────────────────────────────────────────
-      var ly = H - 80;
+      var ly = H - 100;
       ctx.font = '11px IBM Plex Mono, monospace';
       ctx.textAlign = 'left';
 
@@ -261,11 +279,19 @@
       ctx.fillStyle = '#ffe066';
       ctx.fillText('Corridor AABB (padding ' + Math.round(corridorPadding) + 'm)', 34, ly + 4);
 
+      var outsideAABB = buildings.length - corridor.inAABB.size;
+
       ly += 18;
       ctx.fillStyle = 'rgba(126, 255, 212, 0.5)';
       ctx.fillRect(12, ly - 4, 12, 8);
       ctx.fillStyle = '#7effd4';
-      ctx.fillText(corridor.candidateCount + ' batiments candidats / ' + buildings.length + ' total', 34, ly + 4);
+      ctx.fillText(corridor.candidateCount + ' candidats (ray-tracing)', 34, ly + 4);
+
+      ly += 18;
+      ctx.fillStyle = 'rgba(255, 160, 60, 0.5)';
+      ctx.fillRect(12, ly - 4, 12, 8);
+      ctx.fillStyle = '#ffa03c';
+      ctx.fillText(corridor.dotEliminated.size + ' dans AABB, elimines par dot product', 34, ly + 4);
 
       ly += 18;
       ctx.fillStyle = 'rgba(255, 224, 102, 0.15)';
@@ -273,13 +299,13 @@
       ctx.strokeStyle = 'rgba(255, 224, 102, 0.3)';
       ctx.strokeRect(12, ly - 4, 12, 8);
       ctx.fillStyle = '#ffe066';
-      ctx.fillText(corridor.corridorCells.length + ' cellules 64m dans le corridor AABB', 34, ly + 4);
+      ctx.fillText(corridor.corridorCells.length + ' cellules 64m dans l\'AABB', 34, ly + 4);
 
       ly += 18;
-      ctx.fillStyle = 'rgba(80, 85, 100, 0.6)';
+      ctx.fillStyle = 'rgba(60, 65, 80, 0.5)';
       ctx.fillRect(12, ly - 4, 12, 8);
-      ctx.fillStyle = '#666';
-      ctx.fillText((buildings.length - corridor.candidateCount) + ' batiments ignores (hors corridor)', 34, ly + 4);
+      ctx.fillStyle = '#555';
+      ctx.fillText(outsideAABB + ' hors AABB (jamais testes)', 34, ly + 4);
 
       // ── Scale bar ──────────────────────────────────────────────────
       var scaleBarM = 100;
