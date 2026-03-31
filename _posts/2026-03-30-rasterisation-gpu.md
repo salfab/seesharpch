@@ -11,13 +11,13 @@ En construisant les visualisations interactives de l'article précédent, une qu
 
 ## Ce qu'est la rasterisation
 
-La rasterisation, c'est transformer un objet géométrique (un triangle, un polygone, une ligne) en pixels sur une grille régulière. On parcourt la grille, et pour chaque cellule on demande : "est-ce que ce pixel est à l'intérieur du polygone ?" Si oui, on stocke une valeur — une hauteur, une couleur, une profondeur.
+La rasterisation, c'est convertir un objet géométrique en **valeurs sur une grille régulière**. À gauche, un bâtiment décrit par ses coordonnées exactes (un polygone vectoriel). À droite, la même information stockée dans une grille : chaque cellule contient un nombre — ici, l'altitude (500m = sol, 525m = toit du bâtiment).
 
 <div id="viz-rasterization" style="width: 100%; margin: 1.5rem 0; border-radius: 6px; overflow: hidden; background: var(--bg2); border: 1px solid var(--border);"></div>
 
-C'est le principe fondamental du rendu 3D temps réel depuis les années 90. Ton écran est une grille de pixels. Le GPU prend chaque triangle de la scène, calcule quels pixels il couvre, et les remplit. Un GPU moderne rasterise des milliards de triangles par seconde. Pas besoin de suivre des rayons lumineux — on projette les triangles sur la grille un par un.
+L'avantage : pour connaître l'altitude à n'importe quel point, un seul accès mémoire suffit — `grille[ligne][colonne]`. Pas de calcul géométrique, pas de test "est-ce que ce point est à l'intérieur du polygone ?". Survolez la grille pour le voir en action.
 
-Le shadow mapping — la technique qu'utilise Three.js pour les ombres — est lui aussi de la rasterisation : on rend la scène une deuxième fois depuis le point de vue du soleil, et on stocke la profondeur de chaque pixel dans une texture. Ensuite, pour chaque pixel de la vue normale, on vérifie s'il est "plus loin" que ce que le soleil voit. Si oui, il est dans l'ombre.
+L'inconvénient : les bords du bâtiment sont arrondis aux pixels. Un mur qui tombe entre deux cellules est soit dedans, soit dehors — pas de demi-mesure. Plus la grille est fine (0.5m au lieu de 2m), plus la perte est faible, mais plus la mémoire explose.
 
 ## Ce qu'est le ray-tracing
 
