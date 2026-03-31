@@ -23,9 +23,11 @@ Le filtrage se fait en trois étapes, de la plus grossière à la plus fine :
 
 1. **AABB + grille spatiale** — Un rectangle englobant aligné sur les axes (AABB, pour "Axis-Aligned Bounding Box" : un rectangle toujours horizontal/vertical, jamais tourné, ce qui le rend extrêmement rapide à calculer) entoure le rayon avec un large padding. Tous les bâtiments indexés dans les cellules de 64m qui touchent ce rectangle sont retenus. Le reste — la grande majorité — est éliminé sans aucun calcul. C'est un filtre grossier : l'AABB est volontairement large, il garde des bâtiments qui ne sont pas sur le chemin du rayon.
 
-2. **Dot product (produit scalaire)** — On projette la position de chaque bâtiment sur la direction du rayon. Si le résultat est négatif, le bâtiment est derrière l'observateur — éliminé.
+2. **Altitude culling par cellule** — Avant même de regarder les bâtiments individuels, on vérifie pour chaque cellule 64m : "le bâtiment le plus haut de cette cellule est-il assez haut pour bloquer le soleil à cette distance ?" On calcule la hauteur minimale qu'un obstacle devrait avoir pour intercepter le rayon — si le toit le plus haut de la cellule est en dessous, on saute toute la cellule d'un coup. Cette optimisation donne **39-54% d'amélioration** à elle seule, surtout quand le soleil est haut (les cellules lointaines avec des bâtiments bas sont toutes éliminées). Les cellules violettes dans la visualisation ci-dessous sont celles éliminées par ce test.
 
-3. **Test d'élévation / ray-tracing** — Pour chaque candidat restant, on calcule si le sommet du bâtiment est au-dessus de la ligne de visée vers le soleil. C'est seulement ici qu'on vérifie si le bâtiment **bloque réellement** le rayon. En mode prisme, c'est une comparaison d'angle (quasi-instantanée). En mode mesh, c'est une intersection rayon-triangle (plus coûteuse, mais précise).
+3. **Dot product (produit scalaire)** — On projette la position de chaque bâtiment restant sur la direction du rayon. Si le résultat est négatif, le bâtiment est derrière l'observateur — éliminé.
+
+4. **Ray-tracing** — Pour chaque candidat restant, on vérifie si le bâtiment **bloque réellement** le rayon. En mode prisme, c'est une comparaison d'angle (quasi-instantanée). En mode mesh, c'est une intersection rayon-triangle (plus coûteuse, mais précise).
 
 L'AABB est donc une enveloppe de recherche, pas un test de blocage — comme chercher dans un annuaire par code postal avant de vérifier l'adresse exacte. On pourrait le remplacer par un rectangle orienté le long du rayon (OBB), mais les benchmarks montrent que ça ne change rien : **1.02x de speedup**. Les bâtiments éliminés par un corridor plus serré ne déclenchent jamais le ray-tracing de toute façon.
 
