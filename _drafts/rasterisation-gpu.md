@@ -62,6 +62,37 @@ Si on voulait rendre toute la ville en 3D interactive dans le navigateur :
 
 C'est faisable — Google Earth le fait. Mais c'est un projet d'une tout autre échelle que Mappy Hour.
 
+## Et si on rasterisait aussi les bâtiments ?
+
+Puisque swissSURFACE3D inclut déjà les bâtiments (c'est un modèle de surface : sol + tout ce qui dépasse), pourquoi ne pas s'en servir pour **tout** ? On remplacerait les 93'000 obstacles vectoriels et leurs 8 étapes de filtrage par une simple boucle : avancer le long du rayon, lire la hauteur dans la grille, comparer. 200 lookups au lieu d'un pipeline complexe.
+
+J'ai testé avec les vraies données swissSURFACE3D à 0.5m autour du Great Escape. Résultat d'un ray march vers le soleil (azimut 252°, altitude 9.1°, 17h30) :
+
+```
+d=0-8m   surface ≈ terrain (esplanade ouverte)  ✓
+d=9m     surface=513.1m, rayon=510.1m  → BLOQUÉ  (coin de toit)
+d=10m    surface retombe (espace entre bâtiments) → libre
+d=15-20m terrain en pente, rien ne bloque        ✓
+d=22m    surface=513.0m, rayon=512.2m  → BLOQUÉ  (bloc de bâtiments)
+```
+
+Le bloquer à 9m n'apparaît que sur **un seul pixel à 0.5m** — c'est probablement un coin de toit qui dépasse de quelques centimètres au-dessus de la ligne de visée. Le ray-tracing vectoriel de Mappy Hour sait que le rayon passe **à côté** de ce bâtiment grâce à un test géométrique exact. Le raster ne sait pas — il ne voit qu'une hauteur par pixel de 50cm, sans notion de "à côté".
+
+C'est le compromis fondamental :
+
+| | **Raster (swissSURFACE3D)** | **Vectoriel (mesh 3D)** |
+|---|---|---|
+| **Complexité** | ~200 lookups dans une grille | 8 étapes de filtrage + ray-triangle |
+| **Données** | 1 fichier GeoTIFF | Index de 93k obstacles + DXF |
+| **Précision** | ±0.5m (taille du pixel) | Sub-millimétrique |
+| **Faux positifs** | Coins de toits, pixels ambigus | 0 (en mode detailed) |
+| **Bâtiment en L** | Ne voit pas le vide intérieur | Le traverse correctement |
+| **Performance** | Quasi-instantané (mémoire séquentielle) | Optimisé mais plus lent |
+
+À midi (soleil à 38.5°), le rayon monte si vite que même le raster ne trouve rien qui bloque. Le problème n'apparaît qu'en fin de journée, quand le soleil rase et que chaque pixel compte.
+
+La piste d'optimisation réaliste : un **mode hybride raster-first**. Lancer le ray march raster en premier (quasi-gratuit). Si le résultat est "pas bloqué", c'est définitif — pas besoin du vectoriel. Si c'est "bloqué", vérifier avec le ray-tracing vectoriel exact pour éliminer les faux positifs. Ça pourrait éliminer le vectoriel dans la majorité des cas (soleil haut, zones dégagées) tout en gardant la précision quand ça compte.
+
 ## Conclusion
 
-La rasterisation est omniprésente dans Mappy Hour — pour le terrain, la végétation, l'horizon. Le seul calcul qui résiste, c'est les bâtiments : trop fins, trop verticaux, trop irréguliers pour une grille. Le GPU pourrait accélérer ce calcul via des compute shaders, mais le gain dépend du profiling réel. Et pour un service qui répond "soleil ou ombre ?" via une API REST, la réponse doit être un booléen exact, pas une image approximative.
+La rasterisation est omniprésente dans Mappy Hour — pour le terrain, la végétation, l'horizon. Le seul calcul qui résiste, c'est les bâtiments : trop fins, trop verticaux, trop irréguliers pour une grille. Mais swissSURFACE3D offre un raccourci possible pour les cas simples. Le GPU pourrait accélérer le tout via des compute shaders, mais le gain dépend du profiling réel. Et pour un service qui répond "soleil ou ombre ?" via une API REST, la réponse doit être un booléen exact, pas une image approximative — le raster seul ne suffit pas.
