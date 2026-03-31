@@ -19,7 +19,7 @@ Il fallait passer de "techniquement correct" à "utilisable en temps réel". Spo
 
 Premier réflexe d'optimisation : pourquoi tester un bâtiment à 2 km à l'est quand le soleil vient du sud ?
 
-Pour chaque rayon solaire, je construis un corridor — une bounding box alignée sur la direction du soleil. Le padding inclut la demi-diagonale du plus gros bâtiment plus 64 mètres de marge. Tout ce qui est hors du corridor est ignoré sans même un calcul de distance.
+Pour chaque rayon solaire, je construis un corridor — un rectangle englobant aligné sur les axes (AABB, pour "Axis-Aligned Bounding Box" : un rectangle toujours horizontal/vertical, jamais tourné, ce qui le rend extrêmement rapide à calculer). Ce rectangle entoure le rayon avec un padding qui inclut la demi-diagonale du plus gros bâtiment plus 64 mètres de marge. Tout bâtiment dont le centre est hors de ce rectangle est ignoré sans même un test d'intersection.
 
 ## La grille spatiale 64m
 

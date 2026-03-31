@@ -80,29 +80,29 @@
       var azRad = azDeg * Math.PI / 180;
       var dirX = Math.sin(azRad);
       var dirY = Math.cos(azRad);
-      // Perpendicular direction (for lateral distance)
-      var perpX = -dirY;
-      var perpY = dirX;
 
       var endE = originE + dirX * maxDistance;
       var endN = originN + dirY * maxDistance;
 
-      // Corridor AABB (coarse, for grid cell lookup)
+      // Corridor AABB — same logic as mappy-hour buildings-shadow.ts
+      // A simple axis-aligned rectangle around the ray, padded by
+      // maxHalfDiagonal + cellSize. Fast to compute, fast to intersect.
       var corrMinE = Math.min(originE, endE) - corridorPadding;
       var corrMaxE = Math.max(originE, endE) + corridorPadding;
       var corrMinN = Math.min(originN, endN) - corridorPadding;
       var corrMaxN = Math.max(originN, endN) + corridorPadding;
 
-      // Grid cells in AABB
+      // Grid cells inside the AABB
       var cellMinX = Math.floor(corrMinE / cellSize);
       var cellMaxX = Math.floor(corrMaxE / cellSize);
       var cellMinY = Math.floor(corrMinN / cellSize);
       var cellMaxY = Math.floor(corrMaxN / cellSize);
 
-      // Collect candidates from grid, then filter properly
+      var corridorCells = [];
       var rawCandidates = new Set();
       for (var cy2 = cellMinY; cy2 <= cellMaxY; cy2++) {
         for (var cx2 = cellMinX; cx2 <= cellMaxX; cx2++) {
+          corridorCells.push({ cx: cx2, cy: cy2 });
           var key = cx2 + ':' + cy2;
           if (grid[key]) {
             grid[key].forEach(function (idx) { rawCandidates.add(idx); });
@@ -110,74 +110,27 @@
         }
       }
 
-      // Filter: dot product (not behind) + lateral distance (within corridor width)
+      // Filter: dot product (not behind observer) + max distance
+      // This is the exact same logic as collectCandidateObstacleIndices
       var filtered = [];
       rawCandidates.forEach(function (idx) {
         var b = buildings[idx];
         var dx = b.centerX - originE;
         var dy = b.centerY - originN;
-        // Along-ray distance
         var dot = dx * dirX + dy * dirY;
-        if (dot < -b.halfDiagonal) return; // behind observer
-        // Lateral distance to ray
-        var lateral = Math.abs(dx * perpX + dy * perpY);
-        if (lateral > corridorPadding + b.halfDiagonal) return; // too far from ray
-        // Distance check
+        if (dot < -b.halfDiagonal) return;
         var dist = Math.sqrt(dx * dx + dy * dy);
         if (dist > maxDistance + b.halfDiagonal) return;
         filtered.push(idx);
       });
 
-      var candidateSet = new Set(filtered);
-
-      // Determine which cells actually contain candidates (for highlighting)
-      var activeCells = {};
-      filtered.forEach(function (idx) {
-        var b = buildings[idx];
-        var cMinX2 = Math.floor(b.minX / cellSize);
-        var cMaxX2 = Math.floor(b.maxX / cellSize);
-        var cMinY2 = Math.floor(b.minY / cellSize);
-        var cMaxY2 = Math.floor(b.maxY / cellSize);
-        for (var cy3 = cMinY2; cy3 <= cMaxY2; cy3++) {
-          for (var cx3 = cMinX2; cx3 <= cMaxX2; cx3++) {
-            activeCells[cx3 + ':' + cy3] = true;
-          }
-        }
-      });
-
-      // Also highlight cells that the ray passes through
-      var rayCells = {};
-      for (var t = 0; t <= maxDistance; t += cellSize / 2) {
-        var re = originE + dirX * t;
-        var rn = originN + dirY * t;
-        // Include cells within corridorPadding of the ray point
-        var rcMinX = Math.floor((re - corridorPadding) / cellSize);
-        var rcMaxX = Math.floor((re + corridorPadding) / cellSize);
-        var rcMinY = Math.floor((rn - corridorPadding) / cellSize);
-        var rcMaxY = Math.floor((rn + corridorPadding) / cellSize);
-        for (var rcy = rcMinY; rcy <= rcMaxY; rcy++) {
-          for (var rcx = rcMinX; rcx <= rcMaxX; rcx++) {
-            // Check if cell center is within corridorPadding of the ray line
-            var ccE = (rcx + 0.5) * cellSize;
-            var ccN = (rcy + 0.5) * cellSize;
-            var cdx = ccE - originE;
-            var cdy = ccN - originN;
-            var clat = Math.abs(cdx * perpX + cdy * perpY);
-            if (clat <= corridorPadding + cellSize * 0.7) {
-              rayCells[rcx + ':' + rcy] = true;
-            }
-          }
-        }
-      }
-
       return {
-        dirX: dirX, dirY: dirY, perpX: perpX, perpY: perpY,
+        dirX: dirX, dirY: dirY,
         endE: endE, endN: endN,
         minE: corrMinE, maxE: corrMaxE, minN: corrMinN, maxN: corrMaxN,
-        activeCells: activeCells,
-        rayCells: rayCells,
+        corridorCells: corridorCells,
         candidateCount: filtered.length,
-        candidateIndices: candidateSet,
+        candidateIndices: new Set(filtered),
         corridorPadding: corridorPadding,
       };
     }
@@ -210,34 +163,20 @@
         }
       }
 
-      // ── Corridor strip (rotated, aligned to ray) ─────────────────
-      var p0 = toScreen(originE, originN);
-      var pEnd = toScreen(corridor.endE, corridor.endN);
-      var padPx = corridor.corridorPadding * scale;
-      var perpScreenX = -corridor.perpX * padPx;  // perp in screen is (perpE, -perpN) scaled
-      var perpScreenY = corridor.perpY * padPx;
-
-      ctx.beginPath();
-      ctx.moveTo(p0.x + perpScreenX, p0.y + perpScreenY);
-      ctx.lineTo(pEnd.x + perpScreenX, pEnd.y + perpScreenY);
-      ctx.lineTo(pEnd.x - perpScreenX, pEnd.y - perpScreenY);
-      ctx.lineTo(p0.x - perpScreenX, p0.y - perpScreenY);
-      ctx.closePath();
+      // ── Corridor AABB (axis-aligned bounding box) ─────────────────
+      var cTL = toScreen(corridor.minE, corridor.maxN);
+      var cBR = toScreen(corridor.maxE, corridor.minN);
       ctx.fillStyle = 'rgba(255, 224, 102, 0.04)';
-      ctx.fill();
+      ctx.fillRect(cTL.x, cTL.y, cBR.x - cTL.x, cBR.y - cTL.y);
       ctx.strokeStyle = 'rgba(255, 224, 102, 0.25)';
       ctx.lineWidth = 1;
       ctx.setLineDash([6, 4]);
-      ctx.stroke();
+      ctx.strokeRect(cTL.x, cTL.y, cBR.x - cTL.x, cBR.y - cTL.y);
       ctx.setLineDash([]);
 
-      // ── Corridor grid cells (only cells near the ray) ──────────────
-      var rayCellKeys = Object.keys(corridor.rayCells);
-      rayCellKeys.forEach(function (key) {
-        var parts = key.split(':');
-        var cellX = parseInt(parts[0]);
-        var cellY = parseInt(parts[1]);
-        var tl = toScreen(cellX * cellSize, (cellY + 1) * cellSize);
+      // ── Grid cells inside the AABB ─────────────────────────────────
+      corridor.corridorCells.forEach(function (cell) {
+        var tl = toScreen(cell.cx * cellSize, (cell.cy + 1) * cellSize);
         ctx.fillStyle = 'rgba(255, 224, 102, 0.06)';
         ctx.fillRect(tl.x, tl.y, cellSize * scale, cellSize * scale);
         ctx.strokeStyle = 'rgba(255, 224, 102, 0.2)';
@@ -334,7 +273,7 @@
       ctx.strokeStyle = 'rgba(255, 224, 102, 0.3)';
       ctx.strokeRect(12, ly - 4, 12, 8);
       ctx.fillStyle = '#ffe066';
-      ctx.fillText(Object.keys(corridor.rayCells).length + ' cellules 64m dans le corridor', 34, ly + 4);
+      ctx.fillText(corridor.corridorCells.length + ' cellules 64m dans le corridor AABB', 34, ly + 4);
 
       ly += 18;
       ctx.fillStyle = 'rgba(80, 85, 100, 0.6)';
