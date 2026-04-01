@@ -34,12 +34,14 @@ jobs:
           node-version: "20"
 
       - name: Generate OG image
+        continue-on-error: true
         run: |
           npm init -y --silent
           npm install puppeteer --silent
           node generate-og-image.js
 
       - name: Generate CV PDF
+        continue-on-error: true
         run: |
           npx serve _site -p 4000 &
           sleep 3
