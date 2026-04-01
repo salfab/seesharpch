@@ -75,96 +75,79 @@ Le GPU est optimisé pour rendre des images. Mappy Hour a besoin de répondre "o
 
 ## Les pistes GPU réalistes
 
-**WebGPU + Compute Shaders** — Le successeur de WebGL permet d'exécuter du code arbitraire sur le GPU, pas seulement du rendu. On pourrait porter le ray-tracing des bâtiments sur GPU : charger la grille spatiale 64m et les footprints dans des buffers GPU, lancer un compute shader par point de la grille, et récupérer le résultat. Le gain potentiel est massif — des milliers de rays en parallèle au lieu de les traiter séquentiellement.
+Avant de parler GPU, regardons où le temps est réellement passé. Le profiling d'une tuile de Lausanne (1248 points × 16 instants = 19'968 évaluations, mode detailed) :
 
-**BVH (Bounding Volume Hierarchy)** — Au lieu de la grille 64m plate, un arbre de volumes englobants permettrait un ray-tracing plus efficace sur GPU. C'est ce que font les moteurs de jeu pour le ray-tracing hardware (RT cores des GPU NVIDIA/AMD).
-
-**Le vrai bottleneck** — Avant de porter sur GPU, il faut regarder où le temps est passé. Les benchmarks de Mappy Hour montrent que le plus gros gain (45.8x) vient du partage de contexte par tuile, pas du ray-tracing lui-même. Optimiser la mauvaise chose ne sert à rien.
-
-## Les limites pour "tout Lausanne en 3D"
-
-Si on voulait rendre toute la ville en 3D interactive dans le navigateur :
-
-- **93'000 bâtiments** = ~500k triangles (mesh détaillés). Un GPU moderne encaisse, mais il faut les charger. En JSON, c'est des centaines de mégaoctets. Il faudrait du glTF binaire ou des 3D Tiles (le format de Cesium/Google Earth).
-- **Le terrain** sur 300 km² à 2m de résolution = 75 millions de points. Il faut du LOD (Level of Detail) — haute résolution près de la caméra, basse résolution au loin.
-- **La végétation** à 0.5m sur la même zone = 1.2 milliard de pixels. Même problème, en pire.
-
-C'est faisable — Google Earth le fait. Mais c'est un projet d'une tout autre échelle que Mappy Hour.
-
-## Et si on rasterisait aussi les bâtiments ?
-
-Puisque swissSURFACE3D inclut déjà les bâtiments (c'est un modèle de surface : sol + tout ce qui dépasse), pourquoi ne pas s'en servir pour **tout** ? On remplacerait les 93'000 obstacles vectoriels et leurs 8 étapes de filtrage par une simple boucle : avancer le long du rayon, lire la hauteur dans la grille, comparer. 200 lookups au lieu d'un pipeline complexe.
-
-J'ai testé avec les vraies données swissSURFACE3D à 0.5m autour du Great Escape. Résultat d'un ray march vers le soleil (azimut 252°, altitude 9.1°, 17h30) :
-
-```
-d=0-8m   surface ≈ terrain (esplanade ouverte)  ✓
-d=9m     surface=513.1m, rayon=510.1m  → BLOQUÉ  (coin de toit)
-d=10m    surface retombe (espace entre bâtiments) → libre
-d=15-20m terrain en pente, rien ne bloque        ✓
-d=22m    surface=513.0m, rayon=512.2m  → BLOQUÉ  (bloc de bâtiments)
-```
-
-Le bloquer à 9m n'apparaît que sur **un seul pixel à 0.5m** — c'est probablement un coin de toit qui dépasse de quelques centimètres au-dessus de la ligne de visée. Le ray-tracing vectoriel de Mappy Hour sait que le rayon passe **à côté** de ce bâtiment grâce à un test géométrique exact. Le raster ne sait pas — il ne voit qu'une hauteur par pixel de 50cm, sans notion de "à côté".
-
-C'est le compromis fondamental :
-
-| | **Raster (swissSURFACE3D)** | **Vectoriel (mesh 3D)** |
+| Phase | Temps | Part |
 |---|---|---|
-| **Complexité** | ~200 lookups dans une grille | 8 étapes de filtrage + ray-triangle |
-| **Données** | 1 fichier GeoTIFF | Index de 93k obstacles + DXF |
-| **Précision** | ±0.5m (taille du pixel) | Sub-millimétrique |
-| **Faux positifs** | Coins de toits, pixels ambigus | 0 (en mode detailed) |
-| **Bâtiment en L** | Ne voit pas le vide intérieur | Le traverse correctement |
-| **Performance** | Quasi-instantané (mémoire séquentielle) | Optimisé mais plus lent |
+| **Bâtiments (ray-tracing)** | **39'758 ms** | **99.2%** |
+| Végétation (ray march raster) | 78 ms | 0.2% |
+| Terrain (horizon mask) | 32 ms | 0.1% |
+| Position solaire (SunCalc) | 35 ms | 0.1% |
+| Finalization | 133 ms | 0.3% |
 
-À midi (soleil à 38.5°), le rayon monte si vite que même le raster ne trouve rien qui bloque. Le problème n'apparaît qu'en fin de journée, quand le soleil rase et que chaque pixel compte.
+Le ray-tracing des bâtiments, c'est **99.2% du temps**. Tout le reste est négligeable. C'est le seul levier qui compte.
 
-La piste d'optimisation réaliste : un **mode hybride raster-first**. Lancer le ray march raster en premier (quasi-gratuit). Si le résultat est "pas bloqué", c'est définitif — pas besoin du vectoriel. Si c'est "bloqué", vérifier avec le ray-tracing vectoriel exact pour éliminer les faux positifs. Ça pourrait éliminer le vectoriel dans la majorité des cas (soleil haut, zones dégagées) tout en gardant la précision quand ça compte.
+## La cascade de court-circuits
+
+Le code ne calcule pas bêtement les 144 instants. Pour chaque instant, une cascade de tests élimine le travail :
+
+1. **Soleil sous l'horizon astronomique ?** → résultat immédiat : nuit. Coût : ~0.
+2. **Soleil sous le masque d'horizon** (montagnes) ? → résultat : ombre terrain. Coût : un lookup dans le masque.
+3. **Seulement si le soleil est visible** → évaluation bâtiments + végétation.
+
+Sur une journée de mars (8h-20h, toutes les 15 minutes), environ **50 à 60 instants** déclenchent réellement le calcul bâtiments. Les instants de nuit, d'aube, et de crépuscule sont court-circuités.
 
 ## Pistes d'amélioration
 
-### Le paradoxe de Mappy Hour
+### Ce qu'un GPU changerait concrètement
 
-Mappy Hour calcule un résultat par point d'une grille de 5m, toutes les 5 minutes de 8h à 20h. Le résultat final est un booléen — soleil ou ombre — stocké dans un cache par tuile de 250m. En sortie, c'est une grille. On a donc les contraintes d'une grille fixe (résolution limitée) mais le coût du ray-tracing (calcul par bâtiment). La question est légitime : pourquoi ne pas utiliser un GPU pour tout ça ?
+Remplacer le ray-tracing CPU des bâtiments par un shadow map GPU :
 
-### Piste 1 : Shadow map GPU pour les bâtiments
+- **Actuellement** : 39.7 secondes par tuile (ray-tracing de 19'968 points)
+- **Avec GPU** : ~60 shadow maps (un par instant "soleil visible") × ~1ms par rendu + 19'968 lookups = **~100ms au lieu de 40 secondes**
+- **Gain estimé : ~400x** sur la couche bâtiments
 
-Pour la couche bâtiments seule, sur une zone urbaine de quelques kilomètres, un shadow map GPU par instant serait probablement plus rapide que le ray-tracing CPU. Le principe :
+Pour tout Lausanne (des centaines de tuiles) : le précalcul passerait de **plusieurs heures à quelques minutes**.
 
-- Charger les 93k bâtiments comme mesh GPU (une fois)
-- Pour chaque instant T : rendre un shadow map depuis la position du soleil → une image de profondeurs
-- Lire l'image : pour chaque point de la grille 5m, un lookup dans le shadow map
+### Le changement architectural
 
-**144 instants/jour × 1 rendu GPU par instant = 144 rendus.** Un GPU moderne fait ça en quelques secondes.
+Le bon côté : c'est un changement **ciblé**. Seul le module `buildingShadowEvaluator` dans `solar.ts` serait remplacé. Le reste du pipeline ne bouge pas :
 
-Le frein actuel : Mappy Hour tourne sur un serveur Node.js sans GPU. Il faudrait soit un serveur avec GPU (coûteux), soit déporter le calcul sur le client (WebGPU dans le navigateur).
+- L'API REST : identique
+- La cascade de court-circuits : identique
+- Le terrain, la végétation, l'horizon : identiques (déjà en raster, rapides)
+- Le cache par tuile : identique
+- Les données (DXF, index) : identiques, converties en mesh GPU au chargement
 
-### Piste 2 : Hybride raster-first (CPU, sans GPU)
+Concrètement : charger les 93k bâtiments en buffers GPU au démarrage du serveur. Pour chaque instant, rendre un shadow map depuis la position du soleil. Pour chaque point, un lookup dans le depth buffer au lieu du ray-tracing vectoriel.
 
-Sans changer d'infrastructure, on pourrait utiliser swissSURFACE3D comme pré-filtre :
+~200-400 lignes de code nouveau. Pas une réécriture.
 
-1. Ray march sur la grille raster 0.5m (quasi-gratuit : ~200 lookups mémoire)
-2. Si "pas bloqué" → terminé, pas besoin du vectoriel
-3. Si "bloqué" → vérifier avec le ray-tracing vectoriel exact
+### Avec ou sans GPU physique
 
-Le raster dirait "pas bloqué" dans la majorité des cas (soleil haut, zones dégagées). Le vectoriel ne serait invoqué que pour les cas limites — soleil rasant, coins de toits ambigus.
+Trois options :
 
-### Piste 3 : WebGPU compute shaders
+1. **Serveur avec GPU** (ex: GPU NVIDIA sur un VPS) — le plus rapide, mais coûteux (~50-100€/mois)
+2. **Headless WebGL** (`headless-gl` + Mesa software renderer) — pas de GPU physique, mais le shadow map tourne en CPU via Mesa. Potentiellement encore plus rapide que le ray-tracing vectoriel pour 93k bâtiments, sans matériel supplémentaire.
+3. **Côté client** (WebGPU dans le navigateur) — déporte le calcul chez l'utilisateur. Pas de coût serveur, mais impossible pour le précalcul de cache.
 
-WebGPU permet d'exécuter du code arbitraire sur le GPU du navigateur, pas seulement du rendu. On pourrait porter l'algorithme exact de Mappy Hour (grille spatiale, corridor, ray-tracing) sur GPU via des compute shaders. Chaque point de la grille serait traité en parallèle — des milliers de rays simultanés au lieu de séquentiels.
+La piste 2 est la plus pragmatique : aucun changement d'infrastructure, juste une dépendance npm (`headless-gl`).
 
-Le gain potentiel est massif, mais la complexité aussi : il faut restructurer les données pour le GPU (buffers plats, pas d'objets JS), gérer les limites mémoire, et les compute shaders ne sont pas encore supportés partout.
+### Piste alternative : hybride raster-first (sans GPU du tout)
 
-### Ce qui bloque vraiment
+Sans rien changer à l'infrastructure, utiliser swissSURFACE3D comme pré-filtre avant le ray-tracing :
 
-Avant de choisir une piste, il faut regarder où le temps est réellement passé. Les benchmarks montrent que le plus gros gain (45.8x) vient du **partage de contexte par tuile** — une optimisation algorithmique, pas matérielle. Le ray-tracing des bâtiments lui-même n'est que une partie du coût total. Optimiser la mauvaise chose ne sert à rien.
+1. Ray march sur la grille raster 0.5m (~200 lookups mémoire, quasi-gratuit)
+2. Si "pas bloqué" → terminé
+3. Si "bloqué" → vérifier avec le ray-tracing vectoriel
 
-La piste la plus pragmatique est probablement la **piste 2** : pas de nouveau matériel, pas de nouvelle API, juste un pré-filtre raster qui court-circuite le vectoriel dans les cas simples.
+Le raster dirait "pas bloqué" dans la majorité des cas (soleil haut, zones dégagées). Le vectoriel ne serait invoqué que pour le soleil rasant et les coins de toits ambigus.
 
 ## Conclusion
 
-La rasterisation est omniprésente dans Mappy Hour — pour le terrain, la végétation, l'horizon. Le seul calcul qui résiste, ce sont les bâtiments, mais même là, un pré-filtre raster (swissSURFACE3D) pourrait réduire le travail. Le GPU reste une option pour le futur — shadow map pour les bâtiments, compute shaders pour l'algorithme complet — mais le gain dépend du profiling réel. Et la réponse de l'API doit rester un booléen exact, pas une approximation visuelle.
+Le profiling ne ment pas : le ray-tracing des bâtiments consomme 99.2% du temps de calcul. C'est le seul levier qui compte, et il y a au moins trois façons de l'attaquer — du plus simple (pré-filtre raster, zéro infra) au plus ambitieux (shadow map GPU, gain ~400x).
+
+Le terrain, la végétation et l'horizon sont déjà en raster et ne coûtent rien. La cascade de court-circuits élimine les instants inutiles. Ce qui reste, c'est 50 shadow maps par jour pour 93k bâtiments — et ça, c'est exactement ce que les GPU font le mieux.
 
 <!-- Visualizations -->
 <script src="/assets/js/explain-rasterization.js"></script>
