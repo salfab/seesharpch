@@ -133,7 +133,21 @@ Les mismatches restants sont presque tous "CPU dit ombre, GPU dit soleil" — le
 
 - **Précision float32 vs float64** : le GPU travaille en 32-bit, le CPU en 64-bit. Sur des coordonnées LV95 (2'538'xxx), même après centrage, il reste du bruit qui fait basculer les cas limites.
 
-0% est probablement impossible entre un ray-tracer 64-bit et un rasterizer 32-bit. Mais les derniers pourcents pourraient tomber avec des **cascaded shadow maps** : au lieu d'un seul shadow map qui couvre tout, on découpe la scène en cascades par distance — haute résolution pour les bâtiments proches (0-30m), moyenne pour le milieu (30-100m), basse pour le loin (100-500m). Chaque cascade a son propre frustum serré, donc ses propres pixels dédiés. C'est la technique standard des jeux vidéo en monde ouvert pour exactement ce problème.
+J'ai testé les **cascaded shadow maps** (plusieurs shadow maps à des résolutions différentes par tranche de distance) — la technique standard des jeux vidéo. Résultat : +0.1% de précision pour -57% de speedup (80x → 34x). Le problème n'est pas la résolution du shadow map. Même à 0.1m/pixel, les mêmes points divergent.
+
+### La vraie raison : deux façons de voir un bord d'ombre
+
+La divergence est **géométrique**, pas une question de résolution. Le CPU et le GPU répondent à la même question ("ce point est-il à l'ombre ?") avec deux méthodes fondamentalement différentes :
+
+<div id="viz-divergence" style="width: 100%; margin: 1.5rem 0; border-radius: 6px; overflow: hidden; background: var(--bg2); border: 1px solid var(--border);"></div>
+
+À gauche, le **CPU** lance un rayon infiniment fin vers le soleil. Le rayon touche ou ne touche pas le mur du bâtiment — c'est un test géométrique exact, avec une précision sub-millimétrique. Le bord d'ombre est une ligne nette, continue.
+
+À droite, le **GPU** découpe l'espace en pixels. Pour chaque pixel, il teste le **centre** du pixel. Si le centre est dans l'ombre → tout le pixel est dans l'ombre. Si le centre est au soleil → tout le pixel est au soleil. Le bord d'ombre devient un **escalier** — une approximation en marches d'escalier du vrai bord.
+
+Quand un point tombe **pile sur le bord d'ombre** — à l'intérieur d'un pixel dont le centre est de l'autre côté — les deux méthodes donnent des résultats différents. Ni l'un ni l'autre n'a "tort". Le CPU dit "le rayon touche le mur à 0.3mm du bord". Le GPU dit "le centre du pixel est à 4cm de l'autre côté". Les deux sont corrects dans leur cadre — ils posent juste la question différemment.
+
+C'est pour ça que les 6.6% résistent : ce sont des points qui tombent sur les bords d'ombre. Augmenter la résolution du shadow map réduit la taille des pixels mais ne les élimine pas — il y aura toujours un escalier, juste avec des marches plus petites.
 
 ### Le changement architectural
 
@@ -187,3 +201,4 @@ Le terrain, la végétation et l'horizon sont déjà en raster et ne coûtent ri
 <script src="/assets/js/explain-rasterization.js"></script>
 <script src="/assets/js/explain-shadowmap.js"></script>
 <script src="/assets/js/explain-raytracing.js"></script>
+<script src="/assets/js/explain-divergence.js"></script>
