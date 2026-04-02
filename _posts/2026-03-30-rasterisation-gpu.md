@@ -104,25 +104,36 @@ Sur une journée de mars (8h-20h, toutes les 15 minutes), environ **50 à 60 ins
 
 Les estimations, c'est bien. Les benchmarks, c'est mieux. J'ai implémenté un vrai backend GPU shadow map dans Mappy Hour — même interface que le ray-tracing CPU, interchangeable — et mesuré sur un ThinkPad X1 avec un Intel Arc 140V (GPU intégré, pas un monstre).
 
-Trois itérations pour y arriver :
+Quatre itérations pour y arriver :
 
 | Version | Approche | Speedup | Mismatches | Problème |
 |---|---|---|---|---|
 | v2 | Footprints extrudés (prismes) | 54x | 23.5% | Géométrie simplifiée → ombres manquantes |
 | v3 | Vrais mesh DXF 3D (907k triangles) | 71x | 35.6% | Frustum mal calibré → bâtiments hors champ |
-| **v4** | **Mesh DXF + frustum resserré + bias corrigé** | **54x** | **7%** | Quelques cas limites aux bords de tuile |
+| v4 | Mesh DXF + frustum resserré + bias corrigé | 54x | 7% | Quelques cas limites aux bords de tuile |
+| **v5** | **Frustum directionnel + PCF** | **80x** | **6.6%** | Bâtiments très proches (2-5m) et très loin (132m) |
 
-En v3, le frustum du soleil (le volume de rendu, défini plus haut) était trop petit : des bâtiments en bordure de zone n'étaient pas rendus dans le shadow map, donc pas d'ombre. Resserrer le frustum tout en couvrant la bonne zone a corrigé la majorité des mismatches.
+En v3, le frustum du soleil (le volume de rendu, défini plus haut) était trop petit : des bâtiments en bordure de zone n'étaient pas rendus dans le shadow map, donc pas d'ombre. Resserrer le frustum tout en couvrant la bonne zone a corrigé la majorité des mismatches. Le frustum directionnel de v5 étend la couverture dans la direction du soleil pour capturer les ombres longues de fin de journée.
 
-Le résultat v4 en détail :
+Le résultat v5 en détail :
 
-- **CPU** : 27 secondes (ray-tracing detailed, 19'968 évaluations)
-- **GPU** : **0.5 seconde** (16 shadow maps × 31ms + 19'968 lookups × 0.23µs)
-- **Speedup : 54x** sur un GPU intégré Intel. Un NVIDIA dédié ferait mieux.
+- **CPU** : 40 secondes (ray-tracing detailed, 19'968 évaluations)
+- **GPU** : **0.5 seconde** (16 shadow maps × 31ms + 19'968 lookups × 0.42µs)
+- **Speedup : 80x** sur un GPU intégré Intel. Un NVIDIA dédié ferait mieux.
 
-Le pattern est simple : `prepareSunPosition` rend un shadow map en 31ms, puis chaque `evaluate` est un lookup dans le depth buffer à **0.23 microsecondes** — 6'000 fois plus rapide que le ray-tracing CPU (1'354µs).
+Le pattern est simple : `prepareSunPosition` rend un shadow map en 31ms, puis chaque `evaluate` est un lookup dans le depth buffer — 5'000 fois plus rapide que le ray-tracing CPU.
 
-Les 7% de mismatches restants sont presque tous "CPU dit ombre, GPU dit soleil" (le GPU manque quelques ombres, notamment de bâtiments aux bords de la tuile qui projettent des ombres longues). Certains pourraient être des faux positifs du CPU — le ray-tracing vectoriel détecte parfois des ombres à 2-5m de distance qui sont en réalité des artefacts de proximité.
+### Les 6.6% de mismatches : pourquoi pas 0% ?
+
+Les mismatches restants sont presque tous "CPU dit ombre, GPU dit soleil" — le GPU manque quelques ombres. Trois cas résistent :
+
+- **Bâtiments à 2-5m** : le bias nécessaire pour éviter le shadow acne fait "décoller" les ombres du pied des bâtiments. Le ray-tracing CPU, lui, n'a pas de bias — il teste géométriquement. Mais à 2m de distance, le CPU pourrait aussi avoir des faux positifs (un rayon qui frôle un triangle du mesh DXF).
+
+- **Bâtiments à 132m** : des ombres très longues projetées par des bâtiments loin du point d'observation. Le frustum directionnel aide, mais couvrir 132m tout en gardant la précision à 2m avec un seul shadow map 4096×4096, c'est tendre la couverture trop fin.
+
+- **Précision float32 vs float64** : le GPU travaille en 32-bit, le CPU en 64-bit. Sur des coordonnées LV95 (2'538'xxx), même après centrage, il reste du bruit qui fait basculer les cas limites.
+
+0% est probablement impossible entre un ray-tracer 64-bit et un rasterizer 32-bit. Mais les derniers pourcents pourraient tomber avec des **cascaded shadow maps** : au lieu d'un seul shadow map qui couvre tout, on découpe la scène en cascades par distance — haute résolution pour les bâtiments proches (0-30m), moyenne pour le milieu (30-100m), basse pour le loin (100-500m). Chaque cascade a son propre frustum serré, donc ses propres pixels dédiés. C'est la technique standard des jeux vidéo en monde ouvert pour exactement ce problème.
 
 ### Le changement architectural
 
