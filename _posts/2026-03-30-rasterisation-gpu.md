@@ -101,37 +101,57 @@ Sur une journée de mars (8h-20h, toutes les 15 minutes), environ **50 à 60 ins
 
 ### Ce qu'un GPU changerait concrètement
 
-Remplacer le ray-tracing CPU des bâtiments par un shadow map GPU :
+Les estimations, c'est bien. Les benchmarks, c'est mieux. J'ai implémenté un vrai backend GPU shadow map dans Mappy Hour — même interface que le ray-tracing CPU, interchangeable — et mesuré sur un ThinkPad X1 avec un Intel Arc 140V (GPU intégré, pas un monstre).
 
-- **Actuellement** : 39.7 secondes par tuile (ray-tracing de 19'968 points)
-- **Avec GPU** : ~60 shadow maps (un par instant "soleil visible") × ~1ms par rendu + 19'968 lookups = **~100ms au lieu de 40 secondes**
-- **Gain estimé : ~400x** sur la couche bâtiments
+Trois itérations pour y arriver :
 
-Pour tout Lausanne (des centaines de tuiles) : le précalcul passerait de **plusieurs heures à quelques minutes**.
+| Version | Approche | Speedup | Mismatches | Problème |
+|---|---|---|---|---|
+| v2 | Footprints extrudés (prismes) | 54x | 23.5% | Géométrie simplifiée → ombres manquantes |
+| v3 | Vrais mesh DXF 3D (907k triangles) | 71x | 35.6% | Frustum mal calibré → bâtiments hors champ |
+| **v4** | **Mesh DXF + frustum resserré + bias corrigé** | **54x** | **7%** | Quelques cas limites aux bords de tuile |
+
+Le résultat v4 en détail :
+
+- **CPU** : 27 secondes (ray-tracing detailed, 19'968 évaluations)
+- **GPU** : **0.5 seconde** (16 shadow maps × 31ms + 19'968 lookups × 0.23µs)
+- **Speedup : 54x** sur un GPU intégré Intel. Un NVIDIA dédié ferait mieux.
+
+Le pattern est simple : `prepareSunPosition` rend un shadow map en 31ms, puis chaque `evaluate` est un lookup dans le depth buffer à **0.23 microsecondes** — 6'000 fois plus rapide que le ray-tracing CPU (1'354µs).
+
+Les 7% de mismatches restants sont presque tous "CPU dit ombre, GPU dit soleil" (le GPU manque quelques ombres, notamment de bâtiments aux bords de la tuile qui projettent des ombres longues). Certains pourraient être des faux positifs du CPU — le ray-tracing vectoriel détecte parfois des ombres à 2-5m de distance qui sont en réalité des artefacts de proximité.
 
 ### Le changement architectural
 
-Le bon côté : c'est un changement **ciblé**. Seul le module `buildingShadowEvaluator` dans `solar.ts` serait remplacé. Le reste du pipeline ne bouge pas :
+Le bon côté : c'est un changement **ciblé**. L'interface `BuildingShadowBackend` a deux méthodes :
 
-- L'API REST : identique
-- La cascade de court-circuits : identique
-- Le terrain, la végétation, l'horizon : identiques (déjà en raster, rapides)
-- Le cache par tuile : identique
-- Les données (DXF, index) : identiques, converties en mesh GPU au chargement
+- `prepareSunPosition(azimuth, altitude)` — GPU : rend le shadow map. CPU : no-op.
+- `evaluate(query)` — GPU : lookup depth buffer. CPU : ray-tracing.
 
-Concrètement : charger les 93k bâtiments en buffers GPU au démarrage du serveur. Pour chaque instant, rendre un shadow map depuis la position du soleil. Pour chaque point, un lookup dans le depth buffer au lieu du ray-tracing vectoriel.
+Le reste du pipeline ne bouge pas. L'API REST, la cascade de court-circuits, le terrain, la végétation, l'horizon, le cache — tout reste identique. Une factory choisit le backend au démarrage :
 
-~200-400 lignes de code nouveau. Pas une réécriture.
+```
+MAPPY_SHADOW_BACKEND=gpu → tente le GPU, fallback CPU si indisponible
+MAPPY_SHADOW_BACKEND=cpu → comportement actuel (défaut)
+```
 
-### Avec ou sans GPU physique
+Le jour où on voudrait un microservice GPU dédié, on remplacerait l'implémentation derrière la même interface — le reste du code ne saurait même pas.
 
-Trois options :
+### Vulkan, wgpu, ou headless-gl ?
 
-1. **Serveur avec GPU** (ex: GPU NVIDIA sur un VPS) — le plus rapide, mais coûteux (~50-100€/mois)
-2. **Headless WebGL** (`headless-gl` + Mesa software renderer) — pas de GPU physique, mais le shadow map tourne en CPU via Mesa. Potentiellement encore plus rapide que le ray-tracing vectoriel pour 93k bâtiments, sans matériel supplémentaire.
-3. **Côté client** (WebGPU dans le navigateur) — déporte le calcul chez l'utilisateur. Pas de coût serveur, mais impossible pour le précalcul de cache.
+Pour le shadow map, on rend des boîtes extrudées dans un depth buffer 60 fois par jour — pas Cyberpunk 2077. La question est : quelle API GPU utiliser ?
 
-La piste 2 est la plus pragmatique : aucun changement d'infrastructure, juste une dépendance npm (`headless-gl`).
+| | **Vulkan** | **wgpu** | **headless-gl** |
+|---|---|---|---|
+| Setup pour un triangle | ~1000 lignes | ~100 lignes | ~50 lignes |
+| Gestion mémoire GPU | Manuelle | Automatique | Automatique |
+| Multi-plateforme | Linux/Windows | Partout (Vulkan+Metal+DX12) | Partout (OpenGL) |
+| Performance | 100% | ~95-98% | ~80% (software possible) |
+| Bindings Node.js | Quasi-inexistants | Expérimentaux | Stable (`gl` sur npm) |
+
+Vulkan donne le contrôle total — mémoire GPU, synchronisation, pipelines — mais c'est de l'artillerie lourde pour un cas d'usage simple. wgpu offre 95% de la puissance pour 10% de la complexité, et le même code tourne sur tous les OS. headless-gl (utilisé dans le benchmark) est le plus simple mais peut tomber en software rendering si le GPU n'est pas accessible.
+
+Pour la production, wgpu serait le bon choix. Pour le prototypage, headless-gl a fait le job.
 
 ### Piste alternative : hybride raster-first (sans GPU du tout)
 
