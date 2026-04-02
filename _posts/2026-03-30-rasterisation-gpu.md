@@ -20,9 +20,11 @@ L'inconvénient : les bords du bâtiment sont arrondis aux pixels. Un mur qui to
 
 OK, mais comment passer d'une "grille de hauteurs" à "ce point est-il à l'ombre" ? C'est le **shadow mapping**, la technique qu'utilisent Three.js et tous les jeux vidéo. Le principe en deux étapes :
 
-1. **On rend la scène depuis le point de vue du soleil** — le résultat est un "depth buffer" : pour chaque pixel, la distance entre le soleil et le premier objet touché. Si le soleil voit un toit, la distance est courte. S'il voit le sol directement, la distance est longue.
+1. **On rend la scène depuis le point de vue du soleil** — le soleil "regarde" les bâtiments à travers un **frustum** (du latin "tronqué") : le volume en forme de pyramide tronquée qui délimite ce que la caméra peut voir. Tout ce qui est dans le frustum est rendu. Tout ce qui est en dehors est ignoré. Le résultat est un "depth buffer" : pour chaque pixel, la distance entre le soleil et le premier objet touché. Si le soleil voit un toit, la distance est courte. S'il voit le sol directement, la distance est longue.
 
 2. **Pour chaque point au sol**, on calcule sa distance au soleil et on la compare au depth buffer. Si ma distance est plus grande que celle stockée dans le buffer → il y a un objet entre moi et le soleil → **ombre**. Sinon → **soleil**.
+
+Le depth buffer doit être recalculé pour chaque position du soleil — le frustum change à chaque instant puisque le soleil se déplace.
 
 <div id="viz-shadowmap" style="width: 100%; margin: 1.5rem 0; border-radius: 6px; overflow: hidden; background: var(--bg2); border: 1px solid var(--border);"></div>
 
@@ -108,7 +110,7 @@ Trois itérations pour y arriver :
 | v3 | Vrais mesh DXF 3D (907k triangles) | 71x | 35.6% | Frustum mal calibré → bâtiments hors champ |
 | **v4** | **Mesh DXF + frustum resserré + bias corrigé** | **54x** | **7%** | Quelques cas limites aux bords de tuile |
 
-Le frustum (du latin "tronqué"), c'est le volume en forme de pyramide tronquée que la caméra — ici le soleil — peut "voir". Tout ce qui est hors du frustum n'est pas rendu dans le shadow map. En v3, ce volume était trop petit : des bâtiments en bordure de zone n'étaient pas rendus, donc pas d'ombre. Resserrer le frustum tout en couvrant la bonne zone a corrigé la majorité des mismatches.
+En v3, le frustum du soleil (le volume de rendu, défini plus haut) était trop petit : des bâtiments en bordure de zone n'étaient pas rendus dans le shadow map, donc pas d'ombre. Resserrer le frustum tout en couvrant la bonne zone a corrigé la majorité des mismatches.
 
 Le résultat v4 en détail :
 
