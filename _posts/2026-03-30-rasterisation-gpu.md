@@ -30,6 +30,8 @@ Le depth buffer doit être recalculé pour chaque position du soleil — le frus
 
 Survolez les points au sol pour voir la comparaison en action. Le depth buffer stocke **85m** pour les pixels qui voient le toit (distance courte) et **200m** pour ceux qui voient le sol (distance longue). Un point au sol à 200m du soleil regarde le pixel correspondant : si le buffer dit 85m, quelque chose est plus proche du soleil que lui → ombre. Si le buffer dit 200m, il est le premier objet touché → soleil. On compare toujours des **distances au soleil** — la même unité, le même référentiel.
 
+Un détail qui a l'air anodin mais qui peut tout casser : le **bias** (décalage). Le toit d'un bâtiment est à la fois la surface rendue dans le depth buffer ET un point qu'on veut tester. Sa distance au soleil devrait être exactement égale à la valeur stockée. En pratique, les arrondis du float32 font que parfois la distance calculée est 0.0001m plus grande que la valeur stockée — et le toit se déclare à l'ombre de lui-même. C'est le **shadow acne** : des motifs de zébrures sur chaque surface. Le bias ajoute un petit décalage au test de comparaison pour tolérer ces erreurs d'arrondi. Trop petit → shadow acne. Trop grand → les ombres "décollent" du pied des bâtiments et les points très proches sont manqués. Trouver le bon bias, c'est un exercice d'équilibriste.
+
 ## Ce qu'est le ray-tracing
 
 Le ray-tracing fait l'inverse : au lieu de projeter des triangles sur une grille, on lance un **rayon** depuis un point dans une direction, et on cherche ce qu'il touche.
