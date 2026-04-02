@@ -2,9 +2,6 @@
 layout: post
 title: "Mappy Hour : la technologie au service de l'apéro"
 tags: [project, gis, nextjs, swisstopo]
-unlisted: true
-permalink: /preview/c1af1312/mappy-hour
-sitemap: false
 ---
 
 ![Mappy Hour](/assets/img/mappy-hour.png)

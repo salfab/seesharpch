@@ -2,9 +2,6 @@
 layout: post
 title: "Hello, World!"
 tags: [meta]
-unlisted: true
-permalink: /preview/a20aebe9/hello-world
-sitemap: false
 ---
 
 ![Hello World](/assets/img/hello-world.png)

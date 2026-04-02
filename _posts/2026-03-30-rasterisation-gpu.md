@@ -2,9 +2,6 @@
 layout: post
 title: "Rasterisation, ray-tracing et GPU : pourquoi pas Three.js pour tout ?"
 tags: [project, gis, performance, gpu, ray-tracing]
-unlisted: true
-permalink: /preview/f7a2c891/rasterisation-gpu
-sitemap: false
 ---
 
 En construisant les visualisations interactives de l'article précédent, une question s'est imposée : si Three.js peut rendre 225 bâtiments avec des ombres en temps réel sur un GPU grand public, pourquoi est-ce que Mappy Hour fait tout en CPU avec du code TypeScript ?
@@ -110,6 +107,8 @@ Trois itérations pour y arriver :
 | v2 | Footprints extrudés (prismes) | 54x | 23.5% | Géométrie simplifiée → ombres manquantes |
 | v3 | Vrais mesh DXF 3D (907k triangles) | 71x | 35.6% | Frustum mal calibré → bâtiments hors champ |
 | **v4** | **Mesh DXF + frustum resserré + bias corrigé** | **54x** | **7%** | Quelques cas limites aux bords de tuile |
+
+Le frustum (du latin "tronqué"), c'est le volume en forme de pyramide tronquée que la caméra — ici le soleil — peut "voir". Tout ce qui est hors du frustum n'est pas rendu dans le shadow map. En v3, ce volume était trop petit : des bâtiments en bordure de zone n'étaient pas rendus, donc pas d'ombre. Resserrer le frustum tout en couvrant la bonne zone a corrigé la majorité des mismatches.
 
 Le résultat v4 en détail :
 
