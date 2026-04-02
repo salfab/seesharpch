@@ -2,9 +2,6 @@
 layout: post
 title: "Comment j'ai ray-tracé toute une ville en temps réel"
 tags: [project, gis, ray-tracing, performance, nextjs, swisstopo]
-unlisted: true
-permalink: /preview/b9519c9c/mappy-hour-deep-dive
-sitemap: false
 ---
 
 Cet article est la suite technique de [Mappy Hour](/mappy-hour). Si tu veux le pitch et le contexte, commence par là. Ici on parle maths, structures de données et benchmarks.
