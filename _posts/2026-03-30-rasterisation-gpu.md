@@ -115,11 +115,18 @@ Quatre itérations pour y arriver :
 
 En v3, le frustum du soleil (le volume de rendu, défini plus haut) était trop petit : des bâtiments en bordure de zone n'étaient pas rendus dans le shadow map, donc pas d'ombre. Resserrer le frustum tout en couvrant la bonne zone a corrigé la majorité des mismatches. Le frustum directionnel de v5 étend la couverture dans la direction du soleil pour capturer les ombres longues de fin de journée.
 
-Le résultat v5 en détail :
+Le résultat v5 en détail (1 tuile, 16 instants) :
 
 - **CPU** : 40 secondes (ray-tracing detailed, 19'968 évaluations)
 - **GPU** : **0.5 seconde** (16 shadow maps × 31ms + 19'968 lookups × 0.42µs)
-- **Speedup : 80x** sur un GPU intégré Intel. Un NVIDIA dédié ferait mieux.
+- **Speedup : 80x** sur un Intel Arc 140V (GPU intégré). Un NVIDIA dédié ferait mieux.
+
+À l'échelle de tout Lausanne (~150 tuiles, journée complète 8h-20h) :
+
+| | **CPU (8 workers)** | **GPU Intel Arc 140V** |
+|---|---|---|
+| 1 tuile, 1 journée | 1.4 min | 1.1 s |
+| **Tout Lausanne, 1 journée** | **1h 20min** | **8 min** |
 
 Le pattern est simple : `prepareSunPosition` rend un shadow map en 31ms, puis chaque `evaluate` est un lookup dans le depth buffer — 5'000 fois plus rapide que le ray-tracing CPU.
 
