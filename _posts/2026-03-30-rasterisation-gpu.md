@@ -6,35 +6,51 @@ tags: [project, gis, performance, gpu, ray-tracing]
 
 En construisant les visualisations interactives de l'article précédent, une question s'est imposée : si Three.js peut rendre 225 bâtiments avec des ombres en temps réel sur un GPU grand public, pourquoi est-ce que Mappy Hour fait tout en CPU avec du code TypeScript ?
 
-## Ce qu'est la rasterisation
+## Comment Mappy Hour calcule l'ensoleillement
 
-La rasterisation, c'est convertir un objet géométrique en **valeurs sur une grille régulière**. À gauche, un bâtiment décrit par ses coordonnées exactes (un polygone vectoriel). À droite, la même information stockée dans une grille : chaque cellule contient un nombre — ici, l'altitude (500m = sol, 525m = toit du bâtiment).
+Mappy Hour utilise trois couches de données pour déterminer si un point est au soleil :
+
+**Le terrain** — SwissALTI3D, une grille de 2 mètres de résolution. Chaque cellule stocke l'altitude du sol nu. Pour connaître l'altitude à un point : `grille[ligne][colonne]`. Un seul accès mémoire, pas de calcul.
+
+**La végétation** — swissSURFACE3D, une grille de 0.5m. On lance un rayon vers le soleil et on échantillonne la grille tous les 2 mètres. Si un échantillon est au-dessus de la ligne de visée → un arbre bloque le soleil.
+
+**Les bâtiments** — la seule couche qui n'est pas une grille. Ce sont des polygones 3D (les vrais modèles architecturaux de Swisstopo), testés par intersection rayon-triangle. Pourquoi pas une grille ? Parce qu'un mur de 30 mètres de haut sur 50 centimètres d'épaisseur serait invisible dans une grille à 2m — il tomberait entre les pixels.
+
+Le profiling montre que les deux premières couches (terrain + végétation) prennent **0.3% du temps**. Les bâtiments prennent **99.2%**. C'est le seul levier qui compte.
+
+## Deux façons de calculer les ombres
+
+Pour comprendre comment accélérer le calcul des bâtiments, il faut comprendre deux techniques fondamentales.
+
+### La rasterisation
+
+La rasterisation, c'est convertir un objet géométrique en **valeurs sur une grille régulière**. À gauche, un bâtiment décrit par ses coordonnées exactes. À droite, la même information stockée dans une grille : chaque cellule contient l'altitude (500m = sol, 525m = toit).
 
 <div id="viz-rasterization" style="width: 100%; margin: 1.5rem 0; border-radius: 6px; overflow: hidden; background: var(--bg2); border: 1px solid var(--border);"></div>
 
-L'avantage : pour connaître l'altitude à n'importe quel point, un seul accès mémoire suffit — `grille[ligne][colonne]`. Pas de calcul géométrique, pas de test "est-ce que ce point est à l'intérieur du polygone ?". Survolez la grille pour le voir en action.
+L'avantage : lire une valeur, c'est un seul accès mémoire — `grille[ligne][colonne]`. Pas de calcul géométrique. Survolez la grille pour le voir en action.
 
-L'inconvénient : les bords du bâtiment sont arrondis aux pixels. Un mur qui tombe entre deux cellules est soit dedans, soit dehors — pas de demi-mesure. Plus la grille est fine (0.5m au lieu de 2m), plus la perte est faible, mais plus la mémoire explose.
+L'inconvénient : les bords sont arrondis aux pixels. Plus la grille est fine, plus c'est précis, mais plus la mémoire explose.
 
-## Le shadow mapping : la rasterisation au service des ombres
+### Le shadow mapping
 
-OK, mais comment passer d'une "grille de hauteurs" à "ce point est-il à l'ombre" ? C'est le **shadow mapping**, la technique qu'utilisent Three.js et tous les jeux vidéo. Le principe en deux étapes :
+Le **shadow mapping** utilise la rasterisation pour calculer les ombres. Le principe en deux étapes :
 
-1. **On rend la scène depuis le point de vue du soleil** — le soleil "regarde" les bâtiments à travers un **frustum** (du latin "tronqué") : le volume en forme de pyramide tronquée qui délimite ce que la caméra peut voir. Tout ce qui est dans le frustum est rendu. Tout ce qui est en dehors est ignoré. Le résultat est un "depth buffer" : pour chaque pixel, la distance entre le soleil et le premier objet touché. Si le soleil voit un toit, la distance est courte. S'il voit le sol directement, la distance est longue.
+1. **On rend la scène depuis le point de vue du soleil** — le soleil "regarde" les bâtiments à travers un **frustum** (le volume en forme de pyramide tronquée qui délimite son champ de vision). Tout ce qui est dans le frustum est rendu. Le résultat est un "depth buffer" : pour chaque pixel, la distance entre le soleil et le premier objet touché.
 
-2. **Pour chaque point au sol**, on calcule sa distance au soleil et on la compare au depth buffer. Si ma distance est plus grande que celle stockée dans le buffer → il y a un objet entre moi et le soleil → **ombre**. Sinon → **soleil**.
+2. **Pour chaque point au sol**, on calcule sa distance au soleil et on la compare au depth buffer. Si ma distance est plus grande que celle stockée → il y a un objet plus proche du soleil que moi → **ombre**. Sinon → **soleil**.
 
 Le depth buffer doit être recalculé pour chaque position du soleil — le frustum change à chaque instant puisque le soleil se déplace.
 
 <div id="viz-shadowmap" style="width: 100%; margin: 1.5rem 0; border-radius: 6px; overflow: hidden; background: var(--bg2); border: 1px solid var(--border);"></div>
 
-Survolez les points au sol pour voir la comparaison en action. Le depth buffer stocke **85m** pour les pixels qui voient le toit (distance courte) et **200m** pour ceux qui voient le sol (distance longue). Un point au sol à 200m du soleil regarde le pixel correspondant : si le buffer dit 85m, quelque chose est plus proche du soleil que lui → ombre. Si le buffer dit 200m, il est le premier objet touché → soleil. On compare toujours des **distances au soleil** — la même unité, le même référentiel.
+Survolez les points au sol pour voir la comparaison en action. Le depth buffer stocke **85m** (le toit, distance courte) ou **200m** (le sol, distance longue). On compare toujours des **distances au soleil** — la même unité, le même référentiel.
 
-Un détail qui a l'air anodin mais qui peut tout casser : le **bias** (décalage). Le toit d'un bâtiment est à la fois la surface rendue dans le depth buffer ET un point qu'on veut tester. Sa distance au soleil devrait être exactement égale à la valeur stockée. En pratique, les arrondis du float32 font que parfois la distance calculée est 0.0001m plus grande que la valeur stockée — et le toit se déclare à l'ombre de lui-même. C'est le **shadow acne** : des motifs de zébrures sur chaque surface. Le bias ajoute un petit décalage au test de comparaison pour tolérer ces erreurs d'arrondi. Trop petit → shadow acne. Trop grand → les ombres "décollent" du pied des bâtiments et les points très proches sont manqués. Trouver le bon bias, c'est un exercice d'équilibriste.
+Un détail qui a l'air anodin mais qui peut tout casser : le **bias** (décalage). Le toit d'un bâtiment est à la fois la surface rendue dans le depth buffer ET un point qu'on veut tester. Sa distance au soleil devrait être exactement égale à la valeur stockée. En pratique, les arrondis font que la distance calculée est parfois un poil plus grande — et le toit se déclare à l'ombre de lui-même. C'est le **shadow acne** : des zébrures sur chaque surface. Le bias ajoute un petit décalage de tolérance. Trop petit → zébrures. Trop grand → les ombres décollent du pied des bâtiments.
 
-## Ce qu'est le ray-tracing
+### Le ray-tracing
 
-Le ray-tracing fait l'inverse : au lieu de projeter des triangles sur une grille, on lance un **rayon** depuis un point dans une direction, et on cherche ce qu'il touche.
+Le ray-tracing fait l'inverse : au lieu de projeter des triangles sur une grille, on lance un **rayon** depuis un point vers le soleil, et on cherche ce qu'il touche.
 
 <div id="viz-raytracing" style="width: 100%; margin: 1.5rem 0; border-radius: 6px; overflow: hidden; background: var(--bg2); border: 1px solid var(--border);"></div>
 <div style="text-align: center; margin: 0 0 1.5rem;">
@@ -43,156 +59,69 @@ Le ray-tracing fait l'inverse : au lieu de projeter des triangles sur une grille
     oninput="document.getElementById('raytracing-alt').textContent=this.value+'°'">
 </div>
 
-La formule est simple : **P(t) = O + t × D**, où O est l'observateur, D la direction vers le soleil, et t la distance. On avance le long du rayon et on teste chaque obstacle. Si le rayon intersecte un triangle du mesh 3D d'un bâtiment avant d'atteindre le soleil, le point est à l'ombre. Sinon, il est au soleil.
+La formule : **P(t) = O + t × D**, où O est l'observateur, D la direction vers le soleil, et t la distance. Si le rayon intersecte un triangle de mesh 3D avant d'atteindre le soleil → ombre. Sinon → soleil. Bougez le slider pour voir : un soleil bas est bloqué, un soleil haut passe au-dessus.
 
-Bougez le slider pour voir comment l'altitude du soleil change le résultat : un soleil bas (fin de journée) est bloqué par le bâtiment, un soleil haut (midi) passe au-dessus.
+C'est ce que fait Mappy Hour pour les bâtiments — et c'est ce qui prend 99.2% du temps.
 
-## Où on l'utilise déjà (et on ne s'en rendait pas compte)
+## Le backend GPU shadow map
 
-Mappy Hour utilise en fait de la rasterisation pour **deux des trois couches** de calcul :
+J'ai remplacé le ray-tracing CPU des bâtiments par un shadow map GPU. Même interface, interchangeable : le reste du pipeline (terrain, végétation, horizon, cache) ne change pas. Un switch au démarrage du serveur choisit le backend.
 
-**Le terrain** — SwissALTI3D est une grille raster à 2 mètres de résolution. Chaque "pixel" stocke l'altitude du sol nu. Quand on veut connaître l'altitude à un point donné, on fait un simple lookup dans la grille : `grille[colonne][ligne]`. C'est de la rasterisation au sens propre — une donnée continue (le relief) discrétisée sur une grille régulière.
+Quatre itérations sur un ThinkPad X1 avec Intel Arc 140V (GPU intégré) :
 
-**La végétation** — swissSURFACE3D est une grille raster à 0.5m. Chaque pixel stocke l'altitude de la surface (sol + arbres + tout ce qui dépasse). Pour tester si un arbre bloque le soleil, on lance un rayon dans la direction du soleil et on échantillonne la grille tous les 2 mètres. Si un échantillon est au-dessus de la ligne de visée, c'est bloqué. C'est du ray marching sur une grille raster — un hybride entre ray-tracing et rasterisation.
-
-**Le masque d'horizon** — le DEM Copernicus à 30m est aussi une grille raster. On la parcourt jusqu'à 120 km dans chaque direction pour construire le profil d'obstruction.
-
-La seule couche qui n'est **pas** raster, ce sont les **bâtiments** : des polygones 3D (footprints extrudés, mesh triangulés) testés par intersection rayon-triangle. Pourquoi ? Parce que les murs des bâtiments sont verticaux et discontinus. Un mur de 30 mètres de haut sur 50 centimètres d'épaisseur serait invisible dans une grille raster à 2m — il tomberait entre les pixels.
-
-## Pourquoi pas tout faire sur GPU alors ?
-
-Three.js rend notre scène de 225 bâtiments à 60 fps. Mais ce qu'il fait est fondamentalement différent de ce que fait Mappy Hour :
-
-| | **Three.js (GPU)** | **Mappy Hour (CPU)** |
-|---|---|---|
-| **Objectif** | "Ça a l'air juste" | "C'est juste" |
-| **Ombres** | Shadow map (texture de résolution fixe) | Ray-tracing exact par bâtiment |
-| **Précision** | ~1m (dépend de la shadow map) | Sub-métrique |
-| **Terrain** | Pas de terrain au-delà de la scène | 120 km avec réfraction atmosphérique |
-| **Végétation** | Non | Raster 0.5m le long du rayon |
-| **Résultat** | Une image à regarder | Un booléen par point : soleil ou ombre |
-
-Le GPU est optimisé pour rendre des images. Mappy Hour a besoin de répondre "oui" ou "non" pour des milliers de points à des centaines d'instants. Ce sont deux problèmes différents.
-
-## Les pistes GPU réalistes
-
-Avant de parler GPU, regardons où le temps est réellement passé. Le profiling d'une tuile de Lausanne (1248 points × 16 instants = 19'968 évaluations, mode detailed) :
-
-| Phase | Temps | Part |
-|---|---|---|
-| **Bâtiments (ray-tracing)** | **39'758 ms** | **99.2%** |
-| Végétation (ray march raster) | 78 ms | 0.2% |
-| Terrain (horizon mask) | 32 ms | 0.1% |
-| Position solaire (SunCalc) | 35 ms | 0.1% |
-| Finalization | 133 ms | 0.3% |
-
-Le ray-tracing des bâtiments, c'est **99.2% du temps**. Tout le reste est négligeable. C'est le seul levier qui compte.
-
-## La cascade de court-circuits
-
-Le code ne calcule pas bêtement les 144 instants. Pour chaque instant, une cascade de tests élimine le travail :
-
-1. **Soleil sous l'horizon astronomique ?** → résultat immédiat : nuit. Coût : ~0.
-2. **Soleil sous le masque d'horizon** (montagnes) ? → résultat : ombre terrain. Coût : un lookup dans le masque.
-3. **Seulement si le soleil est visible** → évaluation bâtiments + végétation.
-
-Sur une journée de mars (8h-20h, toutes les 15 minutes), environ **50 à 60 instants** déclenchent réellement le calcul bâtiments. Les instants de nuit, d'aube, et de crépuscule sont court-circuités.
-
-## Pistes d'amélioration
-
-### Ce qu'un GPU changerait concrètement
-
-Les estimations, c'est bien. Les benchmarks, c'est mieux. J'ai implémenté un vrai backend GPU shadow map dans Mappy Hour — même interface que le ray-tracing CPU, interchangeable — et mesuré sur un ThinkPad X1 avec un Intel Arc 140V (GPU intégré, pas un monstre).
-
-Quatre itérations pour y arriver :
-
-| Version | Approche | Speedup | Mismatches | Problème |
+| Version | Approche | Speedup | Erreur | Problème |
 |---|---|---|---|---|
-| v2 | Footprints extrudés (prismes) | 54x | 23.5% | Géométrie simplifiée → ombres manquantes |
-| v3 | Vrais mesh DXF 3D (907k triangles) | 71x | 35.6% | Frustum mal calibré → bâtiments hors champ |
-| v4 | Mesh DXF + frustum resserré + bias corrigé | 54x | 7% | Quelques cas limites aux bords de tuile |
-| **v5** | **Frustum directionnel + PCF** | **80x** | **6.6%** | Bâtiments très proches (2-5m) et très loin (132m) |
+| v2 | Bâtiments simplifiés (prismes) | 54x | 23.5% | Géométrie trop simple → ombres manquantes |
+| v3 | Vrais mesh 3D Swisstopo (907k triangles) | 71x | 35.6% | Frustum mal calibré → bâtiments hors champ |
+| v4 | Frustum resserré + bias corrigé | 54x | 7% | Cas limites aux bords de tuile |
+| **v5** | **Frustum directionnel** | **80x** | **6.6%** | Divergence géométrique irréductible |
 
-En v3, le frustum du soleil (le volume de rendu, défini plus haut) était trop petit : des bâtiments en bordure de zone n'étaient pas rendus dans le shadow map, donc pas d'ombre. Resserrer le frustum tout en couvrant la bonne zone a corrigé la majorité des mismatches. Le frustum directionnel de v5 étend la couverture dans la direction du soleil pour capturer les ombres longues de fin de journée.
-
-Le résultat v5 en détail (1 tuile, 16 instants) :
-
-- **CPU** : 40 secondes (ray-tracing detailed, 19'968 évaluations)
-- **GPU** : **0.5 seconde** (16 shadow maps × 31ms + 19'968 lookups × 0.42µs)
-- **Speedup : 80x** sur un Intel Arc 140V (GPU intégré). Un NVIDIA dédié ferait mieux.
-
-À l'échelle de tout Lausanne (~150 tuiles, journée complète 8h-20h) :
+Le résultat à l'échelle :
 
 | | **CPU (8 workers)** | **GPU Intel Arc 140V** |
 |---|---|---|
 | 1 tuile, 1 journée | 1.4 min | 1.1 s |
 | **Tout Lausanne, 1 journée** | **1h 20min** | **8 min** |
 
-Le pattern est simple : `prepareSunPosition` rend un shadow map en 31ms, puis chaque `evaluate` est un lookup dans le depth buffer — 5'000 fois plus rapide que le ray-tracing CPU.
+J'ai testé les **cascaded shadow maps** (plusieurs shadow maps à des résolutions différentes par tranche de distance) pour réduire les 6.6%. Résultat : +0.1% de précision pour -57% de speedup. Le problème n'est pas la résolution.
 
-### Les 6.6% de mismatches : pourquoi pas 0% ?
+## Pourquoi 6.6% de divergence et pas 0%
 
-Les mismatches restants sont presque tous "CPU dit ombre, GPU dit soleil" — le GPU manque quelques ombres. Trois cas résistent :
-
-- **Bâtiments à 2-5m** : le bias nécessaire pour éviter le shadow acne fait "décoller" les ombres du pied des bâtiments. Le ray-tracing CPU, lui, n'a pas de bias — il teste géométriquement. Mais à 2m de distance, le CPU pourrait aussi avoir des faux positifs (un rayon qui frôle un triangle du mesh DXF).
-
-- **Bâtiments à 132m** : des ombres très longues projetées par des bâtiments loin du point d'observation. Le frustum directionnel aide, mais couvrir 132m tout en gardant la précision à 2m avec un seul shadow map 4096×4096, c'est tendre la couverture trop fin.
-
-- **Précision float32 vs float64** : le GPU travaille en 32-bit, le CPU en 64-bit. Sur des coordonnées LV95 (2'538'xxx), même après centrage, il reste du bruit qui fait basculer les cas limites.
-
-J'ai testé les **cascaded shadow maps** (plusieurs shadow maps à des résolutions différentes par tranche de distance) — la technique standard des jeux vidéo. Résultat : +0.1% de précision pour -57% de speedup (80x → 34x). Le problème n'est pas la résolution du shadow map. Même à 0.1m/pixel, les mêmes points divergent.
-
-### La vraie raison : deux façons de voir un bord d'ombre
-
-La divergence est **géométrique**, pas une question de résolution. Le CPU et le GPU répondent à la même question ("ce point est-il à l'ombre ?") avec deux méthodes fondamentalement différentes :
+La divergence est **géométrique**, pas une question de résolution ou de configuration. Les deux méthodes répondent à la même question avec des outils fondamentalement différents :
 
 <div id="viz-divergence" style="width: 100%; margin: 1.5rem 0; border-radius: 6px; overflow: hidden; background: var(--bg2); border: 1px solid var(--border);"></div>
 
-À gauche, le **CPU** lance un rayon infiniment fin vers le soleil. Le rayon touche ou ne touche pas le mur du bâtiment — c'est un test géométrique exact, avec une précision sub-millimétrique. Le bord d'ombre est une ligne nette, continue.
+À gauche, le **CPU** lance un rayon infiniment fin. Le rayon touche ou ne touche pas le mur — c'est un test géométrique exact, sub-millimétrique. Le bord d'ombre est une ligne nette.
 
-À droite, le **GPU** découpe l'espace en pixels. Pour chaque pixel, il teste le **centre** du pixel. Si le centre est dans l'ombre → tout le pixel est dans l'ombre. Si le centre est au soleil → tout le pixel est au soleil. Le bord d'ombre devient un **escalier** — une approximation en marches d'escalier du vrai bord.
+À droite, le **GPU** découpe l'espace en pixels. Pour chaque pixel, il teste le **centre**. Si le centre est dans l'ombre → tout le pixel est dans l'ombre. Le bord d'ombre devient un **escalier**.
 
-Quand un point tombe **pile sur le bord d'ombre** — à l'intérieur d'un pixel dont le centre est de l'autre côté — les deux méthodes donnent des résultats différents. Ni l'un ni l'autre n'a "tort". Le CPU dit "le rayon touche le mur à 0.3mm du bord". Le GPU dit "le centre du pixel est à 4cm de l'autre côté". Les deux sont corrects dans leur cadre — ils posent juste la question différemment.
+Quand un point tombe pile sur le bord — à l'intérieur d'un pixel dont le centre est de l'autre côté — les deux méthodes donnent des résultats différents. Ni l'un ni l'autre n'a "tort". Le CPU dit "le rayon touche le mur à 0.3mm du bord". Le GPU dit "le centre du pixel est à 4cm de l'autre côté". Les deux sont corrects dans leur cadre.
 
-C'est pour ça que les 6.6% résistent : ce sont des points qui tombent sur les bords d'ombre. Augmenter la résolution du shadow map réduit la taille des pixels mais ne les élimine pas — il y aura toujours un escalier, juste avec des marches plus petites.
+## L'architecture
 
-### Le changement architectural
+L'interface `BuildingShadowBackend` a deux méthodes :
 
-Le bon côté : c'est un changement **ciblé**. L'interface `BuildingShadowBackend` a deux méthodes :
-
-- `prepareSunPosition(azimuth, altitude)` — GPU : rend le shadow map. CPU : no-op.
+- `prepareSunPosition(azimuth, altitude)` — GPU : rend le shadow map. CPU : rien.
 - `evaluate(query)` — GPU : lookup depth buffer. CPU : ray-tracing.
 
-Le reste du pipeline ne bouge pas. L'API REST, la cascade de court-circuits, le terrain, la végétation, l'horizon, le cache — tout reste identique. Une factory choisit le backend au démarrage :
+Une factory choisit le backend au démarrage. Le jour où on voudra un microservice GPU dédié, on remplacera l'implémentation derrière la même interface.
 
-```
-MAPPY_SHADOW_BACKEND=gpu → tente le GPU, fallback CPU si indisponible
-MAPPY_SHADOW_BACKEND=cpu → comportement actuel (défaut)
-```
-
-Le jour où on voudrait un microservice GPU dédié, on remplacerait l'implémentation derrière la même interface — le reste du code ne saurait même pas.
-
-### Vulkan, wgpu, ou headless-gl ?
-
-Pour le shadow map, on rend des boîtes extrudées dans un depth buffer 60 fois par jour — pas Cyberpunk 2077. La question est : quelle API GPU utiliser ?
+Pour le shadow map, on rend 907'000 triangles dans un depth buffer 60 fois par jour — pas Cyberpunk 2077. L'API GPU n'a pas besoin d'être complexe :
 
 | | **Vulkan** | **wgpu** | **headless-gl** |
 |---|---|---|---|
 | Setup pour un triangle | ~1000 lignes | ~100 lignes | ~50 lignes |
 | Gestion mémoire GPU | Manuelle | Automatique | Automatique |
 | Multi-plateforme | Linux/Windows | Partout (Vulkan+Metal+DX12) | Partout (OpenGL) |
-| Performance | 100% | ~95-98% | ~80% (software possible) |
-| Bindings Node.js | Quasi-inexistants | Expérimentaux | Stable (`gl` sur npm) |
+| Performance | 100% | ~95-98% | ~80% |
 
-Vulkan donne le contrôle total — mémoire GPU, synchronisation, pipelines — mais c'est de l'artillerie lourde pour un cas d'usage simple. wgpu offre 95% de la puissance pour 10% de la complexité, et le même code tourne sur tous les OS. headless-gl (utilisé dans le benchmark) est le plus simple mais peut tomber en software rendering si le GPU n'est pas accessible.
-
-Pour la production, wgpu serait le bon choix. Pour le prototypage, headless-gl a fait le job.
+Vulkan donne le contrôle total mais c'est de l'artillerie lourde pour un cas d'usage simple. wgpu offre 95% de la puissance pour 10% de la complexité. headless-gl (utilisé dans le benchmark) est le plus simple mais peut tomber en software rendering.
 
 ## Conclusion
 
-Le profiling ne ment pas : le ray-tracing des bâtiments consomme 99.2% du temps de calcul. Le shadow map GPU divise ce temps par 80 — même sur un GPU intégré Intel. Tout Lausanne en 8 minutes au lieu d'une heure vingt.
+Le ray-tracing des bâtiments consommait 99.2% du temps de calcul. Le shadow map GPU le divise par 80 — même sur un GPU intégré Intel. Tout Lausanne passe de 1h 20min à 8 minutes.
 
-Le terrain, la végétation et l'horizon sont déjà en raster et ne coûtent rien. La cascade de court-circuits élimine les instants inutiles. Ce qui reste, c'est 50 shadow maps par jour pour 93k bâtiments — et ça, c'est exactement ce que les GPU font le mieux.
+Le terrain, la végétation et l'horizon étaient déjà en raster et ne coûtaient rien. La cascade de court-circuits éliminait déjà les instants inutiles. Ce qui restait, c'était 50 shadow maps par jour pour 93k bâtiments — et ça, c'est exactement ce que les GPU font le mieux.
 
 <!-- Visualizations -->
 <script src="/assets/js/explain-rasterization.js"></script>
