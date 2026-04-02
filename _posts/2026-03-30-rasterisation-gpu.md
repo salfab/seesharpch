@@ -188,19 +188,9 @@ Vulkan donne le contrôle total — mémoire GPU, synchronisation, pipelines —
 
 Pour la production, wgpu serait le bon choix. Pour le prototypage, headless-gl a fait le job.
 
-### Piste alternative : hybride raster-first (sans GPU du tout)
-
-Sans rien changer à l'infrastructure, utiliser swissSURFACE3D comme pré-filtre avant le ray-tracing :
-
-1. Ray march sur la grille raster 0.5m (~200 lookups mémoire, quasi-gratuit)
-2. Si "pas bloqué" → terminé
-3. Si "bloqué" → vérifier avec le ray-tracing vectoriel
-
-Le raster dirait "pas bloqué" dans la majorité des cas (soleil haut, zones dégagées). Le vectoriel ne serait invoqué que pour le soleil rasant et les coins de toits ambigus.
-
 ## Conclusion
 
-Le profiling ne ment pas : le ray-tracing des bâtiments consomme 99.2% du temps de calcul. C'est le seul levier qui compte, et il y a au moins trois façons de l'attaquer — du plus simple (pré-filtre raster, zéro infra) au plus ambitieux (shadow map GPU, gain ~400x).
+Le profiling ne ment pas : le ray-tracing des bâtiments consomme 99.2% du temps de calcul. Le shadow map GPU divise ce temps par 80 — même sur un GPU intégré Intel. Tout Lausanne en 8 minutes au lieu d'une heure vingt.
 
 Le terrain, la végétation et l'horizon sont déjà en raster et ne coûtent rien. La cascade de court-circuits élimine les instants inutiles. Ce qui reste, c'est 50 shadow maps par jour pour 93k bâtiments — et ça, c'est exactement ce que les GPU font le mieux.
 
