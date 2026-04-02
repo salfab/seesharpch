@@ -1,8 +1,10 @@
 /**
  * Canvas 2D visualization: Shadow mapping explained
- * Shows the two-pass process:
- * 1. Render scene from sun's POV → depth buffer
- * 2. For each point, compare its sun-distance to the depth buffer
+ * Shows the two-pass process with DISTANCES (not labels):
+ * 1. Sun looks at scene → stores distance to first object per pixel
+ * 2. Each ground point: compare MY distance to sun vs stored distance
+ *    Same distance = I'm what the sun sees = soleil
+ *    Greater distance = something is closer to sun than me = ombre
  */
 (function () {
   'use strict';
@@ -10,7 +12,7 @@
   if (!container) return;
 
   var W = container.clientWidth;
-  var H = 400;
+  var H = 420;
   var dpr = Math.min(window.devicePixelRatio, 2);
   var canvas = document.createElement('canvas');
   canvas.width = W * dpr; canvas.height = H * dpr;
@@ -20,88 +22,79 @@
   var ctx = canvas.getContext('2d');
   ctx.scale(dpr, dpr);
 
-  // Scene layout (side view)
   var margin = 20;
   var sceneTop = 50;
-  var sceneH = 180;
+  var sceneH = 170;
   var groundY = sceneTop + sceneH;
   var sceneLeft = margin + 10;
   var sceneRight = W - margin - 10;
   var sceneW = sceneRight - sceneLeft;
 
-  // Sun position (top-left, looking down-right)
-  var sunX = sceneLeft + 30;
-  var sunY = sceneTop + 10;
-  var sunAlt = 25; // degrees
+  // Sun position
+  var sunAlt = 25;
+  var sunDist = 250; // "distance" to sun (conceptual)
+  var altRad = sunAlt * Math.PI / 180;
 
-  // Building (side view)
+  // Sun visual position (top-left)
+  var sunVizX = sceneLeft + 50;
+  var sunVizY = sceneTop - 5;
+
+  // Building
   var bldgLeft = sceneLeft + sceneW * 0.35;
   var bldgW = 40;
   var bldgH = 100;
   var bldgTop = groundY - bldgH;
 
-  // Ground test points
+  // Depth buffer layout
+  var depthBufY = groundY + 40;
+  var depthBufH = 55;
+  var depthPixels = 20;
+  var depthBufLeft = sceneLeft + 20;
+  var depthBufW = sceneW - 40;
+  var depthCellW = depthBufW / depthPixels;
+
+  // Calculate distance from sun to first object hit, per depth pixel
+  // Sun rays come from top-left at sunAlt degrees
+  function calcSunDepth(col) {
+    var fracX = (col + 0.5) / depthPixels;
+    var targetX = depthBufLeft + fracX * depthBufW;
+
+    // Does the sun ray through this column hit the building?
+    if (targetX >= bldgLeft && targetX <= bldgLeft + bldgW) {
+      // Hits the roof → short distance
+      return { dist: 85, hitY: bldgTop, isBuilding: true };
+    }
+    // Hits the ground → longer distance
+    return { dist: 200, hitY: groundY, isBuilding: false };
+  }
+
+  // For a ground point, calculate its distance to the sun
+  function pointSunDist(px) {
+    // Simplified: distance depends on horizontal position
+    // Points behind the building are farther because the sun is to the left
+    return 200; // all ground points are at ~200 distance from sun
+  }
+
+  // Test points along the ground
   var testPoints = [];
-  for (var x = sceneLeft + 20; x < sceneRight - 20; x += 18) {
+  for (var x = sceneLeft + 20; x < sceneRight - 20; x += 16) {
     testPoints.push({ x: x, y: groundY });
   }
 
-  // Depth buffer (1D, from sun's perspective)
-  var depthBufY = groundY + 30;
-  var depthBufH = 50;
-  var depthBufW = sceneW - 40;
-  var depthBufLeft = sceneLeft + 20;
-  var depthPixels = 20;
-  var depthCellW = depthBufW / depthPixels;
-
-  var hoverPoint = null; // index into testPoints
-
-  // Calculate if a point is in shadow
-  // Simplified: sun rays come from top-left at sunAlt degrees
-  function isInShadow(px, py) {
-    // Trace ray from point toward sun direction
-    var altRad = sunAlt * Math.PI / 180;
-    // Sun is to the left and above. Ray goes up-left.
-    var dx = -1; // left
-    var dy = -Math.tan(altRad); // up
-
-    // Check if ray hits building
-    // Building spans bldgLeft to bldgLeft+bldgW, from groundY-bldgH to groundY
-    // Parametric: point + t * (dx, dy)
-    // Find t where x = bldgLeft+bldgW (right face of building)
+  function isInShadow(px) {
     if (px > bldgLeft + bldgW) {
-      var tRight = (bldgLeft + bldgW - px) / dx;
-      if (tRight > 0) {
-        var yAtRight = py + tRight * dy;
-        if (yAtRight >= bldgTop && yAtRight <= groundY) return true;
-      }
+      // Right of building: check if sun ray is blocked
+      var tRight = (px - bldgLeft - bldgW);
+      var rayY = groundY - tRight * Math.tan(altRad);
+      return rayY >= bldgTop; // ray would hit building going back toward sun
     }
-    // Find t where x = bldgLeft (left face)
-    if (px > bldgLeft && px <= bldgLeft + bldgW) {
-      return true; // directly under building
-    }
-    // Check top face
-    var tTop = (bldgTop - py) / dy;
-    if (tTop > 0) {
-      var xAtTop = px + tTop * dx;
-      if (xAtTop >= bldgLeft && xAtTop <= bldgLeft + bldgW) return true;
+    if (px >= bldgLeft && px <= bldgLeft + bldgW) {
+      return true; // under building
     }
     return false;
   }
 
-  // Calculate depth from sun for a column (what the sun "sees")
-  function sunDepth(col) {
-    // Sun looks from top-left. For each "column" of sun view,
-    // the depth is the distance to the first object hit.
-    var fracX = col / depthPixels;
-    var targetX = depthBufLeft + fracX * depthBufW;
-    // Simple: if column overlaps building, depth = distance to building top
-    // Otherwise depth = distance to ground
-    if (targetX >= bldgLeft && targetX <= bldgLeft + bldgW) {
-      return { depth: 'short', hitY: bldgTop, label: 'toit' };
-    }
-    return { depth: 'long', hitY: groundY, label: 'sol' };
-  }
+  var hoverPoint = null;
 
   function draw() {
     ctx.clearRect(0, 0, W, H);
@@ -112,15 +105,14 @@
     ctx.font = 'bold 13px IBM Plex Mono, monospace';
     ctx.fillStyle = '#ffe066';
     ctx.textAlign = 'center';
-    ctx.fillText('Shadow mapping : comment la rasterisation calcule les ombres', W / 2, 22);
-
+    ctx.fillText('Shadow mapping : la comparaison de distances', W / 2, 20);
     ctx.font = '10px IBM Plex Mono, monospace';
     ctx.fillStyle = '#666';
-    ctx.fillText('Vue de cote : le soleil regarde la scene et enregistre les distances', W / 2, 38);
+    ctx.fillText('Le soleil enregistre la distance au premier objet touche. Chaque point compare SA distance.', W / 2, 36);
 
     // Ground
     ctx.fillStyle = '#1e2128';
-    ctx.fillRect(sceneLeft, groundY, sceneW, 8);
+    ctx.fillRect(sceneLeft, groundY, sceneW, 6);
 
     // Building
     ctx.fillStyle = 'rgba(90, 95, 110, 0.7)';
@@ -135,106 +127,117 @@
 
     // Sun
     ctx.beginPath();
-    ctx.arc(sunX, sunY, 14, 0, Math.PI * 2);
+    ctx.arc(sunVizX, sunVizY, 14, 0, Math.PI * 2);
     ctx.fillStyle = '#ffe066';
     ctx.fill();
     ctx.font = '10px IBM Plex Mono, monospace';
     ctx.fillStyle = '#ffe066';
     ctx.textAlign = 'left';
-    ctx.fillText('soleil', sunX + 20, sunY + 4);
+    ctx.fillText('soleil', sunVizX + 20, sunVizY + 4);
 
-    // Sun rays toward scene
-    var altRad = sunAlt * Math.PI / 180;
-    for (var i = 0; i < 8; i++) {
-      var startX = sunX + 14;
-      var startY = sunY + i * 3;
-      var endX = startX + 300;
-      var endY = startY + 300 * Math.tan(altRad) * 0.4;
-      // Check if ray hits building
+    // Sun rays (subtle)
+    for (var i = 0; i < 6; i++) {
       ctx.beginPath();
-      ctx.moveTo(startX, startY);
-
-      var hitsBldg = endX > bldgLeft && startX < bldgLeft;
-      if (hitsBldg) {
-        var t = (bldgLeft - startX);
-        var hitY = startY + t * Math.tan(altRad) * 0.4;
-        if (hitY < groundY) {
-          ctx.lineTo(bldgLeft, hitY);
-          ctx.strokeStyle = 'rgba(255, 224, 102, 0.15)';
-        } else {
-          ctx.lineTo(endX, endY);
-          ctx.strokeStyle = 'rgba(255, 224, 102, 0.08)';
-        }
-      } else {
-        ctx.lineTo(endX, endY);
-        ctx.strokeStyle = 'rgba(255, 224, 102, 0.08)';
-      }
+      ctx.moveTo(sunVizX + 14, sunVizY + i * 5);
+      ctx.lineTo(sunVizX + 14 + 300, sunVizY + i * 5 + 300 * Math.tan(altRad) * 0.4);
+      ctx.strokeStyle = 'rgba(255, 224, 102, 0.06)';
       ctx.lineWidth = 0.5;
       ctx.stroke();
     }
 
-    // Shadow on ground (dark area behind building)
+    // Shadow zone on ground
     var shadowStart = bldgLeft + bldgW;
-    var shadowLen = bldgH / Math.tan(altRad * Math.PI / 180 * 3); // approximate
-    shadowLen = Math.min(shadowLen, 120);
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
-    ctx.fillRect(shadowStart, groundY - 3, shadowLen, 6);
-    ctx.font = '9px IBM Plex Mono, monospace';
-    ctx.fillStyle = '#ff6b6b';
-    ctx.textAlign = 'center';
-    ctx.fillText('ombre', shadowStart + shadowLen / 2, groundY - 8);
+    var shadowEnd = shadowStart + bldgH / Math.tan(altRad);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+    ctx.fillRect(shadowStart, groundY - 2, shadowEnd - shadowStart, 4);
 
     // Test points
     testPoints.forEach(function (pt, idx) {
-      var shadow = isInShadow(pt.x, pt.y);
+      var shadow = isInShadow(pt.x);
       var isHover = hoverPoint === idx;
+      var r = isHover ? 5 : 3;
 
       ctx.beginPath();
-      ctx.arc(pt.x, pt.y - 3, isHover ? 5 : 3, 0, Math.PI * 2);
+      ctx.arc(pt.x, pt.y - 3, r, 0, Math.PI * 2);
       ctx.fillStyle = shadow ? '#ff6b6b' : '#7effd4';
       ctx.fill();
-
       if (isHover) {
         ctx.strokeStyle = '#fff';
         ctx.lineWidth = 1.5;
         ctx.stroke();
+      }
 
-        // Draw ray from this point toward sun
-        ctx.beginPath();
-        ctx.moveTo(pt.x, pt.y - 3);
-        var rayEndX = pt.x - 200;
-        var rayEndY = pt.y - 3 - 200 * Math.tan(altRad);
-        // Check if blocked by building
+      if (isHover) {
+        // Draw line from point toward sun
+        var myDist = pointSunDist(pt.x);
+
         if (shadow && pt.x > bldgLeft + bldgW) {
-          var tHit = (pt.x - bldgLeft - bldgW);
-          var hitY = pt.y - 3 - tHit * Math.tan(altRad);
-          ctx.lineTo(bldgLeft + bldgW, hitY);
+          // Blocked: line to building face
+          var hitX = bldgLeft + bldgW;
+          var hitY = groundY - 3 - (pt.x - hitX) * Math.tan(altRad);
+          ctx.beginPath();
+          ctx.moveTo(pt.x, pt.y - 3);
+          ctx.lineTo(hitX, hitY);
           ctx.strokeStyle = '#ff6b6b';
           ctx.lineWidth = 1.5;
           ctx.stroke();
-          // X mark at hit
+
+          // X at hit
           ctx.beginPath();
-          ctx.moveTo(bldgLeft + bldgW - 4, hitY - 4);
-          ctx.lineTo(bldgLeft + bldgW + 4, hitY + 4);
-          ctx.moveTo(bldgLeft + bldgW + 4, hitY - 4);
-          ctx.lineTo(bldgLeft + bldgW - 4, hitY + 4);
+          ctx.moveTo(hitX - 4, hitY - 4); ctx.lineTo(hitX + 4, hitY + 4);
+          ctx.moveTo(hitX + 4, hitY - 4); ctx.lineTo(hitX - 4, hitY + 4);
           ctx.strokeStyle = '#ff6b6b';
           ctx.lineWidth = 2;
           ctx.stroke();
-        } else {
-          ctx.lineTo(rayEndX, rayEndY);
-          ctx.strokeStyle = 'rgba(126, 255, 212, 0.4)';
+        } else if (!shadow) {
+          // Not blocked: line toward sun
+          ctx.beginPath();
+          ctx.moveTo(pt.x, pt.y - 3);
+          ctx.lineTo(pt.x - 150, pt.y - 3 - 150 * Math.tan(altRad));
+          ctx.strokeStyle = 'rgba(126, 255, 212, 0.3)';
           ctx.lineWidth = 1;
           ctx.setLineDash([4, 4]);
           ctx.stroke();
           ctx.setLineDash([]);
         }
 
-        // Label
-        ctx.font = 'bold 11px IBM Plex Mono, monospace';
-        ctx.textAlign = 'center';
+        // Find which depth buffer column this point maps to
+        var depthCol = Math.floor((pt.x - depthBufLeft) / depthCellW);
+        depthCol = Math.max(0, Math.min(depthPixels - 1, depthCol));
+        var storedDepth = calcSunDepth(depthCol);
+
+        // Highlight the depth buffer column
+        var colX = depthBufLeft + depthCol * depthCellW;
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(colX, depthBufY, depthCellW - 1, depthBufH);
+
+        // Comparison box
+        var boxY = depthBufY + depthBufH + 16;
+        ctx.fillStyle = 'rgba(15, 16, 20, 0.95)';
+        ctx.fillRect(margin, boxY, W - margin * 2, 52);
+
+        ctx.font = '11px IBM Plex Mono, monospace';
+        ctx.textAlign = 'left';
+
+        // Line 1: stored distance
+        ctx.fillStyle = '#ffe066';
+        ctx.fillText('Depth buffer[' + depthCol + '] = ' + storedDepth.dist + 'm', margin + 10, boxY + 16);
+        ctx.fillStyle = '#666';
+        ctx.fillText('(distance soleil → ' + (storedDepth.isBuilding ? 'toit' : 'sol') + ')', margin + 250, boxY + 16);
+
+        // Line 2: my distance
         ctx.fillStyle = shadow ? '#ff6b6b' : '#7effd4';
-        ctx.fillText(shadow ? 'OMBRE' : 'SOLEIL', pt.x, pt.y - 14);
+        ctx.fillText('Ma distance au soleil = ' + myDist + 'm', margin + 10, boxY + 34);
+
+        // Line 3: comparison
+        if (shadow) {
+          ctx.fillStyle = '#ff6b6b';
+          ctx.fillText(myDist + ' > ' + storedDepth.dist + '  →  quelque chose est plus pres du soleil que moi  →  OMBRE', margin + 10, boxY + 48);
+        } else {
+          ctx.fillStyle = '#7effd4';
+          ctx.fillText(myDist + ' ≈ ' + storedDepth.dist + '  →  je suis le premier objet que le soleil voit  →  SOLEIL', margin + 10, boxY + 48);
+        }
       }
     });
 
@@ -242,41 +245,30 @@
     ctx.font = 'bold 11px IBM Plex Mono, monospace';
     ctx.fillStyle = '#ffe066';
     ctx.textAlign = 'left';
-    ctx.fillText('Depth buffer (ce que le soleil "voit") :', depthBufLeft, depthBufY - 6);
+    ctx.fillText('Depth buffer (distance soleil → premier objet) :', depthBufLeft, depthBufY - 6);
 
     for (var i = 0; i < depthPixels; i++) {
-      var sd = sunDepth(i);
+      var sd = calcSunDepth(i);
       var x = depthBufLeft + i * depthCellW;
-      var y = depthBufY;
 
-      // Color by depth
-      ctx.fillStyle = sd.depth === 'short' ? 'rgba(255, 224, 102, 0.3)' : 'rgba(60, 65, 80, 0.4)';
-      ctx.fillRect(x, y, depthCellW - 1, depthBufH);
-      ctx.strokeStyle = sd.depth === 'short' ? 'rgba(255, 224, 102, 0.4)' : '#1e2128';
+      ctx.fillStyle = sd.isBuilding ? 'rgba(255, 224, 102, 0.25)' : 'rgba(60, 65, 80, 0.4)';
+      ctx.fillRect(x, depthBufY, depthCellW - 1, depthBufH);
+      ctx.strokeStyle = sd.isBuilding ? 'rgba(255, 224, 102, 0.3)' : '#1e2128';
       ctx.lineWidth = 0.5;
-      ctx.strokeRect(x, y, depthCellW - 1, depthBufH);
+      ctx.strokeRect(x, depthBufY, depthCellW - 1, depthBufH);
 
-      // Depth label
-      ctx.font = '8px IBM Plex Mono, monospace';
-      ctx.fillStyle = sd.depth === 'short' ? '#ffe066' : '#444';
+      // Distance value
+      ctx.font = '9px IBM Plex Mono, monospace';
+      ctx.fillStyle = sd.isBuilding ? '#ffe066' : '#555';
       ctx.textAlign = 'center';
-      ctx.fillText(sd.label, x + depthCellW / 2, y + depthBufH / 2 + 3);
+      ctx.fillText(sd.dist + 'm', x + depthCellW / 2, depthBufY + depthBufH / 2 + 3);
     }
 
-    // Depth buffer explanation
-    ctx.font = '10px IBM Plex Mono, monospace';
-    ctx.fillStyle = '#888';
-    ctx.textAlign = 'left';
-    ctx.fillText('Jaune = le soleil voit le toit en premier (distance courte)', depthBufLeft, depthBufY + depthBufH + 14);
-    ctx.fillText('Gris = le soleil voit le sol (distance longue)', depthBufLeft, depthBufY + depthBufH + 28);
-    ctx.fillText('Point au sol dont la distance > depth buffer → derriere un objet → ombre', depthBufLeft, depthBufY + depthBufH + 42);
-
-    // Hover instruction
     if (hoverPoint === null) {
       ctx.font = '10px IBM Plex Mono, monospace';
       ctx.fillStyle = '#555';
       ctx.textAlign = 'center';
-      ctx.fillText('Survolez un point au sol pour voir le test ombre/soleil', W / 2, groundY + 16);
+      ctx.fillText('Survolez un point pour voir la comparaison de distances', W / 2, groundY + 16);
     }
   }
 
@@ -286,7 +278,6 @@
     var rect = canvas.getBoundingClientRect();
     var mx = e.clientX - rect.left;
     var my = e.clientY - rect.top;
-
     hoverPoint = null;
     var bestDist = 25;
     testPoints.forEach(function (pt, idx) {
@@ -311,9 +302,8 @@
     canvas.style.width = W + 'px';
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.scale(dpr, dpr);
-    // Recalculate test points
     testPoints = [];
-    for (var x = sceneLeft + 20; x < sceneRight - 20; x += 18) {
+    for (var x = sceneLeft + 20; x < sceneRight - 20; x += 16) {
       testPoints.push({ x: x, y: groundY });
     }
     draw();

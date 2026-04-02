@@ -26,7 +26,7 @@ OK, mais comment passer d'une "grille de hauteurs" à "ce point est-il à l'ombr
 
 <div id="viz-shadowmap" style="width: 100%; margin: 1.5rem 0; border-radius: 6px; overflow: hidden; background: var(--bg2); border: 1px solid var(--border);"></div>
 
-Survolez les points au sol pour voir le test en action : le rayon vers le soleil est-il bloqué par le bâtiment ? Le depth buffer en bas montre ce que le soleil "voit" — les pixels jaunes sont le toit (distance courte), les gris sont le sol (distance longue).
+Survolez les points au sol pour voir la comparaison en action. Le depth buffer stocke **85m** pour les pixels qui voient le toit (distance courte) et **200m** pour ceux qui voient le sol (distance longue). Un point au sol à 200m du soleil regarde le pixel correspondant : si le buffer dit 85m, quelque chose est plus proche du soleil que lui → ombre. Si le buffer dit 200m, il est le premier objet touché → soleil. On compare toujours des **distances au soleil** — la même unité, le même référentiel.
 
 ## Ce qu'est le ray-tracing
 
