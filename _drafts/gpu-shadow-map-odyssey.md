@@ -110,7 +110,25 @@ La solution : apr\u00e8s le premier chargement, s\u00e9rialiser le tableau de ve
 | Dont DXF loading | 38.7 s | **0.11 s** |
 | 4 tuiles total | 59.7 s | **22.9 s** |
 
-Le goulot restant : le masque d'horizon terrain (17.2 s pour le premier calcul).
+Le goulot restant : le masque d'horizon terrain (17.2 s pour le premier calcul). Lui aussi a \u00e9t\u00e9 r\u00e9solu par un cache disque JSON -- 17.2 s \u2192 1 ms.
+
+## Le pi\u00e8ge de Turbopack : 350x de overhead invisible
+
+Apr\u00e8s toutes ces optimisations, le benchmark direct (`npx tsx`) montrait **10.6 secondes** pour une tuile de 62'500 points \u00d7 60 instants solaires = 1.84 million d'\u00e9valuations. Parfait. L'extrapolation \u00e0 25 tuiles donnait **4.4 minutes** pour la zone compl\u00e8te Bourget\u2192Ouchy \u00e0 r\u00e9solution 1 m\u00e8tre.
+
+Mais dans le navigateur, via le serveur `next dev`, la m\u00eame tuile prenait **40 minutes**. L'ETA affichait 18 heures.
+
+Le probl\u00e8me n'\u00e9tait pas le code -- il \u00e9tait identique. Le probl\u00e8me \u00e9tait **Turbopack**, le bundler de Next.js en mode d\u00e9veloppement. Son instrumentation (sourcemaps, hot module replacement, stack traces enrichis) ajoutait un **overhead de 350x** sur chaque \u00e9valuation :
+
+| Environnement | \u00b5s par \u00e9valuation | 1 tuile (1.84M evals) |
+|---|---|---|
+| `npx tsx` (esbuild) | **4 \u00b5s** | **10.6 s** |
+| `next dev` (Turbopack) | **1'400 \u00b5s** | **~40 min** |
+| Ratio | **350x** | |
+
+L'ironie : on avait pass\u00e9 des jours \u00e0 optimiser les boucles internes (GPU shadow maps, frustum culling, PCF sampling, binary cache, horizon precompute) pour gagner des microsecondes par \u00e9valuation -- et le framework de d\u00e9veloppement ajoutait 1'396 microsecondes de overhead \u00e0 chaque it\u00e9ration.
+
+La le\u00e7on : **toujours benchmarker dans l'environnement de production**, pas dans le dev server. Et pour des boucles de calcul intensif (millions d'it\u00e9rations), ex\u00e9cuter le calcul dans un worker process s\u00e9par\u00e9 qui tourne hors du contexte du bundler.
 
 ## Ce qu'on a appris
 
@@ -126,8 +144,10 @@ Le goulot restant : le masque d'horizon terrain (17.2 s pour le premier calcul).
 
 6. **S\u00e9rialiser les artefacts interm\u00e9diaires.** Le cache binaire est le pattern le plus simple et le plus efficace : calculer une fois, persister, recharger. Le Float32Array se lit directement sans parsing -- z\u00e9ro overhead de d\u00e9s\u00e9rialisation.
 
+7. **Le bundler dev n'est pas l'environnement de production.** Turbopack ajoute 350x de overhead sur des boucles de calcul intensif. Benchmarker dans le dev server donne des r\u00e9sultats trompeurs. Toujours valider avec le runtime de production, ou isoler le calcul lourd dans un worker process s\u00e9par\u00e9.
+
 ## Prochaines \u00e9tapes
 
-- **Optimisation du masque d'horizon** (17.2 s) : pr\u00e9calcul batch pour la r\u00e9gion, ou masque r\u00e9gional partag\u00e9
+- **Worker process** pour le calcul de tuiles : le serveur Next.js d\u00e9l\u00e8gue le calcul \u00e0 un process `tsx` s\u00e9par\u00e9 via IPC, \u00e9vitant l'overhead Turbopack
 - **Streaming progressif** : les tuiles calcul\u00e9es arrivent en temps r\u00e9el avec ETA (\u2713 impl\u00e9ment\u00e9)
 - **Retour visuel** : "Chargement de la sc\u00e8ne..." avec barre puls\u00e9e pendant le cold start (\u2713 impl\u00e9ment\u00e9)
