@@ -98,6 +98,20 @@ Avec les b\u00e2timents \u00e0 0.4 s au lieu de 39.7 s, le profiling d'une tuile
 
 Le masque d'horizon -- un raycast \u00e0 120 km dans 360 directions sur le DEM Copernicus 30 m -- est devenu le premier candidat \u00e0 l'optimisation. La v\u00e9g\u00e9tation (ray marching sur le raster swissSURFACE3D) domine dans l'\u00e9valuation restante.
 
+## Le cache binaire : 350x sur le cold start
+
+Le chargement initial des 93'000 b\u00e2timents depuis les fichiers DXF zip prenait 38.7 secondes. Parser du DXF texte depuis des archives ZIP, matcher chaque polyface \u00e0 son obstacle, trianguler -- tout \u00e7a pour produire un `Float32Array` de vertices.
+
+La solution : apr\u00e8s le premier chargement, s\u00e9rialiser le tableau de vertices directement en binaire (180 MB pour 5.2 millions de triangles). Au prochain d\u00e9marrage, un simple `readFile` + `new Float32Array(buffer)` remplace 38.7 secondes de parsing par **112 millisecondes**.
+
+| | Sans cache | Avec cache binaire |
+|---|---|---|
+| Cold start (tuile 1) | 57.0 s | **20.3 s** |
+| Dont DXF loading | 38.7 s | **0.11 s** |
+| 4 tuiles total | 59.7 s | **22.9 s** |
+
+Le goulot restant : le masque d'horizon terrain (17.2 s pour le premier calcul).
+
 ## Ce qu'on a appris
 
 1. **Profiler avant d'optimiser.** Le 99.2% initial \u00e9tait dans les b\u00e2timents -- mais apr\u00e8s le fix, c'est l'horizon qui domine. L'optimisation d\u00e9place les goulots, elle ne les \u00e9limine pas.
@@ -108,10 +122,12 @@ Le masque d'horizon -- un raycast \u00e0 120 km dans 360 directions sur le DEM C
 
 4. **Le software rendering suffit.** headless-gl utilise SwiftShader (pas de GPU physique), et c'est assez rapide. Le gain vient de l'algorithme, pas du hardware.
 
-5. **Le cache module-level est critique.** Sans caching du backend GPU, chaque tuile rechargeait 907'000 triangles depuis les DXF (15 s). Avec le singleton, c'est pay\u00e9 une seule fois.
+5. **Le cache module-level est critique.** Sans caching du backend GPU, chaque tuile rechargeait les triangles depuis les DXF. Avec le singleton + cache binaire, c'est 112 ms au lieu de 38.7 s.
+
+6. **S\u00e9rialiser les artefacts interm\u00e9diaires.** Le cache binaire est le pattern le plus simple et le plus efficace : calculer une fois, persister, recharger. Le Float32Array se lit directement sans parsing -- z\u00e9ro overhead de d\u00e9s\u00e9rialisation.
 
 ## Prochaines \u00e9tapes
 
-- **Pr\u00e9calcul des masques d'horizon** pour toute la r\u00e9gion Lausanne en batch offline, au lieu du raycast \u00e0 la vol\u00e9e
-- **Masque r\u00e9gional unique** -- Lausanne est dans une cuvette, l'horizon montagneux est quasi identique sur 2 km
-- **Streaming progressif** des tuiles calcul\u00e9es vers le client, avec ETA en temps r\u00e9el
+- **Optimisation du masque d'horizon** (17.2 s) : pr\u00e9calcul batch pour la r\u00e9gion, ou masque r\u00e9gional partag\u00e9
+- **Streaming progressif** : les tuiles calcul\u00e9es arrivent en temps r\u00e9el avec ETA (\u2713 impl\u00e9ment\u00e9)
+- **Retour visuel** : "Chargement de la sc\u00e8ne..." avec barre puls\u00e9e pendant le cold start (\u2713 impl\u00e9ment\u00e9)
