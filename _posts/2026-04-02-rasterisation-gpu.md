@@ -63,7 +63,7 @@ Si on voulait rendre toute la ville en 3D interactive dans le navigateur :
 - **Le terrain** sur 300 km² à 2m de résolution = 75 millions de points. Il faut du LOD (Level of Detail) — haute résolution près de la caméra, basse résolution au loin.
 - **La végétation** à 0.5m sur la même zone = 1.2 milliard de pixels. Même problème, en pire.
 
-C'est faisable — Google Earth le fait. Mais c'est un projet d'une tout autre échelle que Mappy Hour.
+C'est faisable. Mais c'est un projet d'une tout autre échelle que Mappy Hour — et surtout, ça ne répond pas à la question. Le rendu 3D interactif produit des images. Mappy Hour a besoin de booléens : soleil ou ombre, pour 62'500 points, 60 fois par jour.
 
 ## Mise à jour — avril 2026 : le GPU shadow map est implémenté
 
@@ -82,19 +82,15 @@ Le principe : charger les 93'000 bâtiments SwissBUILDINGS3D (907'000 triangles 
 
 Le GPU ne tourne pas sur le GPU physique (Intel Arc) mais en software — le gain vient du pattern **render-once/lookup-many**, pas du hardware. Un seul rendu de shadow map remplace 19'968 intersections rayon-triangle individuelles.
 
-**Le plot twist :** avec les bâtiments à 0.4 s, le goulot s'est déplacé. Le profiling par tuile montrait :
+**Le plot twist :** avec les bâtiments à 0.4 s, le goulot s'est déplacé. Le shadow map a résolu le **ray-tracing des bâtiments** (91x). Mais pour chaque point, il reste le terrain (horizon), la végétation (ray-march), et la combinaison finale — tout ça tourne encore en JavaScript, point par point. Le profiling après toutes les optimisations CPU ([deep-dive](/mappy-hour-deep-dive)) + shadow map donnait :
 
-```
-[tile e2538000_n1152250_s250] 42.3s total
-  — horizon 15.2s (36%)
-  — sources 2.1s (5%)
-  — points 0.04s (0.1%)
-  — eval 25.0s (59%)
-```
+| Phase | Temps | Ce qui se passe |
+|---|---|---|
+| Shadow map GPU (bâtiments) | 0.4 s | 1 rendu + 62'500 lookups O(1) |
+| Boucle JS (terrain + végétation + sunny) | ~12 s | 62'500 pts × 60 frames, séquentiel |
+| **Total par tuile** | **~12 s** | Le GPU fait 3%, le CPU fait 97% |
 
-Le masque d'horizon terrain (raycast 120 km sur le DEM Copernicus à 30 m) et le chargement des sources (terrain, végétation) dominaient. Les bâtiments n'étaient plus le problème.
-
-> **Mise à jour :** ce profiling est historique. Depuis, le masque d'horizon est pré-calculé et partagé par macro-cell (0.0s/tuile), et la boucle d'évaluation de 25s a été portée sur GPU via des compute shaders Vulkan (~0.3s/tuile). Le temps total par tuile est passé de **42s à ~3s**. Voir [l'article sur les compute shaders Vulkan](/blog/preview/b4e1f723/pourquoi-compute-shaders).
+Le shadow map avait éliminé le goulot bâtiments. Le nouveau goulot, c'est la **boucle JavaScript** qui traite le terrain et la végétation pour chaque point. C'est [exactement le problème que les compute shaders résolvent](/blog/preview/b4e1f723/pourquoi-compute-shaders).
 
 ## Conclusion
 

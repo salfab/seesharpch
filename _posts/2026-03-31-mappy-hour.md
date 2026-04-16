@@ -75,3 +75,5 @@ Impossible sans LLM. Pas parce que le code est compliqué — c'est du TypeScrip
 Le LLM ne génère pas le code à ma place. Il me donne les outils mathématiques que je n'aurais pas trouvés en moins de deux jours de recherche. La différence entre "je sais que ça existe" et "voici l'implémentation qui fonctionne", c'est exactement ce que le LLM comble.
 
 Les optimisations, par contre, c'est du trial-and-error pur. Essayer, mesurer, garder ou jeter. Le LLM propose des pistes, mais c'est le benchmark qui décide.
+
+Ce prototype de 4 heures calculait l'ombre de chaque bâtiment un par un — 2.85 points par seconde. Inutilisable pour une ville entière. Ce qui a suivi, c'est une chasse aux microsecondes qui m'a emmené du [ray-tracing CPU optimisé](/mappy-hour-deep-dive) au [shadow map GPU](/blog/preview/f7a2c891/rasterisation-gpu), puis aux [compute shaders Vulkan](/blog/preview/b4e1f723/pourquoi-compute-shaders) — et accessoirement, dans une [crise existentielle de développeur](/blog/preview/c9d2a845/vulkan-rust-vibe-coding).

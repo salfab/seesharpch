@@ -60,6 +60,8 @@ Node envoie un message JSON : "voici 62'500 points, voici les rasters de végét
 
 Le serveur Rust est **long-lived** : il démarre une fois par région, garde le mesh en mémoire, et traite les tuiles une par une. Les uploads (horizon, végétation) sont dédupliqués par hash — si deux tuiles consécutives partagent les mêmes rasters, le serveur ne re-upload pas.
 
+Pourquoi ne pas tout faire en Rust ? Parce que Rust ne fait que le calcul GPU pur — la partie que JavaScript ne sait pas faire. Tout le reste — le pipeline de précompute, le cache disque, les routes API, l'ingestion de données, l'orchestration des tuiles — c'est du TypeScript existant, testé, et bien plus rapide à itérer. Réécrire 15'000 lignes de pipeline en Rust pour le plaisir de n'avoir qu'un seul langage, c'est un refactor de prestige, pas une optimisation.
+
 ## Le vibe coding, pour de vrai
 
 Voici ce que je ne connaissais pas avant ce projet :

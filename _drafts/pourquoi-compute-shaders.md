@@ -2,6 +2,7 @@
 layout: post
 title: "Le plafond de verre du shadow map : pourquoi il faut des compute shaders"
 tags: [project, gis, performance, gpu]
+header_image: /assets/img/shaders.png
 unlisted: true
 permalink: /blog/preview/b4e1f723/pourquoi-compute-shaders
 sitemap: false
@@ -23,7 +24,7 @@ Mais pour chaque point de ma grille, il reste trois autres questions auxquelles 
 
 Pour une tuile de 250 mètres au pas de 1 mètre, ça fait 62'500 points. Sur une journée (06h-21h) échantillonnée toutes les 15 minutes, ça fait 60 frames. Soit **3.75 millions d'itérations** — en JavaScript, séquentiellement, point par point.
 
-Le shadow map m'a donné la réponse bâtiment en 0.4 seconde. Mais la boucle JS qui traite le terrain, la végétation et les masques sunny prend **12 secondes**. Le GPU fait 3% du travail.
+Le [shadow map GPU](/blog/preview/f7a2c891/rasterisation-gpu) m'a donné la réponse bâtiment en 0.4 seconde. Mais la boucle JS qui traite le terrain, la végétation et les masques sunny prend **12 secondes**. Le GPU résout les bâtiments — 3% du temps tuile. Les 97% restants, c'est du JavaScript séquentiel.
 
 ## Le rendering ne suffit pas
 
@@ -212,4 +213,13 @@ En portant le terrain, la végétation, et les masques sunny sur GPU via compute
 
 Le shadow map avait donné 91x sur les bâtiments. Les compute shaders donnent un 4x supplémentaire sur **tout le reste**. L'un ne remplace pas l'autre — ils résolvent des problèmes différents. Le shadow map transforme 907'000 triangles en un depth buffer. Le compute shader transforme 62'500 points en bitmasks. Deux outils, deux jobs.
 
-Le total cumulé depuis le ray-tracing CPU pur : **le temps par tuile est passé de 42 secondes à 3 secondes**. Facteur 14. Et la boucle `for` en JavaScript qui faisait 97% du travail... n'existe plus.
+En cumulé depuis le tout début :
+
+| Étape | Temps/tuile | Gagné par |
+|---|---|---|
+| CPU pur (baseline) | ~42 s | — |
+| + optimisations CPU ([deep-dive](/mappy-hour-deep-dive)) | ~15 s | grille spatiale, corridor, contexte partagé |
+| + shadow map GPU ([rasterisation](/blog/preview/f7a2c891/rasterisation-gpu)) | ~12 s | render-once/lookup-many pour les bâtiments |
+| + compute shaders | **~3 s** | terrain + végétation + sunny portés sur GPU |
+
+**Facteur 14** entre le CPU pur et l'état final. Et la boucle `for` en JavaScript qui faisait 97% du travail... n'existe plus.
