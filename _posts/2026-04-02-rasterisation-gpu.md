@@ -48,7 +48,9 @@ Le GPU est optimisé pour rendre des images. Mappy Hour a besoin de répondre "o
 
 **WebGPU + Compute Shaders** — Le successeur de WebGL permet d'exécuter du code arbitraire sur le GPU, pas seulement du rendu. On pourrait porter le ray-tracing des bâtiments sur GPU : charger la grille spatiale 64m et les footprints dans des buffers GPU, lancer un compute shader par point de la grille, et récupérer le résultat. Le gain potentiel est massif — des milliers de rays en parallèle au lieu de les traiter séquentiellement.
 
-**BVH (Bounding Volume Hierarchy)** — Au lieu de la grille 64m plate, un arbre de volumes englobants permettrait un ray-tracing plus efficace sur GPU. C'est ce que font les moteurs de jeu pour le ray-tracing hardware (RT cores des GPU NVIDIA/AMD).
+> **Mise à jour :** cette piste a été implémentée — pas via WebGPU dans le navigateur, mais via **Vulkan compute shaders** côté serveur, en Rust. Le gain est réel : non seulement les bâtiments, mais aussi le terrain et la végétation tournent maintenant sur GPU en parallèle. Voir [l'article dédié](/preview/b4e1f723/pourquoi-compute-shaders) pour le pourquoi et le comment.
+
+**BVH (Bounding Volume Hierarchy)** — Au lieu de la grille 64m plate, un arbre de volumes englobants permettrait un ray-tracing plus efficace sur GPU. C'est ce que font les moteurs de jeu pour le ray-tracing hardware (RT cores des GPU NVIDIA/AMD). Cette piste reste non explorée — le shadow map rend le BVH superflu pour les bâtiments.
 
 **Le vrai bottleneck** — Avant de porter sur GPU, il faut regarder où le temps est passé. Les benchmarks de Mappy Hour montrent que le plus gros gain (45.8x) vient du partage de contexte par tuile, pas du ray-tracing lui-même. Optimiser la mauvaise chose ne sert à rien.
 
@@ -79,7 +81,7 @@ Le principe : charger les 93'000 bâtiments SwissBUILDINGS3D (907'000 triangles 
 
 Le GPU ne tourne pas sur le GPU physique (Intel Arc) mais en software — le gain vient du pattern **render-once/lookup-many**, pas du hardware. Un seul rendu de shadow map remplace 19'968 intersections rayon-triangle individuelles.
 
-**Le plot twist :** avec les bâtiments à 0.4 s, le goulot s'est déplacé. Le profiling par tuile montre maintenant :
+**Le plot twist :** avec les bâtiments à 0.4 s, le goulot s'est déplacé. Le profiling par tuile montrait :
 
 ```
 [tile e2538000_n1152250_s250] 42.3s total
@@ -89,10 +91,14 @@ Le GPU ne tourne pas sur le GPU physique (Intel Arc) mais en software — le gai
   — eval 25.0s (59%)
 ```
 
-Le masque d'horizon terrain (raycast 120 km sur le DEM Copernicus à 30 m) et le chargement des sources (terrain, végétation) dominent. Les bâtiments ne sont plus le problème.
+Le masque d'horizon terrain (raycast 120 km sur le DEM Copernicus à 30 m) et le chargement des sources (terrain, végétation) dominaient. Les bâtiments n'étaient plus le problème.
+
+> **Mise à jour :** ce profiling est historique. Depuis, le masque d'horizon est pré-calculé et partagé par macro-cell (0.0s/tuile), et la boucle d'évaluation de 25s a été portée sur GPU via des compute shaders Vulkan (~0.3s/tuile). Le temps total par tuile est passé de **42s à ~3s**. Voir [l'article sur les compute shaders Vulkan](/preview/b4e1f723/pourquoi-compute-shaders).
 
 ## Conclusion
 
 La rasterisation est omniprésente dans Mappy Hour — pour le terrain, la végétation, l'horizon, et maintenant aussi pour les **bâtiments** via un shadow map GPU. Le ray-tracing CPU exact reste disponible comme référence et fallback, mais le shadow map offre un compromis 91x plus rapide avec 93% de concordance.
 
-Le prochain défi n'est plus les bâtiments — c'est le terrain. Le masque d'horizon qui raycaste à 120 km dans 360 directions est devenu le nouveau goulot. La piste : précalculer ces masques une fois pour toute la région au lieu de les recalculer à la volée.
+~~Le prochain défi n'est plus les bâtiments — c'est le terrain. Le masque d'horizon qui raycaste à 120 km dans 360 directions est devenu le nouveau goulot. La piste : précalculer ces masques une fois pour toute la région au lieu de les recalculer à la volée.~~
+
+**Mise à jour :** le terrain et la végétation sont maintenant aussi sur GPU, via des compute shaders Vulkan. Le shadow map headless-gl reste le chemin de production pour les bâtiments, mais un backend alternatif Rust/wgpu/Vulkan fait shadow map + terrain + végétation + masques sunny en un seul dispatch GPU. L'histoire complète : [Du shadow map aux compute shaders Vulkan](/preview/b4e1f723/pourquoi-compute-shaders).
