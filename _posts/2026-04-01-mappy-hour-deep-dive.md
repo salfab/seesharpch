@@ -122,7 +122,7 @@ Le ray-tracing des bâtiments a évolué en deux approches. La différence est p
 
 **Prism** — Le footprint 2D extrudé en hauteur. Rapide, mais les toits complexes et les formes irrégulières génèrent des faux positifs. Le bâtiment en L du Great Escape ? Le prisme le voit comme un rectangle plein. Résultat : la terrasse est déclarée à l'ombre alors qu'elle ne l'est pas.
 
-**Detailed (mesh SwissTopo)** — Mesh 3D complet issu des fichiers DXF de SwissBUILDINGS3D, avec 32 passes de raffinement. Zéro faux positif. C'est le défaut actuel. Les optimisations du corridor et de la grille rendent ce mode viable en temps réel.
+**Detailed (mesh SwissTopo)** — Les vrais polyfaces 3D des fichiers DXF de SwissBUILDINGS3D, triangulés et testés par intersection rayon-triangle. Zéro faux positif. C'est le défaut actuel. Les optimisations du corridor et de la grille rendent ce mode viable.
 
 ## Pourquoi le mesh a gagné
 
@@ -134,17 +134,11 @@ Plutôt que de continuer à optimiser le ray-tracing triangles — presser les d
 
 ## Le pipeline de données
 
-Avant de ray-tracer quoi que ce soit, il faut ingérer des téraoctets de données publiques suisses.
+Le pipeline de données est détaillé dans [l'article d'introduction](/mappy-hour). En résumé : SwissALTI3D (terrain 2m), SwissBUILDINGS3D (bâtiments DXF), swissSURFACE3D (végétation 0.5m), DEM Copernicus (horizon transfrontalier 30m). Le tout ingéré et caché en tuiles de 250m.
+
+L'ajout par rapport à l'article précédent, c'est la **végétation** : un ray-march le long du rayon solaire sur le raster swissSURFACE3D, échantillonné tous les 2 mètres. Si un échantillon dépasse la ligne de visée de plus de 4 mètres, c'est un arbre qui bloque.
 
 <div id="viz-vegetation" style="width: 100%; margin: 2rem 0; border-radius: 6px; overflow: hidden; background: var(--bg2); border: 1px solid var(--border); position: relative;"></div>
-
-Le pipeline :
-
-1. **Terrain** — SwissALTI3D (2m) via l'API STAC de Swisstopo + Copernicus DEM 30m pour l'horizon transfrontalier
-2. **Bâtiments** — Fichiers DXF de SwissBUILDINGS3D, parsés pour extraire footprints, hauteurs et bounding boxes. Deduplication par footprint+hauteur identiques. Indexation dans la grille spatiale 64m
-3. **Végétation** — swissSURFACE3D, raster GeoTIFF à 0.5m. Chaque pixel = élévation sol + arbres. Échantillonné par interpolation bilinéaire le long du rayon. La visualisation ci-dessus montre le principe : les points jaunes sont les échantillons le long du rayon solaire, les rouges indiquent une intersection avec la canopée.
-
-Le tout est précalculé et caché en tuiles de 250m avec invalidation automatique.
 
 ## Les chiffres
 
