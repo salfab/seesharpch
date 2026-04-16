@@ -77,6 +77,22 @@ C'est la définition du vibe coding : tu pilotes la direction, l'IA écrit le co
 
 Et ça marche. Le serveur Rust tourne, les shaders computent, les bitmasks arrivent, les benchmarks confirment le 4x de speedup. Objectivement, c'est un succès.
 
+Et voilà à quoi ça ressemble, du WGSL — le langage qui murmure à l'oreille des GPU. Les 12 lignes qui font le travail de 3.75 millions d'itérations JavaScript :
+
+```wgsl
+// ── Write all 5 bitmasks via atomicOr ───────────────────────
+if (terrain_blocked) { atomicOr(&terrain_results[word_index], bit); }
+if (vegetation_blocked) { atomicOr(&vegetation_results[word_index], bit); }
+if (buildings_blocked) { atomicOr(&results[word_index], bit); }
+
+let is_sunny_no_veg = !terrain_blocked && !buildings_blocked;
+let is_sunny = is_sunny_no_veg && !vegetation_blocked;
+if (is_sunny_no_veg) { atomicOr(&sunny_no_veg_results[word_index], bit); }
+if (is_sunny) { atomicOr(&sunny_results[word_index], bit); }
+```
+
+C'est lisible. C'est presque du pseudocode. `terrain_blocked`, `vegetation_blocked`, `buildings_blocked` — les mêmes booléens que la boucle JavaScript, sauf que 256 threads GPU exécutent ces lignes en même temps. Le shader complet fait 171 lignes. Le vertex shader qui rend le shadow map en fait 17. 188 lignes de WGSL au total pour remplacer tout le calcul CPU.
+
 ## Le malaise
 
 Sauf que je ne comprends pas mon propre code.
