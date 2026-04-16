@@ -42,15 +42,17 @@ Je ne connais pas Rust.
 
 Plutôt que d'intégrer wgpu dans Node.js via des bindings natifs (fragile, compile croisée, cauchemar de maintenance), j'ai fait un choix pragmatique : un **exécutable Rust autonome** qui communique avec Node via **stdin/stdout en JSON**.
 
-```
-Node.js (TypeScript)          Rust (wgpu/Vulkan)
-┌─────────────────┐          ┌─────────────────┐
-│ precompute loop  │─stdin──▶│ shadow server    │
-│                  │◀stdout──│                  │
-│ envoie points,   │         │ charge mesh,     │
-│ rasters, angles  │         │ rend shadow map, │
-│ reçoit bitmasks  │         │ dispatch compute │
-└─────────────────┘          └─────────────────┘
+```mermaid
+flowchart LR
+    subgraph Node["Node.js (TypeScript)"]
+        A[precompute loop]
+    end
+    subgraph Rust["Rust (wgpu / Vulkan)"]
+        B[shadow server]
+    end
+    A -- "stdin : points, rasters, angles" --> B
+    B -- "stdout : bitmasks" --> A
+    B -.- C["charge mesh\nrend shadow map\ndispatch compute"]
 ```
 
 Node envoie un message JSON : "voici 62'500 points, voici les rasters de végétation, évalue ces 60 frames." Le serveur Rust charge le mesh des bâtiments une fois, rend un shadow map par frame, dispatch le compute shader, et renvoie les bitmasks. Node les copie directement dans l'artefact final — 5 `memcpy`, pas de boucle JavaScript.
@@ -80,7 +82,7 @@ Sauf que je ne comprends pas mon propre code.
 
 Je peux lire le WGSL ligne par ligne et dire ce que chaque instruction fait. Mais je ne pourrais pas l'écrire de zéro. Je ne pourrais pas debugger un crash Vulkan validation layer sans aide. Je ne saurais pas dimensionner un workgroup pour un GPU différent.
 
-En 15 ans de C#, je n'ai jamais eu cette sensation. Même quand j'apprenais un nouveau framework, je comprenais les abstractions sous-jacentes. Ici, les abstractions sont **opaques**. Je sais que `device.create_bind_group_layout` fait quelque chose d'important. Je ne sais pas exactement quoi.
+En 19 ans de dev, je n'ai jamais eu cette sensation. Même quand j'apprenais un nouveau framework, je comprenais les abstractions sous-jacentes. Ici, les abstractions sont **opaques**. Je sais que `device.create_bind_group_layout` fait quelque chose d'important. Je ne sais pas exactement quoi.
 
 C'est le syndrome de l'imposteur dans sa forme la plus pure : le code fonctionne, les benchmarks sont bons, le résultat est en production — et je ne suis pas sûr de mériter le crédit.
 
