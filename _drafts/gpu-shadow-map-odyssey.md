@@ -3,7 +3,7 @@ layout: post
 title: "Du ray-tracing CPU au shadow map GPU : odyss\u00e9e d'une optimisation 91x"
 tags: [project, gis, performance, gpu, shadow-mapping, optimization]
 unlisted: true
-permalink: /preview/a3b7d912/gpu-shadow-odyssey
+permalink: /blog/preview/a3b7d912/gpu-shadow-odyssey
 sitemap: false
 ---
 

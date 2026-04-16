@@ -2,6 +2,7 @@
 layout: post
 title: "Comment j'ai ray-tracé toute une ville en temps réel"
 tags: [project, gis, ray-tracing, performance, nextjs, swisstopo]
+header_image: /assets/img/raycasting.png
 ---
 
 Cet article est la suite technique de [Mappy Hour](/mappy-hour). Si tu veux le pitch et le contexte, commence par là. Ici on parle maths, structures de données et benchmarks.
@@ -129,7 +130,7 @@ Le prisme a un défaut structurel : quand un bâtiment a un fill ratio faible (l
 
 On aurait pu utiliser le prisme comme filtre éliminatoire rapide — si le prisme dit "pas d'ombre", inutile de tester le mesh. Mais en pratique, le gain est marginal (1.02x à 1.07x) parce que les optimisations du corridor et de la grille spatiale éliminent déjà 99% des candidats avant d'arriver au ray-tracing. Le prisme ne filtre que des miettes, et il laisse passer des faux positifs quand il est "confiant et faux".
 
-Plutôt que de continuer à optimiser le ray-tracing triangles — presser les derniers pourcents d'un algorithme CPU déjà bien affûté — j'ai pris une direction complètement différente : **l'accélération matérielle**. Si le GPU peut rasteriser 907'000 triangles en quelques millisecondes pour afficher une image, pourquoi ne pas lui demander de faire la même chose pour produire une shadow map ? C'est [exactement ce qu'on a fait](/preview/f7a2c891/rasterisation-gpu).
+Plutôt que de continuer à optimiser le ray-tracing triangles — presser les derniers pourcents d'un algorithme CPU déjà bien affûté — j'ai pris une direction complètement différente : **l'accélération matérielle**. Si le GPU peut rasteriser 907'000 triangles en quelques millisecondes pour afficher une image, pourquoi ne pas lui demander de faire la même chose pour produire une shadow map ? C'est [exactement ce qu'on a fait](/blog/preview/f7a2c891/rasterisation-gpu).
 
 ## Le pipeline de données
 

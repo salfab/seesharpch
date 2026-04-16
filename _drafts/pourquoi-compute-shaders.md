@@ -3,11 +3,11 @@ layout: post
 title: "Le plafond de verre du shadow map : pourquoi il faut des compute shaders"
 tags: [project, gis, performance, gpu]
 unlisted: true
-permalink: /preview/b4e1f723/pourquoi-compute-shaders
+permalink: /blog/preview/b4e1f723/pourquoi-compute-shaders
 sitemap: false
 ---
 
-Dans [l'article sur la rasterisation GPU](/preview/f7a2c891/rasterisation-gpu), j'ai implémenté un shadow map via headless-gl qui donne un speedup de 91x sur les bâtiments. Le ray-tracing CPU à 2000 µs par évaluation est tombé à 22 µs. Victoire.
+Dans [l'article sur la rasterisation GPU](/blog/preview/f7a2c891/rasterisation-gpu), j'ai implémenté un shadow map via headless-gl qui donne un speedup de 91x sur les bâtiments. Le ray-tracing CPU à 2000 µs par évaluation est tombé à 22 µs. Victoire.
 
 Sauf que le bottleneck s'est déplacé.
 
@@ -197,7 +197,7 @@ block-beta
 
 Le point crucial : **le shader est le même quel que soit le chemin**. Le code WGSL qui tourne sur le GPU est identique que la tuyauterie passe par Vulkan, D3D12 ou Metal. C'est toute la promesse de WebGPU : écrire une fois, exécuter partout.
 
-Pour Mappy Hour, le choix de la tuyauterie a été dicté par un bug driver : le driver **Direct3D 12** d'Intel Arc crashe quand un contexte GPU coexiste avec des opérations fichier lourdes dans le même processus. Or, sur Windows, les implémentations WebGPU utilisent D3D12 par défaut. La solution : forcer le backend **Vulkan** à la place — même shader, même API au-dessus, juste une tuyauterie native différente en dessous. Le [prochain article](/preview/c9d2a845/vulkan-rust-vibe-coding) raconte cette histoire — et accessoirement, comment j'ai écrit du Rust et des shaders GPU pour la première fois de ma vie sans avoir la moindre idée de ce que je faisais.
+Pour Mappy Hour, le choix de la tuyauterie a été dicté par un bug driver : le driver **Direct3D 12** d'Intel Arc crashe quand un contexte GPU coexiste avec des opérations fichier lourdes dans le même processus. Or, sur Windows, les implémentations WebGPU utilisent D3D12 par défaut. La solution : forcer le backend **Vulkan** à la place — même shader, même API au-dessus, juste une tuyauterie native différente en dessous. Le [prochain article](/blog/preview/c9d2a845/vulkan-rust-vibe-coding) raconte cette histoire — et accessoirement, comment j'ai écrit du Rust et des shaders GPU pour la première fois de ma vie sans avoir la moindre idée de ce que je faisais.
 
 ## Le résultat
 
