@@ -3,6 +3,7 @@ layout: post
 title: "Comment j'ai ray-tracé toute une ville"
 tags: [project, gis, ray-tracing, performance, nextjs, swisstopo]
 header_image: /assets/img/raycasting.png
+permalink: /mappy-hour-deep-dive
 ---
 
 Cet article est la suite technique de [Mappy Hour](/mappy-hour). Si tu veux le pitch et le contexte, commence par là. Ici on parle maths, structures de données et benchmarks.
