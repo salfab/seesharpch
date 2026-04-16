@@ -30,13 +30,11 @@ Pour chaque point, on trace un rayon vers le soleil et on regarde si quelque cho
 
 ## L'évolution du modèle
 
-Le calcul d'ombre des bâtiments a traversé trois versions, chacune née d'un problème concret :
+Le calcul d'ombre des bâtiments a traversé deux approches, chacune née d'un problème concret :
 
-**Version 1 : les prismes.** On extrude le footprint de chaque bâtiment en hauteur — une boîte. Rapide, mais un bâtiment en L devient un rectangle plein. Résultat : des terrasses déclarées à l'ombre qui ne le sont pas.
+**Approche 1 : les prismes.** On extrude le footprint de chaque bâtiment en hauteur — une boîte. Rapide, mais un bâtiment en L devient un rectangle plein. Résultat : des terrasses déclarées à l'ombre qui ne le sont pas.
 
-**Version 2 : le two-level.** Le prisme filtre d'abord. Quand le résultat est ambigu (le soleil est proche du seuil d'ombre), on vérifie avec le vrai mesh 3D. Meilleur, mais encore des faux positifs — parce que le prisme peut être "confiant et faux" quand sa bounding box est trois fois plus grande que le vrai bâtiment.
-
-**Version 3 : le mesh détaillé.** Les vrais polyfaces 3D des fichiers DXF de Swisstopo, avec 32 passes de raffinement. Zéro faux positif. C'est le défaut actuel. Et grâce aux optimisations (grille spatiale, corridor de recherche, contexte partagé par tuile), c'est suffisamment rapide pour tourner en production.
+**Approche 2 : le mesh détaillé SwissTopo.** Les vrais polyfaces 3D des fichiers DXF de SwissBUILDINGS3D, avec 32 passes de raffinement. Zéro faux positif. C'est le défaut actuel. Et grâce aux optimisations (grille spatiale, corridor de recherche, contexte partagé par tuile), c'est suffisamment rapide pour tourner en production.
 
 ## Le pipeline de données
 
