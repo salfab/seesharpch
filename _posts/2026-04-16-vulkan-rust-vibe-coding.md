@@ -2,8 +2,9 @@
 layout: post
 title: "Rust, Vulkan, et le syndrome de l'imposteur : mon premier projet en vibe coding pur"
 tags: [project, rust, vulkan, gpu, ai, vibe-coding]
+header_image: /assets/img/vibe-coding.png
 unlisted: true
-permalink: /preview/c9d2a845/vulkan-rust-vibe-coding
+permalink: /blog/preview/c9d2a845/vulkan-rust-vibe-coding
 sitemap: false
 ---
 
@@ -13,7 +14,7 @@ Et puis j'ai dû écrire du Rust et des shaders GPU.
 
 ## Pourquoi pas juste WebGPU
 
-L'[article précédent](/preview/b4e1f723/pourquoi-compute-shaders) explique pourquoi il faut des compute shaders. Reste la question : comment y accéder depuis un serveur Node.js ?
+L'[article précédent](/blog/preview/b4e1f723/pourquoi-compute-shaders) explique pourquoi il faut des compute shaders. Reste la question : comment y accéder depuis un serveur Node.js ?
 
 La réponse évidente : **WebGPU via Dawn**. Dawn, c'est l'implémentation C++ de WebGPU par Google — la même qui tourne dans Chrome. Il existe des bindings Node.js. Sur le papier, c'est le choix naturel.
 

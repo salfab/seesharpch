@@ -2,9 +2,8 @@
 layout: post
 title: "Hello, World!"
 tags: [meta]
+header_image: /assets/img/hello-world.png
 ---
-
-![Hello World](/assets/img/hello-world.png)
 
 First post on this blog. Mostly a place to dump thoughts on software engineering, architecture patterns, and the occasional rant about LLMs pretending they know what SOLID means.
 

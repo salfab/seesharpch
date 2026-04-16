@@ -148,6 +148,22 @@
       border-color: var(--border-light);
     }
 
+    /* ── Hero image ─────────────────────────────── */
+    .post-hero {
+      width: 100%;
+      margin: 0 0 -1rem;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .post-hero img {
+      display: block;
+      width: 100%;
+      height: auto;
+      object-fit: cover;
+      max-height: 360px;
+    }
+
     /* ── Post ───────────────────────────────────── */
     .post-header {
       padding: 4rem 0 2rem;
@@ -328,6 +344,11 @@
   <main>
     <article>
       <div class="container">
+        {% if page.header_image %}
+        <div class="post-hero">
+          <img src="{{ page.header_image }}" alt="{{ page.title }}">
+        </div>
+        {% endif %}
         <header class="post-header">
           <a href="/blog" class="post-back">&larr; Back to blog</a>
           <h1 class="post-title">{{ page.title }}{% if page.draft %} <span class="draft-pill">DRAFT</span>{% endif %}</h1>
