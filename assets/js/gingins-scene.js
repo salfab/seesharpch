@@ -180,89 +180,54 @@
     checkReady();
   });
 
-  // Vegetation: instanced spheres that cast shadows.
-  // Exclude points on building footprints.
-  Promise.all([
-    fetch('/assets/data/gingins-terrain.json').then(function (r) { return r.json(); }),
-    fetch('/assets/data/gingins-surface.json').then(function (r) { return r.json(); }),
-    fetch('/assets/data/gingins-buildings.json').then(function (r) { return r.json(); })
-  ]).then(function (results) {
-    var terrain = results[0], surface = results[1], buildings = results[2];
-    var tw = terrain.width, th = terrain.height;
+  // Vegetation: render swissSURFACE3D as a semi-transparent canopy mesh
+  // above the terrain. Where surface > terrain + 3m = vegetation canopy.
+  // Where surface ≈ terrain = bare ground (invisible, terrain already shown).
+  fetch('/assets/data/gingins-surface.json').then(function (r) { return r.json(); }).then(function (surface) {
+    // Downsample surface to ~2m resolution for performance (every 4th pixel)
     var sw = surface.width, sh = surface.height;
-
-    // Build a coarse 2m occupancy grid from building vertices to reject
-    // vegetation points that land on rooftops.
-    var occGridRes = 2; // meters per cell
-    var occW = Math.ceil((terrain.maxX - terrain.minX) / occGridRes);
-    var occH = Math.ceil((terrain.maxY - terrain.minY) / occGridRes);
-    var occGrid = new Uint8Array(occW * occH);
-    for (var vi = 0; vi < buildings.vertexCount; vi++) {
-      var be = buildings.vertices[vi * 3 + 0];
-      var bn = buildings.vertices[vi * 3 + 1];
-      var gx = Math.floor((be - terrain.minX) / occGridRes);
-      var gy = Math.floor((bn - terrain.minY) / occGridRes);
-      if (gx >= 0 && gx < occW && gy >= 0 && gy < occH) {
-        occGrid[gy * occW + gx] = 1;
-        // Fill a 3x3 kernel to be safe (building edges)
-        for (var dy = -1; dy <= 1; dy++) {
-          for (var dx = -1; dx <= 1; dx++) {
-            var nx = gx + dx, ny = gy + dy;
-            if (nx >= 0 && nx < occW && ny >= 0 && ny < occH) {
-              occGrid[ny * occW + nx] = 1;
-            }
-          }
-        }
-      }
+    var step = 4;
+    var dw = Math.floor(sw / step), dh = Math.floor(sh / step);
+    var geo = new THREE.PlaneGeometry(
+      surface.maxX - surface.minX, surface.maxY - surface.minY, dw - 1, dh - 1
+    );
+    var pos = geo.attributes.position;
+    // We'll also create per-vertex colors: green where canopy, transparent elsewhere
+    var colors = new Float32Array(pos.count * 4); // RGBA
+    for (var i = 0; i < pos.count; i++) {
+      var col = i % dw;
+      var row = Math.floor(i / dw);
+      var sx = col * step, sy = row * step;
+      if (sx >= sw) sx = sw - 1;
+      if (sy >= sh) sy = sh - 1;
+      var surfElev = surface.surface[sy * sw + sx];
+      pos.setZ(i, surfElev - ORIGIN_ALT);
+      // Color: green + opaque where canopy, invisible elsewhere
+      // We approximate terrain from surrounding surface minimum (not perfect
+      // but avoids loading terrain twice)
+      colors[i * 4 + 0] = 0.18; // R
+      colors[i * 4 + 1] = 0.42; // G
+      colors[i * 4 + 2] = 0.18; // B
+      colors[i * 4 + 3] = 1.0;  // A (will be modulated by material opacity)
     }
+    geo.setAttribute('color', new THREE.BufferAttribute(colors, 4));
+    geo.rotateX(-Math.PI / 2);
+    geo.computeVertexNormals();
 
-    // Collect tree positions (exclude building footprints)
-    var treePositions = [];
-    var step = 4; // sample every 4 pixels (2m) — good balance perf/density
-    for (var sy = 0; sy < sh; sy += step) {
-      for (var sx = 0; sx < sw; sx += step) {
-        var surfElev = surface.surface[sy * sw + sx];
-        var tx = Math.floor((sx / sw) * tw);
-        var ty = Math.floor((sy / sh) * th);
-        var terrElev = terrain.elevations[ty * tw + tx];
-        var treeHeight = surfElev - terrElev;
-        if (treeHeight > 3) {
-          var e = surface.minX + (sx / sw) * (surface.maxX - surface.minX);
-          var n = surface.maxY - (sy / sh) * (surface.maxY - surface.minY);
-          // Check occupancy grid
-          var ogx = Math.floor((e - terrain.minX) / occGridRes);
-          var ogy = Math.floor((n - terrain.minY) / occGridRes);
-          if (ogx >= 0 && ogx < occW && ogy >= 0 && ogy < occH && occGrid[ogy * occW + ogx]) {
-            continue; // on a building footprint — skip
-          }
-          var p = lv95ToScene(e, n, surfElev);
-          treePositions.push({ x: p.x, y: p.y, z: p.z, h: treeHeight });
-        }
-      }
-    }
-
-    if (treePositions.length === 0) { checkReady(); return; }
-
-    // Instanced mesh: small spheres representing tree canopy
-    var sphereGeo = new THREE.SphereGeometry(1.2, 6, 4);
-    var treeMat = new THREE.MeshStandardMaterial({
-      color: 0x2d6b2d, roughness: 0.8, metalness: 0.0
+    var mat = new THREE.MeshStandardMaterial({
+      vertexColors: true,
+      color: 0x3a7a3a,
+      roughness: 0.85,
+      metalness: 0.0,
+      transparent: true,
+      opacity: 0.7,
+      side: THREE.DoubleSide,
+      depthWrite: false
     });
-    var instanceCount = treePositions.length;
-    var instMesh = new THREE.InstancedMesh(sphereGeo, treeMat, instanceCount);
-    instMesh.castShadow = true;
-    instMesh.receiveShadow = true;
-    var dummy = new THREE.Object3D();
-    for (var i = 0; i < instanceCount; i++) {
-      var tp = treePositions[i];
-      dummy.position.set(tp.x, tp.y, tp.z);
-      var s = Math.min(tp.h * 0.3, 3); // scale by tree height, cap at 3
-      dummy.scale.set(s, s * 0.7, s);
-      dummy.updateMatrix();
-      instMesh.setMatrixAt(i, dummy.matrix);
-    }
-    vegMesh = instMesh;
-    scene.add(instMesh);
+    vegMesh = new THREE.Mesh(geo, mat);
+    vegMesh.castShadow = true;
+    vegMesh.receiveShadow = true;
+    scene.add(vegMesh);
     checkReady();
   });
 
