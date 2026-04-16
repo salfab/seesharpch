@@ -183,7 +183,7 @@
   // Vegetation: render swissSURFACE3D as a semi-transparent canopy mesh
   // above the terrain. Where surface > terrain + 3m = vegetation canopy.
   // Where surface ≈ terrain = bare ground (invisible, terrain already shown).
-  fetch('/assets/data/gingins-surface.json').then(function (r) { return r.json(); }).then(function (surface) {
+  fetch('/assets/data/gingins-vegetation.json').then(function (r) { return r.json(); }).then(function (surface) {
     // Full 0.5m resolution surface mesh
     var sw = surface.width, sh = surface.height;
     var geo = new THREE.PlaneGeometry(
