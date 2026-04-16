@@ -27,10 +27,33 @@ title: Blog
   .blog-item-link {
     text-decoration: none;
     color: inherit;
-    display: block;
+    display: flex;
+    gap: 1.25rem;
+    align-items: flex-start;
   }
   .blog-item-link:hover .blog-item-title {
     color: var(--accent);
+  }
+  .blog-item-thumb {
+    flex-shrink: 0;
+    width: 120px;
+    height: 72px;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .blog-item-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .blog-item-body {
+    flex: 1;
+    min-width: 0;
+  }
+  @media (max-width: 480px) {
+    .blog-item-thumb { width: 80px; height: 48px; }
   }
   .blog-item-title {
     font-family: var(--display);
@@ -81,11 +104,16 @@ title: Blog
   {% unless post.unlisted %}
   <li class="blog-item">
     <a href="{{ post.url }}" class="blog-item-link">
-      <div class="blog-item-title">{{ post.title }}{% if post.draft %} <span class="draft-pill">DRAFT</span>{% endif %}</div>
-      <div class="blog-item-meta">{{ post.date | date: "%B %d, %Y" }}{% if post.tags.size > 0 %} · {{ post.tags | join: ", " }}{% endif %}</div>
-      {% if post.excerpt %}
-      <div class="blog-item-excerpt">{{ post.excerpt | strip_html | truncate: 160 }}</div>
+      {% if post.header_image %}
+      <div class="blog-item-thumb"><img src="{{ post.header_image }}" alt="{{ post.title }}"></div>
       {% endif %}
+      <div class="blog-item-body">
+        <div class="blog-item-title">{{ post.title }}{% if post.draft %} <span class="draft-pill">DRAFT</span>{% endif %}</div>
+        <div class="blog-item-meta">{{ post.date | date: "%B %d, %Y" }}{% if post.tags.size > 0 %} · {{ post.tags | join: ", " }}{% endif %}</div>
+        {% if post.excerpt %}
+        <div class="blog-item-excerpt">{{ post.excerpt | strip_html | truncate: 160 }}</div>
+        {% endif %}
+      </div>
     </a>
   </li>
   {% endunless %}
