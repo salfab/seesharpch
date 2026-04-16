@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Comment j'ai ray-tracé toute une ville en temps réel"
+title: "Comment j'ai ray-tracé toute une ville"
 tags: [project, gis, ray-tracing, performance, nextjs, swisstopo]
 header_image: /assets/img/raycasting.png
 ---
