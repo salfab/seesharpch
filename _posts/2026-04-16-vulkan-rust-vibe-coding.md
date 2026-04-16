@@ -64,12 +64,12 @@ Le serveur Rust est **long-lived** : il démarre une fois par région, garde le 
 
 Voici ce que je ne connaissais pas avant ce projet :
 
-- **Rust** — ownership, lifetimes, `async`, `Result<T, E>`, `bytemuck`, le système de build cargo
-- **wgpu** — device, adapter, queue, bind group layout, pipeline, command encoder, staging buffers
-- **WGSL** — `@compute`, `@workgroup_size`, `storage` buffers, `atomicAdd`, `textureLoad`
-- **Vulkan** (concepts) — validation layers, device limits, `mapAsync`, `poll(Wait)`
+- **Rust** — `ownership` (qui possède la mémoire et quand elle est libérée), `lifetimes` (prouver au compilateur qu'une référence ne survit pas à son propriétaire), `Result<T, E>` (pas d'exceptions — chaque erreur est une valeur qu'il faut traiter), `bytemuck` (réinterpréter des structs comme des tableaux d'octets bruts pour les envoyer au GPU), `cargo` (le npm de Rust — build, dépendances, compilation)
+- **wgpu** — `device` (la connexion au GPU), `adapter` (quel GPU physique utiliser), `queue` (la file d'attente de commandes à envoyer au GPU), `bind group layout` (le contrat qui décrit quels buffers le shader va lire/écrire), `pipeline` (le shader compilé + son layout, prêt à être dispatché), `command encoder` (l'enregistreur de commandes — tu n'envoies pas les commandes une par une, tu les enregistres d'abord et tu submit en bloc), `staging buffer` (un buffer intermédiaire pour relire les résultats du GPU vers le CPU — le GPU ne peut pas écrire directement dans ta RAM)
+- **WGSL** — `@compute` (ce shader fait du calcul, pas du rendu), `@workgroup_size(256)` (chaque vague traite 256 threads en parallèle), `storage` buffers (les gros tableaux de données que le shader lit/écrit), `atomicAdd` (incrémenter un compteur partagé entre threads sans race condition), `textureLoad` (lire un pixel dans le shadow map)
+- **Vulkan** (concepts) — `validation layers` (un mode debug qui vérifie que tu ne fais pas de bêtises avec l'API — désactivé en production pour la perf), `device limits` (combien de buffers, quelle taille max — chaque GPU a ses propres limites), `mapAsync` (demander au GPU de rendre un buffer lisible côté CPU), `poll(Wait)` (attendre que le GPU ait fini son travail avant de lire le résultat)
 
-Tout. Je ne connaissais littéralement rien de tout ça.
+Tout. Je ne connaissais littéralement rien de tout ça. Et honnêtement, en écrivant ces définitions, je réalise que j'aurais été incapable de les formuler il y a deux semaines.
 
 J'ai travaillé avec Claude — le même outil qui écrit ces articles. Je décrivais ce que je voulais ("porte le terrain check sur GPU"), il proposait le code Rust + WGSL, je testais, on itérait. Quand ça plantait, je lui collais l'erreur et on corrigeait ensemble. Quand ça marchait, je benchmarkais et on passait à la suite.
 
