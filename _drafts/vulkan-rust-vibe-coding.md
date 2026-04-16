@@ -84,7 +84,7 @@ Je peux lire le WGSL ligne par ligne et dire ce que chaque instruction fait. Mai
 
 En 19 ans de dev, je n'ai jamais eu cette sensation. Même quand j'apprenais un nouveau framework, je comprenais les abstractions sous-jacentes. Ici, les abstractions sont **opaques**. Je sais que `device.create_bind_group_layout` fait quelque chose d'important. Je ne sais pas exactement quoi.
 
-C'est le syndrome de l'imposteur dans sa forme la plus pure : le code fonctionne, les benchmarks sont bons, le résultat est en production — et je ne suis pas sûr de mériter le crédit.
+C'est le syndrome de l'imposteur dans sa forme la plus pure : le code fonctionne, les benchmarks sont bons, le résultat est en production — et je ne suis pas sûr d'avoir le droit de sabrer le champagne. Encore moins de l'ajouter sur le CV.
 
 ## Ce que j'en retiens
 
