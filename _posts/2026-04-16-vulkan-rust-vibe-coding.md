@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Rust, Vulkan, et le syndrome de l'imposteur : mon premier projet en vibe coding pur"
+title: "Je ne comprends pas mon propre code (et c'est en production)"
 tags: [project, rust, vulkan, gpu, ai, vibe-coding]
 header_image: /assets/img/vibe-coding.png
 unlisted: true
