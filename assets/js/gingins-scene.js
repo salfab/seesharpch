@@ -184,23 +184,17 @@
   // above the terrain. Where surface > terrain + 3m = vegetation canopy.
   // Where surface ≈ terrain = bare ground (invisible, terrain already shown).
   fetch('/assets/data/gingins-surface.json').then(function (r) { return r.json(); }).then(function (surface) {
-    // Downsample surface to ~2m resolution for performance (every 4th pixel)
+    // Full 0.5m resolution surface mesh
     var sw = surface.width, sh = surface.height;
-    var step = 4;
-    var dw = Math.floor(sw / step), dh = Math.floor(sh / step);
     var geo = new THREE.PlaneGeometry(
-      surface.maxX - surface.minX, surface.maxY - surface.minY, dw - 1, dh - 1
+      surface.maxX - surface.minX, surface.maxY - surface.minY, sw - 1, sh - 1
     );
     var pos = geo.attributes.position;
-    // We'll also create per-vertex colors: green where canopy, transparent elsewhere
     var colors = new Float32Array(pos.count * 4); // RGBA
     for (var i = 0; i < pos.count; i++) {
-      var col = i % dw;
-      var row = Math.floor(i / dw);
-      var sx = col * step, sy = row * step;
-      if (sx >= sw) sx = sw - 1;
-      if (sy >= sh) sy = sh - 1;
-      var surfElev = surface.surface[sy * sw + sx];
+      var col = i % sw;
+      var row = Math.floor(i / sw);
+      var surfElev = surface.surface[row * sw + col];
       pos.setZ(i, surfElev - ORIGIN_ALT);
       // Color: green + opaque where canopy, invisible elsewhere
       // We approximate terrain from surrounding surface minimum (not perfect
