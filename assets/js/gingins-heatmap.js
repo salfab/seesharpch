@@ -99,21 +99,41 @@
       canvas.height = gs;
       var ctx = canvas.getContext('2d');
 
-      function colorForHours(h, maxH) {
-        // 0 (blue cold) → maxH (yellow hot). Indoor or very low = gray.
+      // Compute actual min/max from the data for proper contrast.
+      // Outdoor-only (indoor points skew the min to 0).
+      var outdoorSunny = [], outdoorNoVeg = [];
+      for (var k = 0; k < sunny.length; k++) {
+        if (!indoor[k]) { outdoorSunny.push(sunny[k]); outdoorNoVeg.push(sunnyNoVeg[k]); }
+      }
+      function pct(arr, p) {
+        var sorted = arr.slice().sort(function(a,b){return a-b;});
+        return sorted[Math.max(0, Math.min(sorted.length - 1, Math.floor(sorted.length * p)))];
+      }
+      // Use the 2nd and 98th percentiles to avoid a handful of extreme pixels
+      // squashing the scale. This spreads the color range across where 96%
+      // of the data actually lives — making shadows VISIBLE.
+      var sunnyScale = { min: pct(outdoorSunny, 0.02), max: pct(outdoorSunny, 0.98) };
+      var noVegScale = { min: pct(outdoorNoVeg, 0.02), max: pct(outdoorNoVeg, 0.98) };
+
+      function colorForHours(h, scale) {
         if (h === null) return [80, 80, 90, 200]; // indoor
-        var t = Math.max(0, Math.min(1, h / maxH));
-        // Interpolate: purple (0) → red (0.5) → orange (0.75) → yellow (1)
-        var r = Math.round(40 + t * 215);
-        var g = Math.round(t < 0.3 ? 20 : (t - 0.3) * 220);
-        var b = Math.round(80 * (1 - t));
-        return [r, g, b, 230];
+        var t = Math.max(0, Math.min(1, (h - scale.min) / Math.max(1, scale.max - scale.min)));
+        // Viridis-like gradient: purple (cold/shadow) → teal → yellow (full sun)
+        var r, g, b;
+        if (t < 0.33) {
+          var u = t / 0.33; r = 68 + u * (59 - 68); g = 1 + u * (82 - 1); b = 84 + u * (139 - 84);
+        } else if (t < 0.67) {
+          var u = (t - 0.33) / 0.34; r = 59 + u * (94 - 59); g = 82 + u * (201 - 82); b = 139 + u * (98 - 139);
+        } else {
+          var u = (t - 0.67) / 0.33; r = 94 + u * (253 - 94); g = 201 + u * (231 - 201); b = 98 + u * (37 - 98);
+        }
+        return [Math.round(r), Math.round(g), Math.round(b), 230];
       }
 
       function renderMode(mode) {
         var img = ctx.createImageData(gs, gs);
         var values = mode === 'no-veg' ? sunnyNoVeg : (mode === 'diff' ? null : sunny);
-        var max = 1700; // max hours realistic for Swiss plateau
+        var scale = mode === 'no-veg' ? noVegScale : sunnyScale;
         for (var y = 0; y < gs; y++) {
           for (var x = 0; x < gs; x++) {
             // LV95 point: pixel (x, y) with y=0 at north (maxN)
@@ -136,7 +156,7 @@
               continue;
             }
             h = values[idx];
-            var c = colorForHours(h, max);
+            var c = colorForHours(h, scale);
             a[i] = c[0]; a[i+1] = c[1]; a[i+2] = c[2]; a[i+3] = c[3];
           }
         }
@@ -148,9 +168,10 @@
 
         var legend = document.getElementById('hm-legend');
         if (mode === 'diff') {
-          legend.textContent = 'Heures/an perdues à cause des arbres (0 ← vert → 400+ rouge)';
+          legend.textContent = 'Heures/an perdues à cause des arbres (vert ← peu → rouge beaucoup)';
         } else {
-          legend.textContent = (mode === 'no-veg' ? 'Sans végétation : ' : '') + '0 ← bleu/violet → 1700h jaune';
+          legend.textContent = (mode === 'no-veg' ? 'Sans végétation : ' : 'Avec végétation : ') +
+            'violet ' + Math.round(scale.min) + 'h ← → ' + Math.round(scale.max) + 'h jaune';
         }
       }
 
