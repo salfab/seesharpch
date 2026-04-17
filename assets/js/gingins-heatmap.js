@@ -6,16 +6,8 @@
   var container = document.getElementById('viz-gingins-heatmap');
   if (!container) return;
 
-  // ── LV95 → WGS84 (reverse of lib/geo/projection.ts) ─────────
-  // Source: swisstopo Formulas and constants for the calculation
-  // of the Swiss conformal cylindrical projection.
-  function lv95ToWgs84(easting, northing) {
-    var y = (easting - 2600000) / 1e6;
-    var x = (northing - 1200000) / 1e6;
-    var lon = 2.6779094 + 4.728982 * y + 0.791484 * y * x + 0.1306 * y * x * x - 0.0436 * y * y * y;
-    var lat = 16.9023892 + 3.238272 * x - 0.270978 * y * y - 0.002528 * x * x - 0.0447 * y * y * x - 0.0140 * x * x * x;
-    return { lon: (lon * 100) / 36, lat: (lat * 100) / 36 };
-  }
+  // ── LV95 → WGS84 (proj4, loaded dynamically) ──────────────────
+  var lv95ToWgs84; // defined once proj4 is loaded
 
   // UI layout
   var uiDiv = document.createElement('div');
@@ -45,15 +37,33 @@
     document.head.appendChild(leafletCss);
   }
 
-  function loadLeaflet(cb) {
-    if (typeof L !== 'undefined') return cb();
-    var s = document.createElement('script');
-    s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-    s.onload = cb;
-    document.head.appendChild(s);
+  function loadScript(src) {
+    return new Promise(function (resolve) {
+      var s = document.createElement('script');
+      s.src = src;
+      s.onload = resolve;
+      document.head.appendChild(s);
+    });
   }
 
-  loadLeaflet(function () {
+  function setupProj4() {
+    proj4.defs('EPSG:2056',
+      '+proj=somerc +lat_0=46.95240555555556 +lon_0=7.439583333333333 ' +
+      '+k_0=1 +x_0=2600000 +y_0=1200000 +ellps=bessel ' +
+      '+towgs84=674.374,15.056,405.346,0,0,0,0 +units=m +no_defs');
+    lv95ToWgs84 = function (e, n) {
+      var r = proj4('EPSG:2056', 'EPSG:4326', [e, n]);
+      return { lon: r[0], lat: r[1] };
+    };
+  }
+
+  Promise.all([
+    typeof L !== 'undefined' ? Promise.resolve() : loadScript('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'),
+    typeof proj4 !== 'undefined' ? Promise.resolve() : loadScript('https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.11.0/proj4.js'),
+  ]).then(function () {
+    return loadScript('https://unpkg.com/leaflet-imageoverlay-rotated@0.2.1/Leaflet.ImageOverlay.Rotated.js');
+  }).then(function () {
+    setupProj4();
     // Initial map — will be centered once we load data
     var map = L.map(mapDiv, { preferCanvas: true }).setView([46.4145, 6.1765], 17);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -67,16 +77,20 @@
       var sunnyNoVeg = data.sunnyNoVegHours;
       var indoor = data.indoor;
 
-      // Compute corners in WGS84
+      // Compute all 4 corners in WGS84 (LV95 rectangle is slightly rotated
+      // relative to lat/lng — using only SW/NE offsets buildings by ~4m)
       var swE = data.minEasting, swN = data.minNorthing;
       var neE = data.maxEasting, neN = data.maxNorthing;
       var sw = lv95ToWgs84(swE, swN);
       var ne = lv95ToWgs84(neE, neN);
       var nw = lv95ToWgs84(swE, neN);
       var se = lv95ToWgs84(neE, swN);
+      var tlLatLng = L.latLng(nw.lat, nw.lon);
+      var trLatLng = L.latLng(ne.lat, ne.lon);
+      var blLatLng = L.latLng(sw.lat, sw.lon);
 
-      // Fit bounds
       var bounds = L.latLngBounds([sw.lat, sw.lon], [ne.lat, ne.lon]);
+      bounds.extend([nw.lat, nw.lon]).extend([se.lat, se.lon]);
       map.fitBounds(bounds);
 
       // Render to a canvas
@@ -128,8 +142,9 @@
         }
         ctx.putImageData(img, 0, 0);
         if (overlay) map.removeLayer(overlay);
-        // imageOverlay via canvas dataURL
-        overlay = L.imageOverlay(canvas.toDataURL(), bounds, { opacity: 0.75 }).addTo(map);
+        // Use Rotated overlay with 3 corners: top-left (NW), top-right (NE), bottom-left (SW).
+        // This correctly handles the small rotation between LV95 and WGS84.
+        overlay = L.imageOverlay.rotated(canvas.toDataURL(), tlLatLng, trLatLng, blLatLng, { opacity: 0.75 }).addTo(map);
 
         var legend = document.getElementById('hm-legend');
         if (mode === 'diff') {
@@ -142,19 +157,16 @@
       var overlay = null;
       renderMode('with');
 
-      // Hover: pixel lookup
+      // Hover: convert WGS84 → LV95 via proj4 for exact pixel lookup
       map.on('mousemove', function (e) {
-        var latlng = e.latlng;
-        // Convert latlng to pixel (rough: assume linear within tile)
-        var fracX = (latlng.lng - sw.lon) / (ne.lon - sw.lon);
-        var fracY = (latlng.lat - sw.lat) / (ne.lat - sw.lat);
-        if (fracX < 0 || fracX > 1 || fracY < 0 || fracY > 1) {
+        var lv = proj4('EPSG:4326', 'EPSG:2056', [e.latlng.lng, e.latlng.lat]);
+        var col = Math.floor(lv[0] - data.minEasting);
+        var row = Math.floor(lv[1] - data.minNorthing);
+        if (col < 0 || col >= gs || row < 0 || row >= gs) {
           hoverInfo.textContent = 'Hors tuile';
           return;
         }
-        var x = Math.floor(fracX * gs);
-        var y = Math.floor(fracY * gs);
-        var idx = y * gs + x;
+        var idx = row * gs + col;
         if (indoor[idx]) {
           hoverInfo.textContent = 'Intérieur bâtiment';
           return;
