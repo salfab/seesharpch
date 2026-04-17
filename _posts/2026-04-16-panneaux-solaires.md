@@ -24,7 +24,17 @@ Changez la saison pour voir l'impact : en hiver, le soleil est bas et les ombres
 
 Un panneau solaire ne se contente pas d'être "au soleil" — il a besoin d'un **nombre d'heures** d'ensoleillement direct, sur l'**année entière**. Une terrasse qui reçoit 3h de soleil l'été est parfaite pour un apéro. Un panneau solaire a besoin de 4-6h **en hiver aussi**, quand le rendement compte le plus.
 
-Le moteur de calcul de Mappy Hour peut produire une **heatmap** d'heures d'ensoleillement par pixel, pour chaque jour de l'année. C'est exactement ce dont un installateur a besoin pour optimiser le placement.
+En précalculant chaque point de la parcelle toutes les 15 minutes, du 1er janvier au 31 décembre, on obtient une **heatmap annuelle** : les heures d'ensoleillement direct par pixel, pour toute l'année.
+
+<div id="viz-gingins-heatmap" style="width: 100%; margin: 2rem 0; border-radius: 6px; overflow: hidden; background: var(--bg2, #13151a); border: 1px solid var(--border, #1e2128);"></div>
+
+Les zones jaunes reçoivent 1500+ heures de soleil par an — idéales pour un panneau. Les zones violettes ou bleues sont à l'ombre plus de la moitié du temps. La dalle du Château Blanc lui-même, plein sud et sans obstacle, plafonne autour de 1700 heures — pratiquement le maximum théorique au plateau suisse.
+
+## L'ombre d'un arbre vs l'ombre d'un bâtiment
+
+Le moteur de calcul distingue nativement ce qui bloque le soleil : bâtiment, terrain, ou végétation. Un bâtiment, c'est permanent. Un arbre, ça se taille ou ça se coupe. Cliquez sur **"Heures perdues (arbres)"** dans la carte ci-dessus pour voir exactement combien d'heures la végétation retire à chaque pixel.
+
+Sur une propriété comme celle-ci, certains points perdent jusqu'à 400h/an à cause des arbres — soit près d'un quart du potentiel solaire. La question "faut-il couper ce noyer ?" devient mesurable : on peut comparer la version avec et sans arbres au même coût de calcul, parce que les deux métriques sont produites dans le même dispatch GPU.
 
 ## Et après ?
 
@@ -34,3 +44,4 @@ Le calcul existe déjà — c'est le même pipeline de [compute shaders](/blog/p
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script src="/assets/js/gingins-scene.js"></script>
+<script src="/assets/js/gingins-heatmap.js"></script>
