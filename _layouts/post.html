@@ -12,7 +12,7 @@
   <meta property="og:url" content="https://www.seesharp.ch{{ page.url }}">
   <meta property="og:site_name" content="seesharp.ch">
   <meta property="og:type" content="article">
-  <meta property="og:image" content="https://www.seesharp.ch/og-image.png">
+  <meta property="og:image" content="https://www.seesharp.ch{% if page.header_image %}{{ page.header_image }}{% else %}/og-image.png{% endif %}">
   <meta name="twitter:card" content="summary_large_image">
 
   <!-- Favicon -->
