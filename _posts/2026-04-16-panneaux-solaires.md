@@ -28,7 +28,7 @@ En précalculant chaque point de la parcelle toutes les 15 minutes, du 1er janvi
 
 <div id="viz-gingins-heatmap" style="width: 100%; margin: 2rem 0; border-radius: 6px; overflow: hidden; background: var(--bg2, #13151a); border: 1px solid var(--border, #1e2128);"></div>
 
-Les zones jaunes reçoivent 1500+ heures de soleil par an — idéales pour un panneau. Les zones violettes ou bleues sont à l'ombre plus de la moitié du temps. La dalle du Château Blanc lui-même, plein sud et sans obstacle, plafonne autour de 1700 heures — pratiquement le maximum théorique au plateau suisse.
+L'échelle est étalée entre le 2ᵉ et le 98ᵉ percentile des heures observées sur la tuile — les zones jaunes sont les mieux exposées (soleil direct presque en permanence quand il est au-dessus de l'horizon), les zones violettes subissent des ombres récurrentes tout au long de l'année. Note : le chiffre brut (4000+ heures) est un potentiel **géométrique** — il suppose un ciel dégagé en permanence. La météo suisse ramène le réel à 1500-1700 heures effectives.
 
 ## L'ombre d'un arbre vs l'ombre d'un bâtiment
 
