@@ -162,13 +162,13 @@
         }
         ctx.putImageData(img, 0, 0);
         if (overlay) map.removeLayer(overlay);
-        // Use Rotated overlay with 3 corners: top-left (NW), top-right (NE), bottom-left (SW).
-        // This correctly handles the small rotation between LV95 and WGS84.
-        overlay = L.imageOverlay.rotated(canvas.toDataURL(), tlLatLng, trLatLng, blLatLng, {
+        // Plain axis-aligned overlay — the LV95 rotation is <0.5° (<4m at
+        // 250m corners), negligible for a heatmap visualization and avoids
+        // the numerical distortion from L.imageOverlay.Rotated on tiny angles.
+        overlay = L.imageOverlay(canvas.toDataURL(), bounds, {
           opacity: 0.75,
           interactive: false,
         }).addTo(map);
-        // Disable bilinear smoothing so 1m pixels don't bleed into each other.
         var el = overlay.getElement();
         if (el) {
           el.style.imageRendering = 'pixelated';
