@@ -2,7 +2,7 @@
 layout: post
 title: "Où poser mes panneaux solaires ? Mappy Hour au-delà des terrasses"
 tags: [project, gis, solar, swisstopo]
-header_image: /assets/img/mappy-hour.png
+header_image: /assets/img/panneaux-solaires.png
 unlisted: true
 permalink: /blog/preview/d7f3e156/panneaux-solaires
 sitemap: false
