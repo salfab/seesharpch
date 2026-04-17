@@ -164,7 +164,16 @@
         if (overlay) map.removeLayer(overlay);
         // Use Rotated overlay with 3 corners: top-left (NW), top-right (NE), bottom-left (SW).
         // This correctly handles the small rotation between LV95 and WGS84.
-        overlay = L.imageOverlay.rotated(canvas.toDataURL(), tlLatLng, trLatLng, blLatLng, { opacity: 0.75 }).addTo(map);
+        overlay = L.imageOverlay.rotated(canvas.toDataURL(), tlLatLng, trLatLng, blLatLng, {
+          opacity: 0.75,
+          interactive: false,
+        }).addTo(map);
+        // Disable bilinear smoothing so 1m pixels don't bleed into each other.
+        var el = overlay.getElement();
+        if (el) {
+          el.style.imageRendering = 'pixelated';
+          el.style.imageRendering = 'crisp-edges';
+        }
 
         var legend = document.getElementById('hm-legend');
         if (mode === 'diff') {
