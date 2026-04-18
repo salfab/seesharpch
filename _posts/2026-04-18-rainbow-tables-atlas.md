@@ -2,6 +2,7 @@
 layout: post
 title: "Rainbow tables pour les ombres : troquer du calcul contre du stockage précalculé"
 tags: [project, gis, algorithms, gpu, caching]
+header_image: /assets/img/rainbow-tables-atlas.png
 unlisted: true
 permalink: /blog/preview/a1c5d3e7/rainbow-tables-atlas
 sitemap: false
