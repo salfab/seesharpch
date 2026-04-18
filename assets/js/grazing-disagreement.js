@@ -78,9 +78,11 @@
     setupProj4();
 
     var map = L.map(mapDiv, { preferCanvas: true }).setView([46.52, 6.63], 17);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OSM contributors',
-      maxZoom: 19,
+    // CartoDB Positron: minimal style — streets + labels, no POI icons/businesses
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '© OSM contributors · © CARTO',
+      subdomains: 'abcd',
+      maxZoom: 20,
     }).addTo(map);
 
     fetch('/assets/data/grazing-disagreement.json').then(function (r) { return r.json(); }).then(function (data) {
@@ -119,7 +121,9 @@
             var i = (y * gs + x) * 4;
 
             if (indoor[idx]) {
-              img.data[i] = 60; img.data[i+1] = 60; img.data[i+2] = 70; img.data[i+3] = 170;
+              // Indoor pixels: fully transparent — let the base map show building
+              // outlines instead of overlaying a grey box that reads as extra shadow.
+              img.data[i] = 0; img.data[i+1] = 0; img.data[i+2] = 0; img.data[i+3] = 0;
               continue;
             }
 
@@ -168,7 +172,7 @@
             if (cpu[k]) sunny++; else shade++;
           }
           legend.innerHTML = '<b>Référence CPU</b> — jaune = ensoleillé (' + sunny +
-            ' pts) · violet foncé = à l\'ombre (' + shade + ' pts) · gris = intérieur bâtiment';
+            ' pts) · violet foncé = à l\'ombre (' + shade + ' pts) · transparent = intérieur bâtiment';
         } else {
           var pct = (100 * disagreeCount / data.outdoorPointCount).toFixed(3);
           var methodLabel = { a1: 'Atlas 1°', a075: 'Atlas 0.75°', a05: 'Atlas 0.5°' }[state.method];
