@@ -22,7 +22,8 @@
   scene.background = new THREE.Color(0x1a1e24);
 
   var aspect = container.clientWidth / Math.max(container.clientHeight, 300);
-  var camera = new THREE.PerspectiveCamera(50, aspect, 1, 2000);
+  // Far plane must reach past the Jura silhouette at ~5km + some margin.
+  var camera = new THREE.PerspectiveCamera(50, aspect, 1, 12000);
   camera.position.set(150, 120, 200);
   camera.lookAt(0, 0, 0);
 
@@ -47,18 +48,24 @@
   scene.add(hemiLight);
 
   // ── Sun (directional light with shadows) ───────────────
+  // Shadow camera must encompass BOTH the local scene (500m) AND the distant
+  // Jura silhouette at ~5km radius, otherwise the silhouette falls outside
+  // the shadow map frustum and casts no shadow. Texel resolution trades off
+  // against scene-scale sharpness — 4096² / 12000m span = ~2.9m/texel.
+  var SILHOUETTE_RADIUS = 5000;
+  var SUN_DIST = 15000; // pushed well beyond the silhouette so it sits between sun and scene
   var sunLight = new THREE.DirectionalLight(0xfff4e0, 1.5);
   sunLight.castShadow = true;
-  sunLight.shadow.mapSize.width = 2048;
-  sunLight.shadow.mapSize.height = 2048;
-  var d = SCENE_SIZE / 2;
-  sunLight.shadow.camera.left = -d;
-  sunLight.shadow.camera.right = d;
-  sunLight.shadow.camera.top = d;
-  sunLight.shadow.camera.bottom = -d;
+  sunLight.shadow.mapSize.width = 4096;
+  sunLight.shadow.mapSize.height = 4096;
+  var shadowD = SILHOUETTE_RADIUS + 500; // scene origin + silhouette + margin
+  sunLight.shadow.camera.left = -shadowD;
+  sunLight.shadow.camera.right = shadowD;
+  sunLight.shadow.camera.top = shadowD;
+  sunLight.shadow.camera.bottom = -shadowD;
   sunLight.shadow.camera.near = 1;
-  sunLight.shadow.camera.far = 1000;
-  sunLight.shadow.bias = -0.001;
+  sunLight.shadow.camera.far = SUN_DIST + SILHOUETTE_RADIUS + 500;
+  sunLight.shadow.bias = -0.0005;
   scene.add(sunLight);
   scene.add(sunLight.target);
 
@@ -97,28 +104,92 @@
     return { azimuthRad: azimuth, altitudeRad: altitude, altitudeDeg: altitude * 180 / Math.PI };
   }
 
+  // Horizon mask: 360 altitudes per azimuth bin (0=N, clockwise). Loaded async.
+  var horizonBins = null;
+  function horizonAltDegAt(azDeg) {
+    if (!horizonBins) return 0;
+    var n = horizonBins.length;
+    var x = ((azDeg % 360) + 360) % 360 * (n / 360);
+    var i0 = Math.floor(x) % n;
+    var i1 = (i0 + 1) % n;
+    var t = x - Math.floor(x);
+    return horizonBins[i0] * (1 - t) + horizonBins[i1] * t;
+  }
+
   function updateSun(season, hour) {
     var s = SEASONS[season];
     var date = new Date(2026, s.month, s.day, Math.floor(hour), (hour % 1) * 60, 0);
     var sun = getSunPosition(date);
-    var dist = 300;
     if (sun.altitudeDeg < 0) {
+      // Below geometric horizon — no shadow map work needed
       sunLight.intensity = 0;
       return sun;
     }
+    // Light direction is (position - target).normalized, so a large distance
+    // here doesn't change direction but ensures the silhouette sits between
+    // the sun and the scene (required for the shadow map to pick it up).
     sunLight.intensity = 1.2 + 0.3 * Math.sin(sun.altitudeRad);
-    var sx = Math.sin(sun.azimuthRad) * Math.cos(sun.altitudeRad) * dist;
-    var sy = Math.sin(sun.altitudeRad) * dist;
-    var sz = -Math.cos(sun.azimuthRad) * Math.cos(sun.altitudeRad) * dist;
+    var sx = Math.sin(sun.azimuthRad) * Math.cos(sun.altitudeRad) * SUN_DIST;
+    var sy = Math.sin(sun.altitudeRad) * SUN_DIST;
+    var sz = -Math.cos(sun.azimuthRad) * Math.cos(sun.altitudeRad) * SUN_DIST;
     sunLight.position.set(sx, sy, sz);
     sunLight.target.position.set(0, 0, 0);
     return sun;
   }
 
+  // ── Distant horizon silhouette (Jura etc.) ─────────────
+  // Ring at SILHOUETTE_RADIUS with per-bin vertical extent matching the
+  // horizon altitude angle. Casts shadows via the shadow map (the sunLight
+  // frustum has been enlarged to include both scene and silhouette).
+  function buildHorizonSilhouette(bins) {
+    var R = SILHOUETTE_RADIUS;
+    var n = bins.length;
+    var positions = new Float32Array(n * 2 * 3); // bottom + top ring
+    for (var i = 0; i < n; i++) {
+      var az = (i + 0.5) * (2 * Math.PI / n); // bin center, radians, 0=N cw
+      var x = Math.sin(az) * R;
+      var z = -Math.cos(az) * R;
+      var topY = R * Math.tan(bins[i] * Math.PI / 180);
+      positions[i * 3 + 0] = x;
+      positions[i * 3 + 1] = 0;
+      positions[i * 3 + 2] = z;
+      positions[(n + i) * 3 + 0] = x;
+      positions[(n + i) * 3 + 1] = topY;
+      positions[(n + i) * 3 + 2] = z;
+    }
+    var indices = new Uint32Array(n * 6);
+    for (var j = 0; j < n; j++) {
+      var a = j;
+      var b = (j + 1) % n;
+      var aTop = n + a;
+      var bTop = n + b;
+      // Two triangles per quad, CCW from inside (facing inward toward origin)
+      indices[j * 6 + 0] = a;     indices[j * 6 + 1] = aTop;  indices[j * 6 + 2] = b;
+      indices[j * 6 + 3] = b;     indices[j * 6 + 4] = aTop;  indices[j * 6 + 5] = bTop;
+    }
+    var geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geo.setIndex(new THREE.BufferAttribute(indices, 1));
+    geo.computeVertexNormals();
+    // MeshLambert (not Basic) so the silhouette responds to ambient/hemi
+    // light and reads as a mass rather than a flat cutout. DoubleSide lets
+    // the shadow caster work regardless of backface culling.
+    var mat = new THREE.MeshLambertMaterial({
+      color: 0x2a3040,
+      side: THREE.DoubleSide,
+      fog: false,
+    });
+    var mesh = new THREE.Mesh(geo, mat);
+    mesh.renderOrder = -1;
+    mesh.castShadow = true;
+    mesh.receiveShadow = false;
+    scene.add(mesh);
+  }
+
   // ── Load data ─────────────────────────────────────────
   var terrainMesh, buildingsMesh, vegMesh;
   var loadCount = 0;
-  var totalLoads = 3;
+  var totalLoads = 4; // terrain + vegetation + buildings + horizon
 
   function checkReady() {
     loadCount++;
@@ -222,6 +293,17 @@
     vegMesh.castShadow = true;
     vegMesh.receiveShadow = true;
     scene.add(vegMesh);
+    checkReady();
+  });
+
+  // Horizon (Jura silhouette — 360 azimuth bins, 120km radius DEM raycast)
+  fetch('/assets/data/gingins-horizon.json').then(function (r) { return r.json(); }).then(function (data) {
+    horizonBins = data.binsDeg;
+    buildHorizonSilhouette(data.binsDeg);
+    checkReady();
+  }).catch(function () {
+    // Missing file: degrade gracefully to geometric horizon
+    horizonBins = null;
     checkReady();
   });
 
