@@ -22,8 +22,8 @@
   scene.background = new THREE.Color(0x1a1e24);
 
   var aspect = container.clientWidth / Math.max(container.clientHeight, 300);
-  // Far plane must reach past the Jura silhouette at ~5km + some margin.
-  var camera = new THREE.PerspectiveCamera(50, aspect, 1, 12000);
+  // Far plane must reach past the Jura silhouette + sun + margin.
+  var camera = new THREE.PerspectiveCamera(50, aspect, 1, 8000);
   camera.position.set(150, 120, 200);
   camera.lookAt(0, 0, 0);
 
@@ -49,16 +49,17 @@
 
   // ── Sun (directional light with shadows) ───────────────
   // Shadow camera must encompass BOTH the local scene (500m) AND the distant
-  // Jura silhouette at ~5km radius, otherwise the silhouette falls outside
-  // the shadow map frustum and casts no shadow. Texel resolution trades off
-  // against scene-scale sharpness — 4096² / 12000m span = ~2.9m/texel.
-  var SILHOUETTE_RADIUS = 5000;
-  var SUN_DIST = 15000; // pushed well beyond the silhouette so it sits between sun and scene
+  // Jura silhouette, otherwise the silhouette falls outside the shadow map
+  // frustum and casts no shadow. Silhouette angular profile is
+  // scale-invariant (topY = R × tan(alt)), so we use a relatively small R
+  // to keep texel size tight. 8192² / 7000m span ≈ 0.85m/texel.
+  var SILHOUETTE_RADIUS = 3000;
+  var SUN_DIST = 6000; // pushed well beyond the silhouette so it sits between sun and scene
   var sunLight = new THREE.DirectionalLight(0xfff4e0, 1.5);
   sunLight.castShadow = true;
-  sunLight.shadow.mapSize.width = 4096;
-  sunLight.shadow.mapSize.height = 4096;
-  var shadowD = SILHOUETTE_RADIUS + 500; // scene origin + silhouette + margin
+  sunLight.shadow.mapSize.width = 8192;
+  sunLight.shadow.mapSize.height = 8192;
+  var shadowD = SILHOUETTE_RADIUS + 500; // origin ± (silhouette + margin)
   sunLight.shadow.camera.left = -shadowD;
   sunLight.shadow.camera.right = shadowD;
   sunLight.shadow.camera.top = shadowD;
