@@ -9,7 +9,7 @@ sitemap: false
 
 Trois semaines hors de chez moi, pas de laptop dans la valise, juste un téléphone. La règle implicite des vacances : tu ne codes pas. Sauf que j'avais une idée en tête depuis longtemps — un jeu de plateau sombre, à deux joueurs, où la coopération et la rivalité tirent dans des directions opposées. Et il s'avère qu'avec un écran de 6 pouces, un clavier virtuel et un LLM correctement briefé, on peut concevoir, équilibrer et prototyper un jeu entier sans jamais ouvrir un IDE.
 
-Le résultat s'appelle *Possession*. C'est un jeu semi-coopératif strictement à deux joueurs où chacun incarne un démon rival cherchant à corrompre l'âme d'un pape inspiré d'Alexandre VI. Le but n'est pas de réussir l'exorcisme. Le but est d'être le démon qui profite le mieux de son échec.
+Le résultat s'appelle *Possession*. C'est un jeu semi-coopératif strictement à deux joueurs où chacun incarne un démon rival cherchant à corrompre l'âme d'Alexandre VI — le vrai, pape de 1492 à 1503, Borgia de son état, accessoirement père de plusieurs enfants reconnus, soupçonné d'empoisonnements politiques, et globalement le genre de souverain pontife dont les mœurs ont rendu service à la cause protestante quelques décennies plus tard. Bref, une cible de choix pour des démons. Le but n'est pas de réussir l'exorcisme. Le but est d'être le démon qui profite le mieux de son échec.
 
 C'est ce déplacement qui m'intéressait dès le départ. Pas un duel frontal, pas une coop pure : une tension où il faut collaborer juste assez pour faire échouer l'exorcisme, et se saboter juste assez pour gagner seul.
 
