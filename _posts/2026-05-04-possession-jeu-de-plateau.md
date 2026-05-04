@@ -2,6 +2,9 @@
 layout: post
 title: "Possession : un jeu de plateau conçu pendant mes vacances au Maroc"
 tags: [project, game-design, ai, simulation]
+unlisted: true
+permalink: /blog/preview/e8b4f2a9/possession-jeu-de-plateau
+sitemap: false
 ---
 
 Au lieu de lire un roman au bord de la piscine, j'ai conçu un jeu de plateau. *Possession* est un jeu semi-coopératif strictement à deux joueurs où chacun incarne un démon rival cherchant à corrompre l'âme d'un pape inspiré d'Alexandre VI. Le but n'est pas de réussir l'exorcisme. Le but est d'être le démon qui profite le mieux de son échec.
