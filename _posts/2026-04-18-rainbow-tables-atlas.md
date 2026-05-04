@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Rainbow tables pour les ombres : troquer du calcul contre du stockage précalculé"
+title: "Rainbow tables pour les ombres : troquer de la puissance de calcul contre du stockage de masse"
 tags: [project, gis, algorithms, gpu, caching]
 header_image: /assets/img/rainbow-tables-atlas.png
 unlisted: true
@@ -112,6 +112,12 @@ Quelques observations à tirer de la carte :
 Sans atlas, stocker une année complète de masques d'ombre à 15 minutes pour 250 tuiles coûterait environ **27 GB**. Avec l'atlas à 1°, 400 seaux par tuile, 16 KB par seau : **1.6 GB**, soit **17 fois moins**. Et la perte de précision est en-dessous du demi-pourcent sur le masque final.
 
 Mais le vrai gain n'est pas la compression. L'atlas est calculé **une seule fois** par tuile. Chaque utilisateur qui demande un heatmap pour une date future — le 30 avril 2027, le 4 août 2029, le 12 février 2031 — tape dans les seaux déjà peuplés. Le coût GPU initial est amorti sur toutes les dates futures, passées, et même les dates demandées plusieurs fois de suite pour comparer deux ajustements de calibration.
+
+## Et accessoirement : plus besoin de GPU en production
+
+Conséquence directe et pas anecdotique : **le service qui sert les heatmaps n'a plus besoin de GPU du tout**. Le GPU n'intervient qu'à la phase de construction de l'atlas, qui peut tourner une fois sur une machine dédiée — la mienne, un runner CI, n'importe quel poste équipé. Une fois les seaux écrits sur disque, servir une requête, c'est lire un fichier et faire un OR de bitmasks. Du CPU générique, voire du serverless.
+
+Ça change la nature du déploiement. Pas de driver Vulkan à installer sur le serveur, pas d'instance GPU à louer à l'heure, pas de cauchemar de containerisation avec passthrough du device. Le runtime devient un boîtier banal qui sert des fichiers binaires. C'est l'autre vertu cachée du précalcul indexé : il **dépouille la prod** du matériel coûteux qui a servi à construire la donnée.
 
 C'est l'essence du trade-off : on échange un calcul coûteux mais **répété** contre un stockage modeste et **partagé**. Si l'espace des entrées est petit et prévisible, et si les sorties sont réutilisables, alors le précalcul indexé devient le bon algorithme — qu'il s'agisse de casser un hash ou de projeter l'ombre d'un noyer sur une terrasse.
 
