@@ -75,6 +75,20 @@ La divergence apparaît à la 6ᵉ date, en septembre. La trajectoire repasse su
 
 Et c'est ça qui donne la promesse d'amortissement. Après huit dates bien choisies sur une année, on ajoute 33 nouveaux seaux à la 8ᵉ date au lieu de 48 à la première. La 9ᵉ date ajouterait probablement une poignée de seaux. La 10ᵉ : aucun. **L'atlas converge.**
 
+## Le retour immédiat
+
+Le tableau du dessus mesure quelque chose de précis : combien de **buckets neufs** chaque date apporte. C'est une bonne métrique pour parler de stockage, mais c'est pas la bonne pour juger si l'atlas est utile.
+
+Première fois que j'ai lancé un précompute avec un seul jour, je pensais voir un atlas qui sert ce jour-là et basta. En fait : tu interroges une date arbitraire, disons le 18 octobre, et le rendu affiche déjà quelque chose. Pas tout — juste les frames dont l'angle solaire tombe pile sur un bucket calculé. Mais "quelque chose" pour à peu près toutes les dates de l'année.
+
+La quantification à 0.75° élargit énormément le filet. Deux dates qui semblent éloignées au calendrier (un jour de printemps et son symétrique d'automne) partagent une quantité folle de positions solaires une fois snappées sur la grille. Le soleil ne sait pas qu'on est en avril ou en août — il pointe à (azimut 90°, altitude 30°), et c'est tout ce que l'atlas a besoin de savoir.
+
+Donc le bon mental model, c'est pas "combien de jours faut-il précomputer avant que l'atlas serve à quelque chose". C'est "à partir de quel jour mon atlas a au moins **un peu** de données pour toutes les dates futures". La réponse : le premier. Plus on en ajoute, plus la couverture par date se densifie, mais le système est utile dès le 1er commit GPU.
+
+En pratique ça veut dire qu'on peut précomputer en best-effort, déployer l'atlas, et continuer à le remplir derrière. La prod sert ce qu'elle peut, dès qu'elle peut. Pas besoin d'attendre une "release officielle" de l'atlas.
+
+Et l'autre côté de la médaille, c'est que la course a une ligne d'arrivée. Après un an de précompute à 15 minutes près, l'atlas est saturé à plus de 99 % — il ne reste que des buckets résiduels que le soleil ne traverse qu'à des moments très spécifiques. Après quatre ans, c'est mécaniquement terminé : le calendrier Grégorien boucle son cycle complet (l'analemme repasse au pixel près sur les bissextiles), et continuer à précomputer revient à recalculer des buckets qui sont déjà tous dans le fichier. Tu peux jeter ton GPU à la mer. L'atlas est complet pour l'éternité.
+
 ### Précision : combien on paie en erreur ?
 
 On compare le masque stocké dans l'atlas (calculé au centre du seau) au masque exact d'une frame réelle (calculé à l'angle solaire précis). L'indicateur est le pourcentage de points en désaccord entre les deux masques — un XOR, en termes de bits.
