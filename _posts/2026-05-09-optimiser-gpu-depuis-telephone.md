@@ -1,6 +1,7 @@
 ---
 layout: post
 title: "Optimiser un pipeline GPU depuis son téléphone"
+date: 2026-05-09 08:41:07 +0200
 tags: [project, gpu, performance, ai, optimization, methodology]
 unlisted: true
 permalink: /blog/preview/f2c9a371/optimiser-gpu-depuis-telephone
