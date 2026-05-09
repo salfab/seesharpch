@@ -1,6 +1,7 @@
 ---
 layout: post
 title: "Du ray-tracing CPU au shadow map GPU : odyss\u00e9e d'une optimisation 91x"
+date: 2026-04-16 09:08:38 +0200
 tags: [project, gis, performance, gpu, shadow-mapping, optimization]
 unlisted: true
 permalink: /blog/preview/a3b7d912/gpu-shadow-odyssey
