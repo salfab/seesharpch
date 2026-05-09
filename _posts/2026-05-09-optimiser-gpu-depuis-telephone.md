@@ -8,68 +8,66 @@ permalink: /blog/preview/f2c9a371/optimiser-gpu-depuis-telephone
 sitemap: false
 ---
 
-Il y a quelques semaines, j'ai passé une bonne partie d'une soirée à optimiser un pipeline de précompute GPU depuis mon téléphone, allongé sur le canapé. Pas à regarder du code — à raisonner sur un pipeline asynchrone en échangeant avec Claude, en lisant des résultats de benchmarks, et en challengeant des conclusions qui me semblaient incorrectes.
+Il fait beau dehors. Le soleil tape, c'est l'occasion ou jamais de faire le plein de vitamine D. Sauf qu'il y a ce pet project que je n'arrive pas à lâcher mentalement — un pipeline de précompute GPU avec un truc bizarre dans le pipelining asynchrone que j'aimerais bien comprendre. Le genre de problème qui te trotte dans la tête pendant que tu essaies de te détendre au parc.
 
-Ce que j'ai appris : c'est très différent du vibe coding. Et la différence mérite d'être nommée.
+Tiraillé entre les deux. Sortir au soleil ou avancer sur le projet. Classique.
 
-## Ce qu'on construisait
+Sauf qu'il y a une troisième option : la commande `/remote-control` de Claude Code. Tu la lances depuis ton poste, tu sors, et tu pilotes ton agent depuis ton téléphone. Pas de code à lire, pas d'écran 27" — juste un chat avec un LLM qui a accès à ton repo, qui peut lancer des benchmarks, lire des stack traces, et te restituer ses conclusions. Toi, tu es allongé dans l'herbe.
 
-[Mappy Hour](/blog/preview/...) calcule l'ensoleillement de zones urbaines : pour chaque mètre carré de Lausanne, Nyon, Genève, savoir combien d'heures de soleil direct il reçoit chaque jour de l'année. Le pipeline précompute fait ça en amont — des milliers de tuiles, 365 jours, via un backend Vulkan écrit en Rust.
+Et c'est là que ça devient intéressant. Parce que ce n'est pas du vibe coding. Et la différence mérite d'être nommée.
 
-Le cœur du pipeline : pour chaque tuile, calculer les positions du soleil manquantes, les envoyer au GPU en batch, récupérer les masques d'ombre, merger dans un fichier atlas. Le tout avec du pipelining pour que le GPU reste occupé pendant que Node.js prépare la tuile suivante.
+## Plusieurs ordres de magnitude
 
-C'est du code asynchrone imbriqué, avec des sémaphores, des drains de pipeline, des zones de changement de mesh GPU. Ce n'est pas le genre de truc qu'on optimise facilement sans le voir.
+Le projet sur lequel je bosse calcule l'ensoleillement de villes entières au mètre carré. Le pipeline est lourd — du Vulkan, du Rust, des centaines de millions de calculs d'ombres bâtiments par tuile. Au début c'était plusieurs heures par région. Aujourd'hui c'est quelques minutes.
 
-## Ce que le vibe coding n'est pas
+Plusieurs ordres de magnitude, donc. Et zéro ligne de Rust écrite par moi. Pas parce que je suis devenu fainéant — parce que j'ai changé de niveau d'intervention. Au lieu d'écrire du code, je drive une boucle d'optimisation.
 
-Le vibe coding tel que le terme est généralement utilisé : vous décrivez ce que vous voulez, le LLM génère du code, vous collez, vous testez, vous recommencez. Ça marche très bien pour beaucoup de choses. Mais sur un pipeline asynchrone avec des contraintes GPU matérielles, ça a une limite évidente : le LLM peut générer du code structurellement correct qui repose sur une hypothèse fausse.
+## La boucle
 
-Et l'hypothèse fausse ne sera visible ni dans le code ni dans les tests unitaires — seulement dans les benchmarks, si vous savez quoi y chercher.
+Elle ressemble à ça :
 
-## Le cas concret
+**1. Mesurer.** Pas pour confirmer une intuition — pour cartographier où le temps part vraiment. Un bench bien instrumenté c'est rarement ce que tu attendais. Tu pensais que c'était le GPU ? C'est l'IPC. Tu pensais que c'était l'IPC ? C'est la décompression d'un fichier de cache que personne n'avait chronométré. Le premier bench est presque toujours une surprise.
 
-On travaillait sur une réorganisation du pipeline appelée "tile-first" : au lieu d'itérer jour par jour pour chaque tuile, on itère tuile par tuile — on calcule tous les 365 jours d'une tuile d'un coup, puis on passe à la suivante.
+**2. Comprendre la philosophie.** Pourquoi le système est-il construit comme ça ? Qu'est-ce qui est figé pour des raisons matérielles (un GPU avec une seule queue compute), pour des raisons logicielles (le runtime Node.js mono-thread sur l'event loop), ou pour des raisons purement historiques (une décision prise il y a six mois qui n'a jamais été remise en cause) ? Ces trois catégories ont une hiérarchie radicalement différente d'immobilité. Confondre les trois, c'est s'interdire des optimisations.
 
-Claude m'a présenté les gains attendus, dont celui-ci : *moins de frames à envoyer au GPU, parce que beaucoup de positions solaires sont identiques d'un jour à l'autre — même azimut, même altitude, même bucket.*
+**3. Proposer le contre-pied.** *"OK, aujourd'hui on fait X. Mais si à la place on prenait l'angle inverse et qu'on faisait Y, qu'est-ce que ça donnerait ?"* C'est la question la plus rentable de toute la boucle. Pas un raffinement de X — un Y qui ressemble à rien de l'existant. Et tu lances le LLM dessus : code-le, mesure, montre-moi. La moitié du temps c'est pire. L'autre moitié, c'est un ordre de magnitude.
 
-Ça m'a arrêté. J'ai relu.
+**4. Confronter.** Ton hypothèse contre la mesure. C'est là que tu apprends si ton modèle mental tient la route. Souvent il faut le rectifier — le LLM pointe un effet de bord, ou la mesure révèle un goulot que tu n'avais pas modélisé. C'est pas grave. Tu corriges, tu rebouches.
 
-*"C'est pas pour ça qu'on a fait les atlas au lieu de travailler date par date ?"*
+**5. Rinse and repeat.** Le bottleneck a bougé. Avant c'était la décompression, maintenant c'est l'écriture disque. Avant c'était l'IPC, maintenant c'est l'event loop saturé. Tu retournes au point 1.
 
-Parce que oui — depuis plusieurs mois, le pipeline day-first avait déjà un mécanisme `skipExisting` : avant d'envoyer un bucket au GPU, on vérifie s'il est déjà dans l'atlas sur disque. Si oui, on ne recalcule pas. La déduplication cross-jours existait déjà — pas sous la forme d'un union de positions par tuile, mais via le cache atlas.
+## Ce que le LLM fait, ce que tu fais
 
-Le "gain GPU" de tile-first n'était pas un gain GPU. C'était de l'I/O : au lieu de lire et merger l'atlas 365 fois par tuile (une fois par jour), on le fait une fois. Réel, mais d'un ordre de grandeur différent de ce qui avait été annoncé. Un benchmark comparatif l'a confirmé ensuite.
+Le LLM est très bon aux étapes 1 et 4 : implémenter un bench, lire les chiffres, proposer une explication plausible. Il est honnête aux étapes 2 et 5 : il te donne ce qu'il voit dans le code.
 
-## Ce que ça demande comme état d'esprit
+Là où il est faible, c'est à l'étape 3. Il a tendance à proposer des raffinements — accélérer X de 5%, paralléliser Y, ajouter un cache sur Z. Pas des contre-pieds. Il optimise *à l'intérieur du cadre existant*, parce que c'est ce qu'il a sous les yeux. Il ne va pas spontanément te dire *"et si on inversait l'ordre des deux boucles imbriquées et qu'on indexait par autre chose ?"* — parce que cette idée n'est nulle part dans le code.
 
-Pour attraper cette erreur sans voir le code, il faut avoir une image mentale assez précise du pipeline : qui lit quoi, quand, dans quel ordre. Pas le code ligne par ligne — le *modèle* de ce qui se passe.
+C'est là que tu interviens. Tu n'as pas besoin de connaître Rust ni Vulkan. Tu as besoin de tenir un modèle mental du système suffisamment précis pour repérer un point de friction architectural, et suffisamment lâche pour imaginer un autre arrangement.
 
-Dans ce cas précis : savoir que `skipExisting` existe, savoir qu'il opère au niveau du bucket `(azimut, altitude)`, et savoir que ce bucket est la même unité que ce que le GPU reçoit. Trois niveaux d'abstraction à tenir simultanément, sans les voir écrits nulle part.
+Le LLM fait l'exécution rapide d'idées que tu n'as plus à coder. Toi, tu fais les idées.
 
-C'est ça la vraie difficulté du debugging via LLM sur des systèmes complexes. Pas de générer la bonne instruction. De garder un modèle mental cohérent du système pendant que le LLM vous présente des analyses, des chiffres, des hypothèses — et de savoir quand ce modèle contredit ce qu'on vous dit.
+## Pourquoi ce n'est pas du vibe coding
 
-## Pourquoi c'est différent du vibe coding
+Le vibe coding délègue la compréhension. Tu décris vaguement, le LLM génère, tu colles, tu pries. Ça marche pour des trucs neufs où l'architecture n'a pas encore d'inertie.
 
-Le vibe coding délègue la compréhension au LLM. Ce que je décris ici, c'est l'inverse : vous gardez la compréhension système, vous déléguez l'exécution et une partie de l'analyse. Le LLM est un très bon ingénieur junior qui code vite, écrit des benchmarks, lit des stack traces — mais qui peut vous présenter une conclusion plausible-et-fausse avec la même assurance qu'une vraie.
+Sur un système optimisé sur plusieurs mois, l'inertie *est* la matière première. Ce qu'on cherche à débloquer, c'est précisément des invariants qui ont été acceptés sans être re-questionnés. Le LLM ne les remettra pas en cause spontanément — il les respecte parce qu'ils sont dans le code. Toi, tu peux. Mais seulement si on a construit une représentation du système indépendante du code.
 
-La valeur que vous apportez n'est pas de savoir coder. C'est de savoir *quand le modèle qui vous est présenté est en contradiction avec ce que vous savez du système*.
-
-Et pour ça, on ne peut pas zapper la construction du modèle mental. Au contraire — dans ce mode de travail, le modèle mental est tout ce qu'on a.
+Cette représentation, on ne peut pas la zapper. Au contraire : dans ce mode de travail, c'est tout ce que tu apportes.
 
 ## En pratique
 
-Ce qui aide concrètement :
+**Raisonner en abstractions, pas en lignes.** Tu ne dis pas *"la ligne 486 de tel fichier"*, tu dis *"le moment où on filtre les éléments déjà calculés avant d'appeler le GPU"*. Si on garde le modèle en abstractions, on peut le manipuler depuis son téléphone, depuis un train, depuis sa chaise longue. Le code n'est qu'une projection.
 
-**Nommer les abstractions, pas les lignes.** Pas "la ligne 486 de atlas-tile-service.ts" — "le moment où on filtre les buckets déjà dans l'atlas avant d'appeler le GPU". Si vous gardez le modèle en termes d'abstractions, vous pouvez raisonner dessus sans le code sous les yeux.
+**Lire les benchmarks comme des affirmations à réfuter.** Un chiffre qui confirme ton hypothèse mérite autant de méfiance qu'un chiffre qui l'infirme. Plus, même : un bon résultat coupe l'envie de creuser, et c'est souvent là que se cachent les artefacts de mesure (un setup non isolé, un cache chaud non purgé, un preflight non chronométré).
 
-**Poser la question bête.** *"Mais est-ce que ça n'existait pas déjà ?"* est souvent la meilleure question. Les LLMs ont tendance à présenter une optimisation comme nouvelle parce que le code qui la réalise est nouveau — même si la propriété du système était déjà vraie autrement.
+**Ne pas skipper les benchmarks, même quand c'est tentant.** Et c'est très tentant. Soit parce que ça coûte du temps de calcul (relancer un précompute de plusieurs minutes pour valider une optim de 3%, c'est rébarbatif), soit pour ce que j'appellerais la *token-guilt* — l'envie de pas embêter le LLM avec une session pénible d'instrumentation, de logs ajoutés un peu partout, de timestamps, de runs répétés pour stabiliser la mesure. Ça vaut le coup. À chaque fois. Une conclusion hâtive du LLM — même un modèle frontier à max effort — sera régulièrement infirmée par la mesure réelle. Et celles qui tiennent te donnent une assise pour la suite que tu n'auras jamais en raisonnant à vide.
 
-**Lire les benchmarks comme des affirmations à réfuter, pas à confirmer.** Un chiffre qui confirme votre hypothèse mérite autant de scrutin qu'un chiffre qui l'infirme. Le benchmark zstd semblait montrer −19% de wall-time. Isolé correctement, avec le preflight séparé : −0.5%, dans le bruit. Le bottleneck avait simplement glissé.
+**Poser systématiquement la question naïve.** *"Mais est-ce que ça n'existait pas déjà sous une autre forme ?"* — *"Pourquoi cette boucle est dans cet ordre ?"* — *"Qu'est-ce qui se passerait si on supprimait complètement cette étape ?"* Le LLM ne pose presque jamais ces questions tout seul. Toi si.
 
-**Accepter les fausses pistes documentées.** Une session entière a été perdue sur une "corruption d'atlas" à 36–94% de mismatches. Cause réelle : le script de vérification tournait en mode vulkan, ce qui rendait le golden CPU aveugle aux bâtiments. Pas de corruption. Le temps perdu n'était pas du temps gaspillé — c'est la nature du debugging, avec ou sans LLM. Mais il faut l'accepter plutôt que de continuer à creuser la mauvaise piste.
+**Accepter les fausses pistes.** Une bonne moitié des hypothèses sont fausses. Ce n'est pas du temps perdu, c'est la nature du process. Ce qu'il faut éviter, c'est s'enfermer sur une fausse piste *parce que tu y as déjà investi du temps*. Si la mesure ne supporte pas l'idée, l'idée meurt. Tu reviens à l'étape 3, tu proposes autre chose.
 
 ---
 
-Je ne sais toujours pas écrire du Rust. Je n'ai pas lu la plupart du code GPU en détail. Mais j'ai une image assez précise de comment les tuiles passent dans le pipeline, de quand le GPU est idle, de ce que signifie un drain de pipeline.
+Je ne sais toujours pas écrire du Rust. Je n'ai pas lu la plupart du code GPU en détail. Mais j'ai une représentation assez précise du système pour piloter cette boucle — du parc, du train, du canapé, sous le soleil.
 
-C'est suffisant — à condition de ne pas confondre "je comprends le système" avec "je fais confiance aux conclusions qu'on me présente sur le système".
+Et c'est suffisant pour multiplier les performances par plusieurs ordres de magnitude. À condition de ne jamais confondre *"je comprends le système"* avec *"je fais confiance aux conclusions qu'on me présente sur le système"*.
