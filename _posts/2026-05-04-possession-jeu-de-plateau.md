@@ -2,6 +2,7 @@
 layout: post
 title: "Possession : un jeu de plateau conçu entièrement depuis mon téléphone"
 tags: [project, game-design, ai, simulation]
+header_image: /assets/img/possession-jeu-de-plateau.png
 unlisted: true
 permalink: /blog/preview/e8b4f2a9/possession-jeu-de-plateau
 sitemap: false

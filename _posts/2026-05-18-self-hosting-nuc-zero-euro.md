@@ -3,6 +3,7 @@ layout: post
 title: "Héberger une app Next.js en prod sur un NUC pour 1.25 CHF/mois"
 date: 2026-05-18 09:00:00 +0200
 tags: [project, infrastructure, deployment, docker, tailscale, cloudflare]
+header_image: /assets/img/self-hosting-nuc-zero-euro.png
 unlisted: true
 permalink: /blog/preview/c3d8f014/self-hosting-nuc-zero-euro
 sitemap: false
