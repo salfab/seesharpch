@@ -1,50 +1,65 @@
 ---
 layout: post
-title: "Généraliser sans casser : mon pipeline a tenu — sauf les pièces"
+title: "Généraliser sans casser : le monde n'est pas une planche de pin"
 tags: [project, computer-vision, opencv, machine-learning, board-games]
 unlisted: true
 permalink: /blog/preview/b2e84d15/7-wonders-generaliser
 sitemap: false
 ---
 
-*Deuxième volet. Dans [le premier épisode](/blog/preview/6e5a7cf3/7-wonders-duel-score-photo), mon scoreur photo de 7 Wonders Duel marchait — jusqu'à ce que je pose le jeu sur une serviette de plage et que tout s'effondre.*
+<!-- a2:intro -->
+*Deuxième volet. Dans [le premier épisode](/blog/preview/6e5a7cf3/7-wonders-duel-score-photo), j'étais rentré de vacances fier comme un paon avec un scoreur photo qui marchait — puis j'ai posé le jeu sur une serviette de plage rayée et je l'ai regardé s'effondrer en direct.*
 
-C'est là que le vrai travail commence : durcir chaque détecteur pour qu'il soit **invariant à la surface**, sans casser ce qui marchait déjà sur le bois.
+Le diagnostic, le lendemain, était humiliant de simplicité : **tout mon pipeline supposait, quelque part, du bois.** Le fond uni qui valide une pièce, les bandes colorées des guildes, le contraste des lauriers — chaque détecteur avait été réglé, sans que je le formule jamais, sur les veines chaudes de ma table de cuisine. La serviette n'était ni du bois, ni un mur pâle. Le château de seuils s'est écroulé d'un bloc.
 
-## Des ancres de test, pas de la foi
+La question n'était plus « est-ce que ça marche ? » mais « est-ce que ça *généralise* ? ». Et généraliser, ça voulait dire un truc pénible : reprendre chaque détecteur, un par un, et lui apprendre que le monde n'est pas une planche de pin.
 
-Avant de toucher à quoi que ce soit, j'ai figé deux parties réelles — une sur bois, une sur serviette — en **ancres de test**. Les cibles pas encore atteintes sont des `xfail` qui passeront au vert au fil du durcissement. Règle absolue : tout correctif doit garder les deux ancres vertes. Plus tard j'en ai ajouté une troisième, la plus dure : une partie en extérieur, sur l'herbe, lumière chaude de fin de journée.
+<!-- a2:anchres -->
+## D'abord, me méfier de moi-même
 
-Sans ce garde-fou, « améliorer » sur une photo veut juste dire « casser sur une autre ». Avec, chaque commit est une dette ou un gain, jamais un pari.
+La première chose que j'ai codée n'était pas un détecteur : c'était un garde-fou contre mes propres illusions. J'ai figé **deux parties réelles** — une sur bois, une sur serviette — comme juges de paix. Les cibles pas encore atteintes deviennent des tests en échec *assumé* (`xfail`) ; règle absolue : **aucun correctif n'a le droit de faire rougir une ancre.** J'en ai vite ajouté une troisième, la plus méchante : une partie en extérieur, sur l'herbe, sous une lumière orange de fin de journée.
 
-## Les guildes, par contenu plutôt que par couleur de table
+Sans ce filet, « améliorer » sur une photo veut juste dire « casser » sur une autre — et tu ne le sais jamais. Avec, chaque commit devient une dette ou un gain. Plus jamais un pari.
 
-Le détecteur de guildes s'appuyait sur le « strip violacé » du bandeau. Fragile : sous une autre lumière, un dos de carte ou une bande militaire rouge passaient pour des guildes.
+<!-- a2:guildes -->
+## Les guildes : une victoire (trop) facile
 
-Je l'ai remplacé par le pattern qui avait sauvé les merveilles : le strip violet **propose** (rappel), le recalage de l'art de la guilde **vérifie** par corrélation (précision, NCC ≥ 0,5). Plus une porte de « cœur magenta » qui sépare une vraie bande de guilde (magenta carton) d'une bande brune sous lumière chaude et d'un dos de carte lavande qui se faisait passer pour un magistrat. Et la paire magistrats/marchands, que le recalage ne sait pas distinguer, est tranchée par la couleur de remplissage de l'icône.
+Mon détecteur de guildes reconnaissait une bande violette. Naïf : sous une autre lumière, un dos de carte ou une bande militaire rouge se faisaient promouvoir « guilde » sans sourciller.
 
-Ces durcissements généralisent parce qu'ils s'ancrent sur le **contenu** — l'art, la géométrie recalée — pas sur la surface. Le « pas de modèle entraîné » tient. Toujours zéro neurone.
+La parade, je l'avais déjà inventée pour les merveilles : la bande violette **propose**, et le recalage de l'*art* de la guilde **vérifie** (on superpose la référence, on corrèle les pixels). Plus un garde-fou de teinte qui distingue le vrai carton magenta d'un dos de carte lavande qui jouait au magistrat. Ça généralise parce que ça s'ancre sur le **contenu** — le dessin de la carte — pas sur la couleur de la table. Toujours zéro neurone.
 
-## Les pièces : le mur que le classique n'a pas franchi
+Une victoire propre. Elle m'a bercé dans l'idée que le reste suivrait. Le reste n'a pas suivi.
 
-Et puis il y a les pièces. Sur une surface variable, un pip de carte, une touffe d'herbe ou un pli de tissu est *métriquement identique* à une pièce : un disque rond de la bonne taille. J'ai essayé de couper les faux positifs en pur classique, et je l'ai mesuré — deux fois plutôt qu'une, parce que les pièges étaient instructifs.
+<!-- a2:coins -->
+## Et puis il y a les pièces
 
-- **NCC contre des gabarits** : ne sépare pas. Les vraies pièces scorent 0,03–0,31, les faux positifs 0,01–0,26. La médiane des faux positifs est *plus haute* que certaines vraies pièces.
-- **Signature métallique / variance de teinte** : semblait parfaite sous lumière chaude… falsifiée par une photo en lumière froide, où l'argent lit une variance de 51 et le cuivre de 60. Le signal était confondu par l'éclairage, pas par pièce-vs-pas-pièce. Un piège de sur-apprentissage attrapé en vérifiant les photos froides.
-- **Une règle codée à la main** : sur 669 candidats labellisés, la meilleure feature seule plafonne à 0,47 de précision, et combiner les portes existantes ne fait pas mieux. La frontière est non-linéaire.
+Mon ennemi juré. La pièce est l'objet le plus cruel qui soit pour de la vision classique : sur une surface variable, un pip de carte, une touffe d'herbe ou un pli de tissu est *métriquement une pièce* — un disque rond, de la bonne taille. Distinguer l'un de l'autre sans tricher, j'ai essayé. Et je l'ai mesuré — deux fois, parce que les pièges étaient trop instructifs pour les garder pour moi.
 
-## Le franchissement — au minimum
+<div class="tech-box" markdown="1">
+<span class="tech-box-label">Encadré — trois échecs honnêtes (non-techos : sautez, vous ne ratez qu'une humiliation)</span>
 
-Aucune feature à la main ne sépare proprement. J'ai franchi la ligne « pas d'entraînement » — pour ce seul détecteur, et au strict minimum.
+- **Corrélation contre des gabarits de pièces.** Ne sépare rien : vraies pièces 0,03–0,31, faux positifs 0,01–0,26 — la *médiane* des faux positifs est plus haute que certaines vraies pièces.
+- **Signature métallique (variance de teinte).** Semblait parfaite sous lumière chaude… jusqu'à ce qu'une photo en lumière froide la pulvérise (l'argent y lit une variance de 51 contre ~1,5 attendu). Le signal mesurait l'éclairage, pas la pièce. Un piège de sur-apprentissage, attrapé en vérifiant les photos froides au lieu de me féliciter.
+- **Une simple règle écrite à la main.** Sur 669 candidats étiquetés, la meilleure caractéristique seule plafonne à 0,47 de précision, et combiner les portes existantes ne fait pas mieux. La frontière entre pièce et non-pièce est *non-linéaire* — pas un seuil à régler.
 
-Pas un CNN sur pixels. Une **petite forêt aléatoire** — quelques kilo-octets, entraînée en secondes, sans GPU — sur les *mêmes features classiques*. Précision 0,80, recall 0,67 en *leave-one-photo-out* : le double de précision de la règle codée à la main. Je garde l'extraction de features explicable ; j'ajoute juste un combineur appris de la frontière non-linéaire.
+</div>
 
-Le reste tient en garde-fous. Mesure honnête : *leave-one-photo-out*, jamais *leave-one-crop-out* — les pièces d'une même photo sont corrélées, le vrai N c'est le nombre de photos. Borné : la forêt post-filtre les détections et se charge gracieusement (pas de modèle → le détecteur tourne comme avant). Et un outil de labeling humain-dans-la-boucle, avec *active learning* : l'outil affiche sa prédiction pour que je corrige ses erreurs en priorité.
+Trois angles, trois murs. À un moment, s'acharner devient de l'orgueil.
 
+<!-- a2:franchissement -->
+## J'ai cédé — mais au minimum syndical
+
+Aucune caractéristique faite main ne sépare proprement. Alors j'ai franchi ma propre ligne — « aucun modèle entraîné » — pour ce **seul** détecteur, et au strict minimum.
+
+Pas un gros réseau sur les pixels. Une **petite forêt aléatoire** — quelques kilo-octets, entraînée en secondes, sans GPU — sur *exactement les mêmes* caractéristiques classiques. Précision 0,80, rappel 0,67 : le double de précision de la règle à la main. Je garde l'extraction de features, lisible ; j'ajoute juste un *combineur appris* de la frontière tordue. Mesuré honnêtement — en laissant une *photo* entière de côté à chaque fois, jamais un crop isolé (les pièces d'une même photo partagent la lumière, ce ne sont pas des exemples indépendants). Borné : la forêt ne fait que filtrer après coup, et disparaît proprement si le modèle est absent.
+
+> **Spoiler honnête.** Cette petite forêt avait deux vices que je n'ai découverts que plus tard : chez quiconque n'avait pas installé une certaine dépendance, elle **ne tournait même pas** — un *no-op* silencieux — et un vrai réseau a fini par la remplacer entièrement. Mais n'anticipons pas : ce sont les humiliations d'un prochain épisode.
+
+<!-- a2:morale -->
 ## La ligne n'était pas un dogme
 
-Voilà l'enseignement que je retiens. Le « pas de modèle entraîné » a tenu pour tout — sauf les pièces. Et c'est *parce que je l'ai mesuré* que j'ai su exactement où franchir la ligne, et avec quoi : le minimum d'apprentissage, sur des données que j'ai labellisées moi-même, borné pour ne jamais casser ce qui marchait.
+Voilà ce que je retiens. Le « pas de modèle entraîné » a tenu pour *tout* — sauf les pièces. Et c'est précisément *parce que je l'ai mesuré* que j'ai su où franchir la ligne, et avec quoi : le minimum d'apprentissage, sur des données que j'ai étiquetées moi-même, borné pour ne jamais casser ce qui marchait déjà.
 
-La ligne n'a jamais été un principe moral. C'était une hypothèse, tenue tant que les mesures la portaient, déplacée d'un cran minimal quand elles ont cessé. La discipline, ce n'est pas de refuser le ML. C'est de refuser de le sortir avant que les chiffres ne l'exigent.
+La ligne n'a jamais été une question de morale. C'était une *hypothèse*, tenue tant que les chiffres la portaient, déplacée d'un cran quand ils ont cessé. La discipline, ce n'est pas de refuser le ML par principe. C'est de refuser de le dégainer **avant que les mesures ne l'exigent**.
 
 *Suite et fin : [le jour où le transfer learning a enfoncé un plafond que je croyais physique](/blog/preview/c7a0f6e2/7-wonders-transfer-learning).*
