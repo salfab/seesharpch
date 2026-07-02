@@ -1,0 +1,21 @@
+{
+  "name": "7 Wonders Duel — Scorer",
+  "short_name": "7WD Scorer",
+  "description": "Score a 7 Wonders Duel game from one overview photo per player.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#15355e",
+  "theme_color": "#15355e",
+  "icons": [
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    {
+      "src": "./icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
