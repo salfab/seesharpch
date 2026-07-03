@@ -1,64 +1,574 @@
 {
-"wonders": [
+"entries": [
+{
+"id": "lumber-yard",
+"kind": "card",
+"name": "Lumber Yard",
+"nameFr": "Chantier"
+},
+{
+"id": "logging-camp",
+"kind": "card",
+"name": "Logging Camp",
+"nameFr": "Exploitation"
+},
+{
+"id": "clay-pool",
+"kind": "card",
+"name": "Clay Pool",
+"nameFr": "Bassin argileux"
+},
+{
+"id": "clay-pit",
+"kind": "card",
+"name": "Clay Pit",
+"nameFr": "Cavité"
+},
+{
+"id": "quarry",
+"kind": "card",
+"name": "Quarry",
+"nameFr": "Gisement"
+},
+{
+"id": "stone-pit",
+"kind": "card",
+"name": "Stone Pit",
+"nameFr": "Mine"
+},
+{
+"id": "glassworks",
+"kind": "card",
+"name": "Glassworks",
+"nameFr": "Verrerie"
+},
+{
+"id": "press",
+"kind": "card",
+"name": "Press",
+"nameFr": "Presse"
+},
+{
+"id": "theater",
+"kind": "card",
+"name": "Theater",
+"nameFr": "Théâtre"
+},
+{
+"id": "altar",
+"kind": "card",
+"name": "Altar",
+"nameFr": "Autel"
+},
+{
+"id": "baths",
+"kind": "card",
+"name": "Baths",
+"nameFr": "Bains"
+},
+{
+"id": "pharmacist",
+"kind": "card",
+"name": "Pharmacist",
+"nameFr": "Officine"
+},
+{
+"id": "apothecary",
+"kind": "card",
+"name": "Apothecary",
+"nameFr": "Apothicaire"
+},
+{
+"id": "workshop",
+"kind": "card",
+"name": "Workshop",
+"nameFr": "Atelier"
+},
+{
+"id": "scriptorium",
+"kind": "card",
+"name": "Scriptorium",
+"nameFr": "Scriptorium"
+},
+{
+"id": "stone-reserve",
+"kind": "card",
+"name": "Stone Reserve",
+"nameFr": "Dépôt de pierre"
+},
+{
+"id": "clay-reserve",
+"kind": "card",
+"name": "Clay Reserve",
+"nameFr": "Dépôt d'argile"
+},
+{
+"id": "wood-reserve",
+"kind": "card",
+"name": "Wood Reserve",
+"nameFr": "Dépôt de bois"
+},
+{
+"id": "tavern",
+"kind": "card",
+"name": "Tavern",
+"nameFr": "Taverne"
+},
+{
+"id": "guard-tower",
+"kind": "card",
+"name": "Guard Tower",
+"nameFr": "Tour de garde"
+},
+{
+"id": "stable",
+"kind": "card",
+"name": "Stable",
+"nameFr": "Écuries"
+},
+{
+"id": "garrison",
+"kind": "card",
+"name": "Garrison",
+"nameFr": "Caserne"
+},
+{
+"id": "palisade",
+"kind": "card",
+"name": "Palisade",
+"nameFr": "Palissade"
+},
+{
+"id": "sawmill",
+"kind": "card",
+"name": "Sawmill",
+"nameFr": "Scierie"
+},
+{
+"id": "brickyard",
+"kind": "card",
+"name": "Brickyard",
+"nameFr": "Briqueterie"
+},
+{
+"id": "shelf-quarry",
+"kind": "card",
+"name": "Shelf Quarry",
+"nameFr": "Carrière"
+},
+{
+"id": "glass-blower",
+"kind": "card",
+"name": "Glass-Blower",
+"nameFr": "Soufflerie"
+},
+{
+"id": "drying-room",
+"kind": "card",
+"name": "Drying Room",
+"nameFr": "Séchoir"
+},
+{
+"id": "courthouse",
+"kind": "card",
+"name": "Courthouse",
+"nameFr": "Tribunal"
+},
+{
+"id": "statue",
+"kind": "card",
+"name": "Statue",
+"nameFr": "Statue"
+},
+{
+"id": "temple",
+"kind": "card",
+"name": "Temple",
+"nameFr": "Temple"
+},
+{
+"id": "aqueduct",
+"kind": "card",
+"name": "Aqueduct",
+"nameFr": "Aqueduc"
+},
+{
+"id": "rostrum",
+"kind": "card",
+"name": "Rostrum",
+"nameFr": "Rostres"
+},
+{
+"id": "school",
+"kind": "card",
+"name": "School",
+"nameFr": "École"
+},
+{
+"id": "laboratory",
+"kind": "card",
+"name": "Laboratory",
+"nameFr": "Laboratoire"
+},
+{
+"id": "library",
+"kind": "card",
+"name": "Library",
+"nameFr": "Bibliothèque"
+},
+{
+"id": "dispensary",
+"kind": "card",
+"name": "Dispensary",
+"nameFr": "Dispensaire"
+},
+{
+"id": "forum",
+"kind": "card",
+"name": "Forum",
+"nameFr": "Forum"
+},
+{
+"id": "caravansery",
+"kind": "card",
+"name": "Caravansery",
+"nameFr": "Caravansérail"
+},
+{
+"id": "customs-house",
+"kind": "card",
+"name": "Customs House",
+"nameFr": "Douanes"
+},
+{
+"id": "brewery",
+"kind": "card",
+"name": "Brewery",
+"nameFr": "Brasserie"
+},
+{
+"id": "horse-breeders",
+"kind": "card",
+"name": "Horse Breeders",
+"nameFr": "Haras"
+},
+{
+"id": "barracks",
+"kind": "card",
+"name": "Barracks",
+"nameFr": "Baraquements"
+},
+{
+"id": "archery-range",
+"kind": "card",
+"name": "Archery Range",
+"nameFr": "Champ de tir"
+},
+{
+"id": "parade-ground",
+"kind": "card",
+"name": "Parade Ground",
+"nameFr": "Place d'armes"
+},
+{
+"id": "walls",
+"kind": "card",
+"name": "Walls",
+"nameFr": "Muraille"
+},
+{
+"id": "pantheon",
+"kind": "card",
+"name": "Pantheon",
+"nameFr": "Panthéon"
+},
+{
+"id": "gardens",
+"kind": "card",
+"name": "Gardens",
+"nameFr": "Jardins"
+},
+{
+"id": "town-hall",
+"kind": "card",
+"name": "Town Hall",
+"nameFr": "Hôtel de ville"
+},
+{
+"id": "palace",
+"kind": "card",
+"name": "Palace",
+"nameFr": "Palace"
+},
+{
+"id": "senate",
+"kind": "card",
+"name": "Senate",
+"nameFr": "Sénat"
+},
+{
+"id": "obelisk",
+"kind": "card",
+"name": "Obelisk",
+"nameFr": "Obélisque"
+},
+{
+"id": "academy",
+"kind": "card",
+"name": "Academy",
+"nameFr": "Académie"
+},
+{
+"id": "study",
+"kind": "card",
+"name": "Study",
+"nameFr": "Étude"
+},
+{
+"id": "university",
+"kind": "card",
+"name": "University",
+"nameFr": "Université"
+},
+{
+"id": "observatory",
+"kind": "card",
+"name": "Observatory",
+"nameFr": "Observatoire"
+},
+{
+"id": "chamber-of-commerce",
+"kind": "card",
+"name": "Chamber of Commerce",
+"nameFr": "Chambre de commerce"
+},
+{
+"id": "port",
+"kind": "card",
+"name": "Port",
+"nameFr": "Port"
+},
+{
+"id": "armory",
+"kind": "card",
+"name": "Armory",
+"nameFr": "Armurerie"
+},
+{
+"id": "lighthouse",
+"kind": "card",
+"name": "Lighthouse",
+"nameFr": "Phare"
+},
+{
+"id": "arena",
+"kind": "card",
+"name": "Arena",
+"nameFr": "Arène"
+},
+{
+"id": "pretorium",
+"kind": "card",
+"name": "Pretorium",
+"nameFr": "Prétoire"
+},
+{
+"id": "arsenal",
+"kind": "card",
+"name": "Arsenal",
+"nameFr": "Arsenal"
+},
+{
+"id": "fortifications",
+"kind": "card",
+"name": "Fortifications",
+"nameFr": "Fortifications"
+},
+{
+"id": "siege-workshop",
+"kind": "card",
+"name": "Siege Workshop",
+"nameFr": "Atelier de siège"
+},
+{
+"id": "circus",
+"kind": "card",
+"name": "Circus",
+"nameFr": "Cirque"
+},
+{
+"id": "merchants-guild",
+"kind": "card",
+"name": "Merchants Guild",
+"nameFr": "Guilde des commerçants"
+},
+{
+"id": "shipowners-guild",
+"kind": "card",
+"name": "Shipowners Guild",
+"nameFr": "Guilde des armateurs"
+},
+{
+"id": "builders-guild",
+"kind": "card",
+"name": "Builders Guild",
+"nameFr": "Guilde des bâtisseurs"
+},
+{
+"id": "magistrates-guild",
+"kind": "card",
+"name": "Magistrates Guild",
+"nameFr": "Guilde des magistrats"
+},
+{
+"id": "scientists-guild",
+"kind": "card",
+"name": "Scientists Guild",
+"nameFr": "Guilde des scientifiques"
+},
+{
+"id": "tacticians-guild",
+"kind": "card",
+"name": "Tacticians Guild",
+"nameFr": "Guilde des tacticiens"
+},
+{
+"id": "moneylenders-guild",
+"kind": "card",
+"name": "Moneylenders Guild",
+"nameFr": "Guilde des usuriers"
+},
 {
 "id": "the-appian-way",
+"kind": "wonder",
 "name": "The Appian Way",
 "nameFr": "La Via Appia"
 },
 {
 "id": "circus-maximus",
+"kind": "wonder",
 "name": "Circus Maximus",
 "nameFr": "Le Circus Maximus"
 },
 {
 "id": "the-colossus",
+"kind": "wonder",
 "name": "The Colossus",
 "nameFr": "Le Colosse"
 },
 {
 "id": "the-great-library",
+"kind": "wonder",
 "name": "The Great Library",
 "nameFr": "La Grande Bibliothèque"
 },
 {
 "id": "the-great-lighthouse",
+"kind": "wonder",
 "name": "The Great Lighthouse",
 "nameFr": "Le Grand Phare"
 },
 {
 "id": "the-hanging-gardens",
+"kind": "wonder",
 "name": "The Hanging Gardens",
 "nameFr": "Les Jardins Suspendus"
 },
 {
 "id": "the-mausoleum",
+"kind": "wonder",
 "name": "The Mausoleum",
 "nameFr": "Le Mausolée"
 },
 {
 "id": "piraeus",
+"kind": "wonder",
 "name": "Piraeus",
 "nameFr": "Le Pirée"
 },
 {
 "id": "the-pyramids",
+"kind": "wonder",
 "name": "The Pyramids",
 "nameFr": "Les Pyramides"
 },
 {
 "id": "the-sphinx",
+"kind": "wonder",
 "name": "The Sphinx",
 "nameFr": "Le Sphinx"
 },
 {
 "id": "the-statue-of-zeus",
+"kind": "wonder",
 "name": "The Statue of Zeus",
 "nameFr": "La Statue de Zeus"
 },
 {
 "id": "the-temple-of-artemis",
+"kind": "wonder",
 "name": "The Temple of Artemis",
 "nameFr": "Le Temple d'Artémis"
+},
+{
+"id": "agriculture",
+"kind": "token",
+"name": "Agriculture",
+"nameFr": "Agriculture"
+},
+{
+"id": "architecture",
+"kind": "token",
+"name": "Architecture",
+"nameFr": "Architecture"
+},
+{
+"id": "economy",
+"kind": "token",
+"name": "Economy",
+"nameFr": "Économie"
+},
+{
+"id": "law",
+"kind": "token",
+"name": "Law",
+"nameFr": "Loi"
+},
+{
+"id": "masonry",
+"kind": "token",
+"name": "Masonry",
+"nameFr": "Maçonnerie"
+},
+{
+"id": "mathematics",
+"kind": "token",
+"name": "Mathematics",
+"nameFr": "Mathématiques"
+},
+{
+"id": "philosophy",
+"kind": "token",
+"name": "Philosophy",
+"nameFr": "Philosophie"
+},
+{
+"id": "strategy",
+"kind": "token",
+"name": "Strategy",
+"nameFr": "Stratégie"
+},
+{
+"id": "theology",
+"kind": "token",
+"name": "Theology",
+"nameFr": "Théologie"
+},
+{
+"id": "urbanism",
+"kind": "token",
+"name": "Urbanism",
+"nameFr": "Urbanisme"
 }
 ]
 }
