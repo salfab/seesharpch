@@ -1,0 +1,64 @@
+{
+"wonders": [
+{
+"id": "the-appian-way",
+"name": "The Appian Way",
+"nameFr": "La Via Appia"
+},
+{
+"id": "circus-maximus",
+"name": "Circus Maximus",
+"nameFr": "Le Circus Maximus"
+},
+{
+"id": "the-colossus",
+"name": "The Colossus",
+"nameFr": "Le Colosse"
+},
+{
+"id": "the-great-library",
+"name": "The Great Library",
+"nameFr": "La Grande Bibliothèque"
+},
+{
+"id": "the-great-lighthouse",
+"name": "The Great Lighthouse",
+"nameFr": "Le Grand Phare"
+},
+{
+"id": "the-hanging-gardens",
+"name": "The Hanging Gardens",
+"nameFr": "Les Jardins Suspendus"
+},
+{
+"id": "the-mausoleum",
+"name": "The Mausoleum",
+"nameFr": "Le Mausolée"
+},
+{
+"id": "piraeus",
+"name": "Piraeus",
+"nameFr": "Le Pirée"
+},
+{
+"id": "the-pyramids",
+"name": "The Pyramids",
+"nameFr": "Les Pyramides"
+},
+{
+"id": "the-sphinx",
+"name": "The Sphinx",
+"nameFr": "Le Sphinx"
+},
+{
+"id": "the-statue-of-zeus",
+"name": "The Statue of Zeus",
+"nameFr": "La Statue de Zeus"
+},
+{
+"id": "the-temple-of-artemis",
+"name": "The Temple of Artemis",
+"nameFr": "Le Temple d'Artémis"
+}
+]
+}
