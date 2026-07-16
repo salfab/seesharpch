@@ -76,6 +76,15 @@ D'où une règle bête et méchante : on cherche **où** → détecteur ; on veu
 
 « Et si je dégainais un détecteur pour tout faire, alors ? » Ça ne marche pas, et pour une raison simple : un détecteur passe la moitié de son temps à *localiser* — fouiller la scène pour trouver où sont les choses. Quand la vignette est déjà cadrée, cette moitié-là tourne dans le vide, et il lui reste d'autant moins de capacité pour la seule question qui compte : c'est laquelle ? En prime, il réclame beaucoup plus d'exemples, parce qu'il doit aussi apprendre à quoi ressemble le « rien » autour des objets. Le classifieur, lui, met 100 % de son attention sur la distinction fine à l'intérieur du cadre. Et l'inverse est vrai aussi : lâcher un classifieur sur une photo entière en désordre ne donne rien — il veut une chose, bien cadrée, pas une scène. Chaque outil sa question.
 
+<!-- s4b:boite-ou-pose -->
+## Une boîte suffit-elle, ou faut-il la *pose* ? (brouillon)
+
+Détecteur ou classifieur, on n'a parlé que d'objets qu'on lit **dans leur cadre** : une pièce (quelle valeur ?), un laurier (combien de points ?), une bannière (quelle couleur ?). Pour tous ceux-là, une **boîte** suffit — on recadre, un petit classifieur tranche, fin de l'histoire. Aucune géométrie : l'angle, la rotation, l'objet s'en moque, puisqu'on ne cherche qu'*à l'intérieur*. Ce sont des objets qu'on lit et qu'on oublie.
+
+Une seule famille casse ce confort : les **merveilles**. Parce qu'une merveille n'est pas un objet qu'on lit et qu'on oublie — c'est un **conteneur** : une carte peut être glissée dessous, et c'est justement ça qui la rend « construite » (donc qui vaut des points). Pour répondre à « y a-t-il une carte tuckée ? », une boîte ne suffit plus : il faut savoir *exactement* où passent les quatre bords de la carte, et sous quel angle, pour aller regarder juste au-delà du bon bord. Il faut la **pose**, pas seulement la position. C'est là que le vieux recalage — celui-là même qui lit les merveilles, sans un gramme d'entraînement — reprend du service, cette fois pour la géométrie.
+
+J'ai voulu vérifier qu'il servait encore : peut-être que la boîte du détecteur suffisait, quitte à ignorer l'orientation ? Mesuré. En remplaçant la pose recalée par une simple boîte, le verdict « construite / pas construite » **bascule dans un cas sur trois** — et catastrophiquement sur les photos prises de biais : une table entière de merveilles vues de travers passe de « toutes construites » à « aucune ». La leçon complète l'axe précédent : pour un objet qu'on lit dans son cadre, la boîte suffit ; pour un conteneur dont l'enjeu est ce qui se cache **dessous**, il faut la pose. Chaque question son outil — jusque dans la géométrie.
+
 <!-- s5:blackbox -->
 ## Ouvrir la boîte noire : le *transfer learning*
 
