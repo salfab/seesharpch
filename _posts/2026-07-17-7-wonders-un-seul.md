@@ -68,7 +68,7 @@ Les merveilles posent une autre question. Une carte peut être glissée dessous,
 
 J'ai testé la version simple : remplacer le recalage précis par la boîte du détecteur. Le verdict « construite ou non » a basculé dans **19 cas sur 50**. Sur une photo prise de biais, les dix merveilles construites sont devenues dix merveilles non construites.
 
-Pour l'instant, les rôles sont bien séparés : YOLO propose la zone, l'OCR lit l'identité, puis le recalage ORB/RANSAC retrouve la pose exacte et le NCC vérifie qu'elle tient.
+Cette distinction reste vraie même après avoir remplacé le lecteur d'identité. YOLO propose la zone, ResNet reconnaît la merveille d'après son illustration, puis ORB/RANSAC retrouve sa pose exacte et le NCC vérifie qu'elle tient.
 
 Une boîte suffit pour lire ce qui est dedans. Pour savoir ce qui est glissé dessous, il faut la géométrie.
 
@@ -157,19 +157,42 @@ La correction a été géométrique : si le centre du laurier tombe dans le disq
 
 L'apparence était ambiguë. La position ne l'était pas.
 
-## Recommencer, mais pas de zéro
+## L'OCR a préparé son propre remplacement
 
-Le chantier actuel sur les merveilles rend cette boucle très concrète.
+Au départ, l'OCR était le *low-hanging fruit*. Il savait lire le nom d'une merveille dès le premier jour, sans dataset ni entraînement. Il était lent et dépendait du texte imprimé, mais il permettait au reste du pipeline d'avancer. À ce moment-là, c'était largement suffisant.
 
-Au départ, l'OCR était le *low-hanging fruit*. Il savait lire un nom dès le premier jour, sans dataset et sans entraînement. Il était lent — plusieurs secondes par photo — et dépendait du texte imprimé, mais il permettait au reste du pipeline d'avancer. À ce moment-là, c'était largement suffisant.
+Il a même servi à préannoter le premier lot d'images. Au lieu de dessiner chaque boîte et de saisir chaque identité depuis zéro, je partais de ses propositions. Ensuite, je corrigeais les noms, j'agrandissais les boîtes qui ne couvraient que le texte et j'ajoutais les merveilles qu'il n'avait pas lues.
 
-Pendant qu'il faisait le travail, les photos vérifiées se sont accumulées : d'autres téléphones, d'autres lumières, d'autres angles. J'ai maintenant assez de matière pour tenter l'étape suivante : améliorer la détection des régions d'intérêt, puis reconnaître les merveilles avec un détecteur appris sans repasser par l'OCR.
+Cette vérification humaine n'est pas optionnelle. Sur une image contenant douze merveilles, le détecteur en a proposé treize. La treizième n'est pas seulement une erreur à effacer : marquée comme *hard negative* — un faux positif explicitement étiqueté — elle devient un exemple de ce que le modèle doit apprendre à ignorer.
 
-L'essai est en cours. S'il tient face aux parties mises de côté, l'OCR pourra sortir du pipeline. Sinon, il restera. Le benchmark décidera.
+Une fois les annotations nettoyées, YOLO localise les merveilles et un ResNet reconnaît leur illustration. J'ai comparé cette voie à l'OCR sur les mêmes photos, contre une vérité terrain dessinée à la main :
 
-Ce ne sera pas la preuve que l'OCR était un mauvais choix. Au contraire : il aura permis de démarrer sans données et de récolter celles qui rendent son remplacement possible.
+| Lecteur d'identité | Rappel | Précision |
+|---|---:|---:|
+| OCR — lire le nom | **77 % — 80/104** | **100 %** |
+| YOLO + ResNet — reconnaître l'illustration | **99 % — 103/104** | **100 %** |
 
-L'annotation elle-même est assistée : le système actuel place ses boîtes et propose ses catégories. Je corrige ce qui est faux, j'ajoute ce qu'il a raté, puis seulement l'image rejoint les données d'entraînement. Le modèle prépare une proposition ; il ne valide pas sa propre réponse.
+Les deux évitent d'inventer des merveilles. La différence, c'est que l'OCR échoue souvent à lire : nom trop petit, incliné, occulté ou noyé dans un reflet. Sur une photo de douze merveilles, il n'en a lu aucune ; la voie visuelle en a reconnu onze.
+
+Le résultat tient aussi quand je laisse une partie complète hors de l'entraînement : **6/7** pour YOLO + ResNet contre **5/7** pour l'OCR. C'est un tout petit test, mais au moins le modèle n'avait jamais vu cette partie.
+
+Il restait un cas frustrant. Les Jardins suspendus étaient bien détectés, mais le classifieur répondait avec une confiance de **0,49** pour un seuil fixé à **0,50**.
+
+La carte était presque à l'envers. Plutôt que de sortir ORB pour la redresser, j'ai utilisé une rotation-TTA — *Test-Time Augmentation*, ou augmentation au moment de la prédiction. Je présente le même recadrage à ResNet dans quatre orientations : 0°, 90°, 180° et 270°. Le modèle classe les quatre versions, puis je garde la réponse dont il est le plus sûr.
+
+Ce ne sont pas quatre modèles et ça ne demande aucun nouvel entraînement. C'est le même lecteur auquel on donne quatre façons de regarder la carte. Sur ce cas, la confiance est passée de **0,49 à 0,97**. Sur l'ensemble des 136 merveilles annotées, le rappel est monté de **98,5 % à 99,3 %**, sans nouveau faux positif.
+
+Ça ne rend pas ORB inutile. ResNet dit **laquelle** ; ORB retrouve les quatre bords et leur orientation pour déterminer si une carte est glissée dessous. La TTA sort simplement le recalage du chemin d'identité, là où quatre rotations de quelques millisecondes suffisent.
+
+Et surtout, le nouveau chemin est plus rapide. Modèles déjà chargés, sur CPU, l'OCR prenait en moyenne **20,3 secondes par photo**. YOLO + ResNet, TTA comprise : **1,4 seconde**. Environ quinze fois plus rapide, avec un meilleur rappel et sans dépendre de la langue imprimée.
+
+Le benchmark a tranché : la voie visuelle peut devenir le lecteur principal. L'OCR peut rester en secours le temps d'accumuler davantage de vraies parties, mais il n'a plus besoin de bloquer chaque photo pendant vingt secondes.
+
+Le dernier raté est lui aussi instructif : une merveille petite, partiellement cachée et mangée par un reflet. À l'œil, j'avais conclu que l'information avait disparu. Pourtant, un modèle entraîné avec cet exemple la reconnaît à **0,98**. L'information était bien là ; il manquait simplement des cas comparables pour généraliser.
+
+Le prochain gain ne viendra donc pas de davantage de beaux gros plans. Il viendra de vraies photos difficiles : lumière chaude ou froide, reflets, cartes de biais, fonds variés et merveilles à moitié cachées. C'est précisément ce que l'usage de l'application peut récolter.
+
+Mais récolter n'est pas apprendre. Chaque photo doit encore être vérifiée, corrigée, ajoutée au dataset, puis utilisée pour entraîner et mesurer une nouvelle version. Le modèle prépare une proposition ; il ne valide pas sa propre réponse.
 
 Un peu comme dans le jeu vidéo *Hades* : on y tente de s'échapper des Enfers. Quand on échoue — et ça arrive souvent — on repart du début. Mais pas tout à fait les mains vides : certaines ressources récupérées pendant le *run* sont conservées et permettent de débloquer de petites améliorations permanentes. Chaque tentative prépare la suivante.
 
