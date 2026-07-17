@@ -108,6 +108,18 @@ Le détail qui fait sourire et qui rassure : l'**unique** échec de la voie art,
 
 Morale, qui referme la boucle du billet : le choix « détecteur ou classifieur » n'était que la moitié de l'histoire. L'autre moitié, c'est **par quel canal l'information passe** — le texte ou l'image. Le texte est fragile (police, angle, langue, lumière) ; l'illustration est robuste. Pour un objet qui *porte son nom écrit*, la tentation est de lire ce nom ; la mesure dit que **reconnaître le dessin gagne**.
 
+<!-- b3:tta-orb -->
+
+## [BRUT] Un centième, une rotation, et la question « faut-il ORB ? »
+
+Suite immédiate : ce cheveu de confiance (0,49 pour un seuil à 0,50) valait une enquête, parce qu'il posait une question d'architecture. On aurait pu croire qu'il fallait, avant le classifieur, **redresser la carte** — et pour ça, on a un outil : ORB, qui recale la carte photo sur son scan de référence et en donne les quatre coins exacts. Une belle idée de pipeline en trois temps : *trouver* (YOLO) → *redresser* (ORB) → *reconnaître* (ResNet).
+
+Sauf qu'ORB coûte cher et casse (il échoue sur ~6 % des cartes — reflets, flou, petite carte). Avant de l'invoquer, j'ai mesuré *pourquoi* la confiance chutait. Deux causes : le **cadrage** (la boîte du détecteur, alignée sur les axes, embarque des coins de fond quand la carte est de biais) et surtout l'**orientation** (la carte était quasi tête-bêche). En reclassant la carte à ses **quatre orientations** et en gardant la lecture la plus nette, la confiance passe de 0,49 à **0,97**. Coût : quatre inférences de quelques millisecondes. **Sans ORB.**
+
+La leçon d'archi, que je veux dans l'article : la tentation était d'ajouter une étape lourde et fragile (le recalage) pour une amélioration de *qualité d'image*. La mesure dit que le problème n'était pas la géométrie fine, juste **l'orientation** — et qu'une normalisation triviale la règle. On garde ORB là où **rien d'autre** ne fait le travail (décider si une merveille est *construite* — le classifieur dit *laquelle*, pas *si*), mais **hors du chemin d'identité**.
+
+Et l'honnêteté du chiffre : ça monte le recall à **0,993**, pas à 1,0. Le dernier raté n'est pas une astuce ratée — c'est une carte réellement petite et occultée que le modèle ne reconnaît pas du tout (même pas dans son top-5). Les deux seuls ratés portaient sur *la même merveille* : c'est un signal de **donnée manquante** sur cette classe, pas un réglage à trouver. La dernière fraction de recall se paie en exemples, pas en ruses.
+
 <!-- ============================================================ FIN NOTES BRUTES ============================================================ -->
 
 <!-- ============================================================ FIN NOTES BRUTES ============================================================ -->
