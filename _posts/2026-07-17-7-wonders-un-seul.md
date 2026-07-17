@@ -171,7 +171,7 @@ Ce ne sera pas la preuve que l'OCR était un mauvais choix. Au contraire : il au
 
 L'annotation elle-même est assistée : le système actuel place ses boîtes et propose ses catégories. Je corrige ce qui est faux, j'ajoute ce qu'il a raté, puis seulement l'image rejoint les données d'entraînement. Le modèle prépare une proposition ; il ne valide pas sa propre réponse.
 
-Un peu comme dans le jeu vidéo *Hades* : on y tente de s'échapper des Enfers. Quand on échoue — et ça arrive souvent — on repart du début. Mais pas tout à fait les mains vides : les ressources ramassées pendant le dernier *run* permettent de débloquer de petites améliorations permanentes. Chaque tentative prépare la suivante.
+Un peu comme dans le jeu vidéo *Hades* : on y tente de s'échapper des Enfers. Quand on échoue — et ça arrive souvent — on repart du début. Mais pas tout à fait les mains vides : certaines ressources récupérées pendant le *run* sont conservées et permettent de débloquer de petites améliorations permanentes. Chaque tentative prépare la suivante.
 
 Le scoreur suit la même logique. Une photo ne change pas le modèle en direct. Une fois vérifiée, elle fournit de la matière pour entraîner, mesurer puis déployer la version suivante.
 
