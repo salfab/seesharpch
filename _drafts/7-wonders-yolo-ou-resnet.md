@@ -122,6 +122,16 @@ La leçon d'archi, que je veux dans l'article : la tentation était d'ajouter un
 
 Et l'honnêteté du chiffre : ça monte le recall à **0,993**, pas à 1,0. Le dernier raté n'est pas une astuce ratée — c'est une carte réellement petite et occultée que le modèle ne reconnaît pas du tout (même pas dans son top-5). Les deux seuls ratés portaient sur *la même merveille* : c'est un signal de **donnée manquante** sur cette classe, pas un réglage à trouver. La dernière fraction de recall se paie en exemples, pas en ruses.
 
-<!-- ============================================================ FIN NOTES BRUTES ============================================================ -->
+<!-- b4:degrade-flywheel -->
+
+## [BRUT] Data ou information ? Le test qui m'a fait mentir, puis me corriger
+
+Suite (et rectification d'une bêtise que j'ai failli écrire). Ce dernier raté — une carte « jardins suspendus » noyée sous un **reflet** — j'ai d'abord tranché à l'œil : « l'illustration est effacée, l'information n'existe plus dans l'image, aucune donnée ne la reconstruira » (c'est vrai pour d'autres cas de ce projet). J'allais l'écrire tel quel.
+
+Puis j'ai fait le test qui départage vraiment : **est-ce qu'un modèle qui a VU cette carte arrive à la lire ?** Réponse : **oui, à 0,98.** Donc l'information *était* là — le réseau exploite des indices résiduels (un bout de feuillage, la structure jaune, la signature de couleur, la disposition de la carte) que mon œil jugeait trop noyés. Ce n'était pas un mur d'information ; c'était un **trou de couverture** : le modèle échouait faute d'avoir déjà vu *une* carte glarée de ce genre pour généraliser à une nouvelle.
+
+La leçon, que je veux garder franche dans l'article : **on ne conclut pas « c'est irrécupérable » à l'œil.** Le test « le modèle qui l'a vu la lit-il ? » distingue une information absente (data inutile) d'un simple manque de diversité (data utile). Ici, verdict : data utile. Plus d'exemples **du bon type** — des cartes en **conditions dégradées** (reflets, éclairages divers, angles, occlusion par la carte glissée dessous, cadrage lointain) — font monter le taux de réussite vers 1,0. Pas plus de beaux gros plans nets : j'en ai déjà assez.
+
+Et la partie que je trouve élégante : **je n'ai pas à fabriquer ces conditions dégradées.** L'application a un point de collecte — chaque partie scorée par un utilisateur dépose ses photos, prises dans la vraie vie : mal éclairées, de biais, avec des reflets, sur une table ou une serviette. Autrement dit, **l'usage même de l'app produit exactement la diversité dégradée qui manque au modèle.** Au fil des parties, ce flux réalimente l'entraînement, et le modèle s'améliore tout seul sur les cas durs — un cercle vertueux où *l'outil se nourrit de son propre usage*. Le seul filet à garder pour le résiduel : quand la confiance est basse, l'app demande un cliché rapproché (comme elle sait déjà le faire pour les valeurs de lauriers douteuses).
 
 <!-- ============================================================ FIN NOTES BRUTES ============================================================ -->
