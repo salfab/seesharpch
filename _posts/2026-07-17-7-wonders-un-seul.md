@@ -2,7 +2,7 @@
 layout: post
 title: "L'IA n'est pas magique : quand je l'utilise, quand je m'en passe (leçons d'un compteur de points)"
 tags: [project, computer-vision, machine-learning, ai, board-games]
-header_image: /assets/img/7-wonders-ai-pipeline-hero-v2.png
+header_image: /assets/img/7-wonders-ai-pipeline-hero-v3.png
 unlisted: true
 permalink: /blog/preview/c84f21a7/7-wonders-un-seul
 sitemap: false
