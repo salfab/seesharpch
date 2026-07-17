@@ -133,7 +133,7 @@ Mon détecteur reconnaissait mal les cartes empilées. J'ai fabriqué des exempl
 
 J'ai refait les photos avec les cartes empilées par couleur, comme en fin de partie.
 
-![Des cartes empilées par couleur, avec seulement leur bandeau supérieur visible](/assets/img/7wd-cartes-empilees.jpg)
+![Des cartes empilées par couleur, avec seulement leur bandeau supérieur visible](/assets/img/7wd-cartes-empilees-redressees.jpg)
 
 Cette fois, le nombre de faux positifs a été divisé par deux. Sur une couleur que le détecteur ratait souvent, **sept photos** prises dans la bonne disposition ont fait passer le repérage de **71 % à 99 %**.
 
