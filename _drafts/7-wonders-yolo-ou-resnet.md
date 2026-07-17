@@ -108,6 +108,8 @@ Le détail qui fait sourire et qui rassure : l'**unique** échec de la voie art,
 
 Morale, qui referme la boucle du billet : le choix « détecteur ou classifieur » n'était que la moitié de l'histoire. L'autre moitié, c'est **par quel canal l'information passe** — le texte ou l'image. Le texte est fragile (police, angle, langue, lumière) ; l'illustration est robuste. Pour un objet qui *porte son nom écrit*, la tentation est de lire ce nom ; la mesure dit que **reconnaître le dessin gagne**.
 
+Et il gagne aussi sur un axe qu'on oublie souvent de chiffrer : le **temps**. Lire les noms, c'est balayer l'image à plusieurs rotations, pour chaque merveille — environ **20 secondes par photo** sur mon banc. Reconnaître l'illustration (détecter puis classer, TTA comprise) : **~1,4 seconde**. **Quinze fois plus vite**, pour un meilleur résultat. Sur un serveur ça se voit ; sur un téléphone, ça fait la différence entre « utilisable » et « on abandonne ». Le canal-image n'est pas seulement plus robuste — il est aussi radicalement moins cher.
+
 <!-- b3:tta-orb -->
 
 ## [BRUT] Un centième, une rotation, et la question « faut-il ORB ? »
