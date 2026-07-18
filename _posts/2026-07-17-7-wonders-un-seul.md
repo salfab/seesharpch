@@ -24,11 +24,11 @@ Un cercle assez rond et de la bonne taille ? Probablement une pièce. Une bande 
 
 Voilà ce qu'il faut lire sur une fin de partie : des merveilles, des cartes glissées à moitié dessous, des jetons, des pièces et plusieurs piles de cartes dont on ne voit parfois presque plus que le haut.
 
-![Une fin de partie de 7 Wonders Duel sur une table en bois](/assets/img/7-wonders-duel-score-photo.jpg)
+![Une fin de partie complète de 7 Wonders Duel sur une table en bois](/assets/img/7wd-vue-originale.jpg)
 
 Sur ma table, avec une bonne lumière, ça marchait très bien. Je repérais les cartes, je lisais leurs couleurs, je comptais les pièces. Là, tu te dis que t'as plié le game avec une POC d'une heure et qu'on peut retourner siroter des blue lagoons sur la plage.
 
-![Un tableau de joueur avec les détections dessinées par-dessus](/assets/img/7wd-vue-annotee.jpg)
+![La même photo, avec les détections du programme dessinées par-dessus](/assets/img/7wd-vue-annotee.jpg)
 
 Puis j'ai posé le jeu sur une serviette de plage, dehors, au soleil couchant.
 
