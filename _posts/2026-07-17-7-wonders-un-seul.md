@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "7 Wonders Duel : une solution inutilement complexe assistée par l'IA pour compter les points de victoire… donc un projet indispensable !"
+title: "7 Wonders Duel : une solution inutilement complexe, assistée par l'IA et donc indispensable"
 tags: [project, computer-vision, machine-learning, ai, board-games]
 header_image: /assets/img/7-wonders-ai-pipeline-hero-v3.png
 unlisted: true
