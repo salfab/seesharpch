@@ -147,15 +147,41 @@ C'est le même modèle, sans nouvel entraînement : juste quatre façons de rega
 
 Le nouveau chemin est aussi beaucoup plus rapide. Modèles déjà chargés sur le CPU, l'OCR prenait environ **20 secondes par photo**. YOLO et ResNet, rotations comprises : **1,4 seconde**.
 
-## Ce que les modèles n'ont pas remplacé
+## Trois avis valent mieux qu'un. En principe.
 
-L'identité était réglée. Pas la géométrie.
+L'identité était réglée. Restait à savoir si la merveille avait réellement été construite.
 
-Une merveille ne rapporte ses points que si elle est construite, donc si une carte est glissée dessous. ResNet sait dire **laquelle**. Il ne sait pas retrouver précisément ses quatre bords pour regarder ce qui dépasse. Quand j'ai remplacé ce recalage par la simple boîte de YOLO, le verdict « construite ou non » a changé dans **19 cas sur 50**.
+Dans le jeu, une carte est alors glissée sous la merveille. Une fois celle-ci redressée dans son orientation de référence, la carte dépasse toujours à droite. Je pouvais donc découper une fine bande juste après ce bord et demander à un petit classifieur : « carte ou table ? »
 
-Sur la photo la plus inclinée, les dix merveilles pourtant construites sont ainsi devenues dix merveilles non construites.
+Pour obtenir ce bord avec précision, j'utilisais un recalage ORB entre la photo et l'image de référence de la merveille. La méthode fonctionnait bien, mais pas toujours : sur **36 merveilles sur 378**, le recalage échouait. L'identité était correcte, mais sans les quatre coins exacts je ne pouvais même pas fabriquer la bande à classifier.
 
-J'ai donc gardé le recalage géométrique là où il apporte une information irremplaçable. Il n'a simplement plus besoin de participer à l'identification.
+![Douze merveilles correctement reconnues, mais dont plusieurs n'ont pas pu être recalées par ORB](/assets/img/7wd-vote-orb-echec.jpg)
+
+*Les noms sont bons. Le recalage précis, lui, a abandonné.*
+
+J'ai essayé une solution moins délicate : sonder les quatre marges de la boîte trouvée par YOLO, sans chercher à deviner l'orientation. Ça récupérait **25 merveilles construites** abandonnées par l'ORB. En revanche, sur une table serrée, une marge pouvait attraper la carte voisine et conclure que la merveille était construite.
+
+![La marge de Circus Maximus recouvre une merveille voisine et produit un faux positif](/assets/img/7wd-vote-yolo-voisin.jpg)
+
+*Circus Maximus n'est pas construite. Sa marge a simplement regardé dans l'assiette de la voisine.*
+
+Il restait un troisième indice : chercher le bandeau de la carte dans la zone où elle devrait dépasser. Très utile contre les voisines. Complètement aveugle si la carte est glissée face cachée.
+
+![Des merveilles avec des cartes glissées face cachée, sans bandeau visible à détecter](/assets/img/7wd-vote-bandeau-face-cachee.jpg)
+
+*La carte dépasse bien. Face cachée, elle ne montre juste aucun bandeau.*
+
+Pris séparément, aucun des trois n'était infaillible. Leurs erreurs n'arrivaient simplement pas au même endroit. J'ai donc fait voter :
+
+1. le classifieur sur la bande précisément recalée par ORB, quand ce recalage existe ;
+2. le même classifieur sur les quatre marges de la boîte YOLO ;
+3. la présence d'un bandeau de carte dans la zone attendue.
+
+Deux voix l'emportent. Sur une carte face cachée, ORB et YOLO compensent l'absence de bandeau. Quand l'ORB attrape une voisine, la sonde YOLO et le bandeau peuvent le mettre en minorité.
+
+J'avais donc bricolé une sorte de *Minority Report* pour merveilles en carton. Avec une différence importante : mes trois votants ne voient pas le futur et la majorité peut encore se tromper avec beaucoup d'assurance.
+
+Sur les cas vérifiés jusqu'ici, l'ORB seul obtenait **82/83**. Le vote arrive à **83/83**. Ça corrige tous les échecs connus ; ça ne transforme pas trois systèmes imparfaits en vérité mathématique. Le prochain cas tordu aura toujours le droit de déposer une réclamation.
 
 ## Les photos ratées sont les plus utiles
 
