@@ -115,7 +115,9 @@ J'ai aussi essayé de compenser une classe rare avec du sur-échantillonnage et 
 
 J'ai annulé l'expérience.
 
-Le modèle ne manquait pas de transformations inventées par le code. Il manquait de vraies photos prises dans les conditions où il devait travailler.
+Dans ce cas précis, le modèle ne manquait pas de transformations inventées par le code. Il manquait de vrais exemples de la classe rare.
+
+Ça ne condamnait pas pour autant toutes les données synthétiques. Sur un autre entraînement, le problème était bien l'éclairage : le même objet devenait trop sombre, trop clair ou presque effacé par le contraste. Cette fois, j'ai gardé de vrais recadrages annotés et j'en ai fabriqué des variantes en jouant uniquement sur la luminosité et le contraste. Et là, le synthétique a très bien marché. La différence est importante : je n'essayais plus d'inventer une information absente, mais d'apprendre au modèle à retrouver la même information sous une lumière différente.
 
 ## Une ligne de code peut encore gagner
 
