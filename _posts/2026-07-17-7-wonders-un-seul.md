@@ -119,6 +119,28 @@ Dans ce cas précis, le modèle ne manquait pas de transformations inventées pa
 
 Ça ne condamnait pas pour autant toutes les données synthétiques. Sur un autre entraînement, le problème était bien l'éclairage : le même objet devenait trop sombre, trop clair ou presque effacé par le contraste. Cette fois, j'ai gardé de vrais recadrages annotés et j'en ai fabriqué des variantes en jouant uniquement sur la luminosité et le contraste. Et là, le synthétique a très bien marché. La différence est importante : je n'essayais plus d'inventer une information absente, mais d'apprendre au modèle à retrouver la même information sous une lumière différente.
 
+## La taille est une donnée
+
+Je pensais avoir réglé le problème de résolution en revenant découper chaque objet dans la photo originale. C'était nécessaire, mais pas suffisant.
+
+Sur une vue d'ensemble des deux cités, certains lauriers ne faisaient plus que **48 × 65 pixels**. Le lecteur se trompait alors sur des chiffres qu'il reconnaissait très bien dans des photos plus rapprochées — parfois même sur des images dont une version plus grande avait servi à l'entraîner.
+
+J'ai repris exactement le même recadrage et fait varier un seul facteur. L'éclaircir empirait le résultat. Renforcer la netteté aussi. En revanche, un agrandissement bicubique ×3 faisait relire le « 1 » correctement, avec **0,99** de confiance.
+
+L'agrandissement n'avait évidemment inventé aucun détail. Il avait remis les formes dans un ordre de grandeur familier pour le réseau.
+
+J'ai donc ajouté au dataset des copies réduites à **45–70 %** de leur taille, sans retirer les originales. Le modèle apprenait désormais le même laurier de près et de loin. La photo difficile par cité est passée à **28/28** lectures correctes ; sur la vue d'ensemble, on est passé d'environ **30/39 à 35/39**.
+
+J'ai essayé la même recette sur les guildes et sur le classifieur qui décide si une merveille est construite. Aucun progrès. Cette fois, le classifieur n'était pas coupable : la bannière violette était ratée en amont et la bande à lire était mal extraite. Deux nuits de GPU ne réparent pas le mauvais étage du pipeline.
+
+ORB a rencontré une variante du même problème. Ses descripteurs examinent des zones de taille fixe. Quand une merveille devient petite dans la photo, ses motifs ne sont plus à la même échelle que dans l'image de référence et le recalage abandonne.
+
+Là encore, j'agrandis le recadrage ×2. Pas pour créer des détails, mais pour remettre les points caractéristiques à une taille qu'ORB connaît. Le recalage est passé de **0/8 à 8/8** sur la vue d'ensemble, et les huit verdicts « construite ou non » sont désormais corrects.
+
+Je n'ai pas changé ORB partout. Le second essai ne s'active que si le premier échoue sur une boîte de moins de 620 pixels. C'est plus prudent que de retoucher globalement ses paramètres et de découvrir ensuite que les photos qui fonctionnaient ont décidé de ne plus coopérer.
+
+La taille en pixels n'est donc pas un détail d'implémentation. Pour un modèle comme pour un algorithme classique, elle fait partie de l'entrée.
+
 ## Une ligne de code peut encore gagner
 
 Introduire des modèles n'a pas rendu les règles classiques inutiles.
