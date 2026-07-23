@@ -119,7 +119,7 @@ Dans ce cas précis, le modèle ne manquait pas de transformations inventées pa
 
 Ça ne condamnait pas pour autant toutes les données synthétiques. Sur un autre entraînement, le problème était bien l'éclairage : le même objet devenait trop sombre, trop clair ou presque effacé par le contraste. Cette fois, j'ai gardé de vrais recadrages annotés et j'en ai fabriqué des variantes en jouant uniquement sur la luminosité et le contraste. Et là, le synthétique a très bien marché. La différence est importante : je n'essayais plus d'inventer une information absente, mais d'apprendre au modèle à retrouver la même information sous une lumière différente.
 
-## La taille est une donnée
+## C'est la taille qui compte !
 
 Je pensais avoir réglé le problème de résolution en revenant découper chaque objet dans la photo originale. C'était nécessaire, mais pas suffisant.
 
