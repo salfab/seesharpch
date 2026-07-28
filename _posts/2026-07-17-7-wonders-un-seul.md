@@ -135,11 +135,21 @@ J'ai essayé la même recette sur les guildes et sur le classifieur qui décide 
 
 ORB a rencontré une variante du même problème. Ses descripteurs examinent des zones de taille fixe. Quand une merveille devient petite dans la photo, ses motifs ne sont plus à la même échelle que dans l'image de référence et le recalage abandonne.
 
-Là encore, j'agrandis le recadrage ×2. Pas pour créer des détails, mais pour remettre les points caractéristiques à une taille qu'ORB connaît. Le recalage est passé de **0/8 à 8/8** sur la vue d'ensemble, et les huit verdicts « construite ou non » sont désormais corrects.
+Là encore, j'agrandis le recadrage ×2. Pas pour créer des détails, mais pour remettre les points caractéristiques à une taille qu'ORB connaît. Le recalage est passé de **0/8 à 8/8** sur la vue d'ensemble. Je ne déclenche ce second essai que si le premier échoue sur une petite boîte : inutile de secouer les cas qui fonctionnent déjà.
 
-Je n'ai pas changé ORB partout. Le second essai ne s'active que si le premier échoue sur une boîte de moins de 620 pixels. C'est plus prudent que de retoucher globalement ses paramètres et de découvrir ensuite que les photos qui fonctionnaient ont décidé de ne plus coopérer.
+À ce stade, j'avais fini par résumer le problème un peu vite : quand un objet est trop petit, il faut l'agrandir.
 
-La taille en pixels n'est donc pas un détail d'implémentation. Pour un modèle comme pour un algorithme classique, elle fait partie de l'entrée.
+La piste militaire s'est chargée de corriger la théorie.
+
+Sur certaines photos, elle occupait presque toute la largeur de l'image. YOLO ne la renvoyait plus comme un seul objet, mais comme plusieurs boîtes emboîtées ou posées bout à bout. J'ai d'abord soupçonné les annotations. Le problème venait en fait d'une limite géométrique du détecteur : sur son image d'entrée de 1280 pixels, une prédiction ne pouvait pas tracer une boîte de plus de 1024 pixels de côté. La piste était tout simplement trop grande pour tenir dedans.
+
+Le modèle ne découpait donc pas le plateau parce qu'il avait mal appris. Il faisait ce qu'il pouvait avec plusieurs boîtes, puisqu'aucune ne pouvait couvrir l'ensemble.
+
+Cette fois, la solution a été de **dézoomer** : réduire la photo à 65 % et la placer au centre du canevas avec une marge autour. Sans réentraînement ni nouveau modèle, le détecteur est passé de deux boîtes à une seule. Elle ne couvrait jusque-là qu'environ **85 %** de la longueur annotée ; après dézoom, elle la couvrait entièrement, et aucun des **73 médaillons** du jeu de test ne restait dehors — contre 17 auparavant.
+
+Il ne fallait pas pousser beaucoup plus loin. À 50 %, les grandes pistes tenaient toujours, mais trois petites devenaient à leur tour trop petites pour être détectées.
+
+La fenêtre a donc deux bords. Pour les lauriers, il fallait zoomer sur leur contenant. Pour la piste militaire, il fallait dézoomer. La taille en pixels n'est pas un détail d'implémentation : elle fait partie de l'entrée.
 
 ## Une ligne de code peut encore gagner
 
