@@ -28,36 +28,34 @@ CONVENTION DE NOMMAGE
   art/coins/coin-<1|3|6>.png
       Les trois valeurs de pièce du jeu de base : coin-1.png, coin-3.png,
       coin-6.png. Carré 512x512 px, alpha réel.
-
-      À REVOIR : les trois pièces livrées sont GRISES (pierre). Le jeu imprime
-      des pièces dorées/cuivrées ; posée à 46 px près du compteur, coin-1.png
-      lit « jeton de pierre », pas « pièce ». Rien de cassé, mais c'est le seul
-      asset qui s'écarte du matériel d'origine.
+      Couleurs : 1 argentée, 3 dorée, 6 cuivrée.
 
   art/laurels/laurel-<valeur>.png
       Les couronnes de lauriers : laurel-1.png … laurel-7.png, livrées.
       Carré 512x512 px, fond transparent ; le chiffre est dans l'image.
 
-      MANQUE : laurel-0.png. La rangée de pastilles n'est pas écrite à la main,
-      elle est DÉRIVÉE des cartes (data/buildingChips.ts, VP_CHIPS) : le vert
-      offre {0,1,2,3} et le jaune {0,3}, parce que ces familles impriment des
-      cartes à 0 PV que les guildes comptent quand même. Les deux pastilles « 0 »
-      demandent donc laurel-0.png, ne le trouvent pas, et restent en tuile CSS au
-      milieu d'une rangée d'images — c'est visible, ce n'est pas cassé. Le jour
-      où le fichier arrive (couronne VIDE, sans chiffre : la carte n'imprime
-      aucun laurier), il s'allume sans toucher au code.
+      laurel-0.png représente explicitement une carte dont les brins de laurier
+      sont barrés. Il sert aux cartes vertes/jaunes sans laurier imprimé, sans
+      faire croire que le matériel porte un chiffre 0.
+
+  art/ui/laurel-button-<couleur>.png
+      Sept faces de bouton carrées : blue, green, yellow, red, brown, grey,
+      purple. Leur surface reprend exactement la teinte mesurée de la famille de
+      cartes correspondante ; le fin biseau ivoire reste commun à la série.
+      L'interface utilise actuellement bleu/vert/jaune sous les lauriers.
 
   art/banners/banner-<couleur>.png
       Le bandeau imprimé d'une famille de cartes, une image par couleur :
         banner-blue.png, banner-green.png, banner-yellow.png, banner-red.png,
         banner-brown.png, banner-grey.png, banner-purple.png
-      Toile 512x512 px avec bandeau horizontal détouré sur alpha réel. Mesuré sur
-      les 7 fichiers livrés : le bandeau occupe 430x153 px, centré (lignes 179 à
-      331). C'est ce rectangle que la tuile affiche — `object-fit: cover` calé sur
-      la LARGEUR de la tuile, fenêtre au rapport 512/153. Autrement dit : le
-      bandeau devient l'en-tête pleine largeur de la tuile (~40 px de haut sur un
-      téléphone). GARDER LE SUJET CENTRÉ verticalement : c'est le centrage qui
-      fait tomber le recadrage pile sur le bandeau.
+      Toile 512x512 px, alpha réel. Le bandeau extra-fin occupe 76 px de haut,
+      centré, et déborde volontairement jusqu'aux bords gauche/droit. Il n'a ni
+      pictogramme ni liseré haut/latéral : seule la frise inférieure reste. Le
+      conteneur CSS arrondit le haut et coupe les côtés, au rapport 512/76.
+
+      Teintes mesurées sur quatre scans de cartes par famille :
+        blue #207cb5, green #26784b, yellow #eaa030, red #b83a37,
+        brown #713b38, grey #8d9091, purple #70508f.
 
       banner-purple.png est livré mais AUCUN appel ne le construit aujourd'hui :
       les six compteurs de couleur couvrent bleu/vert/jaune/brun/gris/rouge, et
@@ -87,12 +85,9 @@ reconnaissance des guildes on-device qui les consomme.
 POIDS
 -----
 
-Ces images n'ont pas plus de 256 couleurs : 26 des 27 fichiers sont stockés en
-PNG PALETTE (mode P + tRNS), ce qui a divisé le poids par deux — 691 -> 343 Ko —
-en gardant les pixels STRICTEMENT identiques (banner-brown.png, plus riche, est
-resté en RGBA). Un nouveau lot livré en RGBA peut donc être reconverti sans rien
-perdre ; le contrôle est la comparaison pixel à pixel après re-lecture, pas la
-taille du fichier. Viser < 30 Ko par image.
+Les 35 fichiers finaux sont stockés en PNG RGBA avec un vrai canal alpha. Leur
+palette visuelle est volontairement resserrée à ce qui reste perceptible à la
+taille d'usage (40–48 px). Chaque fichier reste sous 30 Ko.
 
 
 VÉRIFIER APRÈS DÉPÔT
