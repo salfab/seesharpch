@@ -1,0 +1,105 @@
+public/art/ — les icônes générées de la calculette de score
+==========================================================
+
+Ce dossier est la MOITIÉ « dessinée » des vignettes de l'onglet Calculator.
+L'autre moitié — merveilles et guildes — est déjà servie depuis public/models/
+(ce sont les références photo que la vision on-device utilise déjà, on ne les
+duplique pas ici).
+
+RÈGLE : le nom du fichier EST le câblage. Tant qu'un fichier est absent, la
+calculette affiche sa tuile CSS actuelle — jamais un carré cassé.
+
+Le module qui construit ces URL :
+  C:\sources\7-wonders-duel-scoreboard\apps\web\src\data\artAssets.ts
+Le composant qui gère le repli :
+  C:\sources\7-wonders-duel-scoreboard\apps\web\src\components\ArtImage.tsx
+
+
+CONVENTION DE NOMMAGE
+---------------------
+
+  art/tokens/<progress-token-id>.png
+      Les 10 jetons de progrès. Les ids viennent de @swd/game-data
+      (packages/game-data/src/progress-tokens.ts) :
+        agriculture, architecture, economy, law, masonry,
+        mathematics, philosophy, strategy, theology, urbanism
+      Affichés en ROND : carré 512x512 px, sujet centré, alpha réel.
+
+  art/coins/coin-<1|3|6>.png
+      Les trois valeurs de pièce du jeu de base : coin-1.png, coin-3.png,
+      coin-6.png. Carré 512x512 px, alpha réel.
+
+      À REVOIR : les trois pièces livrées sont GRISES (pierre). Le jeu imprime
+      des pièces dorées/cuivrées ; posée à 46 px près du compteur, coin-1.png
+      lit « jeton de pierre », pas « pièce ». Rien de cassé, mais c'est le seul
+      asset qui s'écarte du matériel d'origine.
+
+  art/laurels/laurel-<valeur>.png
+      Les couronnes de lauriers : laurel-1.png … laurel-7.png, livrées.
+      Carré 512x512 px, fond transparent ; le chiffre est dans l'image.
+
+      MANQUE : laurel-0.png. La rangée de pastilles n'est pas écrite à la main,
+      elle est DÉRIVÉE des cartes (data/buildingChips.ts, VP_CHIPS) : le vert
+      offre {0,1,2,3} et le jaune {0,3}, parce que ces familles impriment des
+      cartes à 0 PV que les guildes comptent quand même. Les deux pastilles « 0 »
+      demandent donc laurel-0.png, ne le trouvent pas, et restent en tuile CSS au
+      milieu d'une rangée d'images — c'est visible, ce n'est pas cassé. Le jour
+      où le fichier arrive (couronne VIDE, sans chiffre : la carte n'imprime
+      aucun laurier), il s'allume sans toucher au code.
+
+  art/banners/banner-<couleur>.png
+      Le bandeau imprimé d'une famille de cartes, une image par couleur :
+        banner-blue.png, banner-green.png, banner-yellow.png, banner-red.png,
+        banner-brown.png, banner-grey.png, banner-purple.png
+      Toile 512x512 px avec bandeau horizontal détouré sur alpha réel. Mesuré sur
+      les 7 fichiers livrés : le bandeau occupe 430x153 px, centré (lignes 179 à
+      331). C'est ce rectangle que la tuile affiche — `object-fit: cover` calé sur
+      la LARGEUR de la tuile, fenêtre au rapport 512/153. Autrement dit : le
+      bandeau devient l'en-tête pleine largeur de la tuile (~40 px de haut sur un
+      téléphone). GARDER LE SUJET CENTRÉ verticalement : c'est le centrage qui
+      fait tomber le recadrage pile sur le bandeau.
+
+      banner-purple.png est livré mais AUCUN appel ne le construit aujourd'hui :
+      les six compteurs de couleur couvrent bleu/vert/jaune/brun/gris/rouge, et
+      les guildes ont leur propre vignette (carte entière, recadrée sur
+      l'illustration — voir plus bas). Idem coin-3.png / coin-6.png : seule
+      coin-1.png est posée près du compteur de pièces. Ces trois-là sont en
+      réserve, pas en service.
+
+
+CE QU'ON NE MET PAS ICI
+-----------------------
+
+Pas de recadrage PHOTO. Les images livrées sont des redessins compacts fondés
+sur les éléments visuels des références locales de `data/game-material/`.
+
+Pas de duplication non plus : merveilles (models/wonder-refs/<id>.jpg) et
+guildes (models/guild-refs/<id>.jpg) sont déjà servies pour la vision et lues
+directement depuis là.
+
+La calculette montrait d'abord le bandeau seul des guildes
+(models/guild-band-refs/<id>.png) : même violet, mêmes coûts, les sept tuiles
+étaient indiscernables. Elle affiche désormais la CARTE ENTIÈRE recadrée sur son
+illustration, comme une merveille. Ces PNG de bandeau restent servis — c'est la
+reconnaissance des guildes on-device qui les consomme.
+
+
+POIDS
+-----
+
+Ces images n'ont pas plus de 256 couleurs : 26 des 27 fichiers sont stockés en
+PNG PALETTE (mode P + tRNS), ce qui a divisé le poids par deux — 691 -> 343 Ko —
+en gardant les pixels STRICTEMENT identiques (banner-brown.png, plus riche, est
+resté en RGBA). Un nouveau lot livré en RGBA peut donc être reconverti sans rien
+perdre ; le contrôle est la comparaison pixel à pixel après re-lecture, pas la
+taille du fichier. Viser < 30 Ko par image.
+
+
+VÉRIFIER APRÈS DÉPÔT
+--------------------
+
+  cd apps/web && npm run build     (les fichiers de public/ sont copiés tels quels)
+
+puis ouvrir l'onglet Calculator : la tuile CSS doit avoir cédé la place à
+l'image, en noir et blanc tant que l'élément n'est pas possédé, en couleur
+une fois coché.

@@ -1,0 +1,117 @@
+{
+ "seuil": 0.286,
+ "classes": [
+  "circus-maximus",
+  "circus-maximus__inverse",
+  "other",
+  "piraeus",
+  "piraeus__inverse",
+  "the-appian-way",
+  "the-appian-way__inverse",
+  "the-colossus",
+  "the-colossus__inverse",
+  "the-great-library",
+  "the-great-library__inverse",
+  "the-great-lighthouse",
+  "the-great-lighthouse__inverse",
+  "the-hanging-gardens",
+  "the-hanging-gardens__inverse",
+  "the-mausoleum",
+  "the-mausoleum__inverse",
+  "the-pyramids",
+  "the-pyramids__inverse",
+  "the-sphinx",
+  "the-sphinx__inverse",
+  "the-statue-of-zeus",
+  "the-statue-of-zeus__inverse",
+  "the-temple-of-artemis",
+  "the-temple-of-artemis__inverse"
+ ],
+ "mesure_le": "2026-08-16 17:24",
+ "empreinte_corpus": "349428ee1c57b33f",
+ "empreinte_modele": "ef864f0275f0fc74",
+ "protocole": {
+  "plis": 3,
+  "equilibrage": "par SESSION, deterministe (plus grosse session au pli le plus leger)",
+  "axe": "porte 2 : probabilite de l'argmax, UNIQUEMENT sur les crops dont l'argmax est une merveille — les refus de la classe `other` sont hors sujet",
+  "regle": "moyenne geometrique des deux bords, arrondie VERS LE BAS",
+  "hypothese": "seuil calibre sur les modeles de plis, applique au modele PLEIN : celui-ci voit strictement plus de donnees, il n'est donc pas moins sur",
+  "sessions_insecables": [
+   "neg"
+  ],
+  "plis_sessions": [
+   [
+    "2026-06-22_195300",
+    "2026-06-23_202400",
+    "2026-07-02_165900",
+    "2026-07-13_190000",
+    "2026-07-15_wonder-built-facedown",
+    "2026-07-15_wonder-built-parquet",
+    "2026-07-22_piege_exclusions",
+    "2026-08-02_camping",
+    "2026-08-10_partie",
+    "PXL_20260619_180737919.jpg"
+   ],
+   [
+    "2026-07-04_190000",
+    "2026-07-05_gingins",
+    "2026-07-15_wonder-built-dump",
+    "2026-07-15_wonder-built-orange",
+    "2026-07-15_wonder-built-stone",
+    "2026-07-19_partie",
+    "2026-07-20_adjacent_nonbuilt",
+    "2026-07-22_both_players",
+    "2026-07-26_quatre_vues",
+    "IMG-20260619-WA0004.jpg"
+   ],
+   [
+    "2026-06-20_153250",
+    "2026-06-24_193918",
+    "2026-07-06_soir",
+    "2026-07-07_partie",
+    "2026-07-13_wonder-dump",
+    "2026-07-15_wonder-built-metal",
+    "2026-07-15_wonder-built-wood",
+    "2026-07-17_towel-multizoom",
+    "2026-07-20_piege_4guildes",
+    "2026-07-25_terrasse",
+    "2026-07-29_partie_terrasse"
+   ]
+  ]
+ },
+ "bords": {
+  "bas": 0.7046534419059753,
+  "haut": 0.5770549774169922,
+  "facteur_de_marge": 0.8189202565393712,
+  "detail_bas": {
+   "intrus_nomme_merveille": 0.7046534419059753,
+   "ceinture_intrus_hors_echantillon": 0.7046534419059753,
+   "insecables_mesure_optimiste": 0.062425799667835236,
+   "merveille_mal_nommee": 0.3711433708667755
+  }
+ },
+ "population": {
+  "vraies_merveilles": 1090,
+  "intrus": 553,
+  "refusees_par_other": 2,
+  "bien_nommees": 1087,
+  "mal_nommees": 1,
+  "intrus_nommes_merveille": 1
+ },
+ "chevauchement": {
+  "cout_modele": {
+   "merveille_perdue": 3.0,
+   "intrus_adopte": 1.0
+  },
+  "merveilles_perdues": 0,
+  "intrus_adoptes": 1,
+  "intrus_restants": [
+   {
+    "p": 0.7046534419059753,
+    "lu": "the-mausoleum__inverse",
+    "fichier": "IMG-20260619-WA0004.jpg__IMG-20260619-WA0004__04.jpg"
+   }
+  ]
+ },
+ "reserve": "Les sessions insecables restent a l'entrainement des 3 plis : leur contribution au bord bas est OPTIMISTE."
+}
