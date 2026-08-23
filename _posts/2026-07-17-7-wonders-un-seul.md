@@ -117,7 +117,13 @@ J'ai annulé l'expérience.
 
 Dans ce cas précis, le modèle ne manquait pas de transformations inventées par le code. Il manquait de vrais exemples de la classe rare.
 
-Ça ne condamnait pas pour autant toutes les données synthétiques. Sur un autre entraînement, le problème était bien l'éclairage : le même objet devenait trop sombre, trop clair ou presque effacé par le contraste. Cette fois, j'ai gardé de vrais recadrages annotés et j'en ai fabriqué des variantes en jouant uniquement sur la luminosité et le contraste. Et là, le synthétique a très bien marché. La différence est importante : je n'essayais plus d'inventer une information absente, mais d'apprendre au modèle à retrouver la même information sous une lumière différente.
+## Un bon score peut répondre à la mauvaise question
+
+J'ai aussi réussi à me fabriquer un score excellent en posant la mauvaise question. J'ai fait vérifier 406 propositions du détecteur. Mon jeu d'annotations de référence est passé de **188 à 531 boîtes**. Il en retrouvait 528 : **99,4 %**. Champagne.
+
+Sauf que **73,8 %** de ces boîtes avaient d'abord été proposées par ce même détecteur, puis confirmées à la main. Je mesurais surtout sa capacité à retrouver ses propres idées. Sur les 72 boîtes dessinées là où il n'avait rien proposé, il n'en retrouvait plus que 69 : **95,8 %**. Et les deux seules merveilles de moins de 80 pixels dans l'image reçue par le réseau ? Ratées toutes les deux.
+
+Depuis, chaque annotation garde sa provenance. Le calcul était juste. L'étalon était biaisé. Deux petites merveilles ne suffisent pas pour réentraîner le modèle ; elles suffisent pour savoir quelles photos prendre ensuite.
 
 ## C'est la taille qui compte !
 
@@ -131,9 +137,9 @@ L'agrandissement n'avait évidemment inventé aucun détail. Il avait remis les 
 
 J'ai donc ajouté au dataset des copies réduites à **45–70 %** de leur taille, sans retirer les originales. Le modèle apprenait désormais le même laurier de près et de loin. La photo difficile par cité est passée à **28/28** lectures correctes ; sur la vue d'ensemble, on est passé d'environ **30/39 à 35/39**.
 
-J'ai essayé la même recette sur les guildes et sur le classifieur qui décide si une merveille est construite. Aucun progrès. Cette fois, le classifieur n'était pas coupable : la bannière violette était ratée en amont et la bande à lire était mal extraite. Deux nuits de GPU ne réparent pas le mauvais étage du pipeline.
+J'ai essayé la même recette sur les guildes. Aucun progrès. Cette fois, le classifieur n'était pas coupable : la bannière violette était ratée en amont et la bande à lire était mal extraite. Deux nuits de GPU ne réparent pas le mauvais étage du pipeline.
 
-ORB a rencontré une variante du même problème. Ses descripteurs examinent des zones de taille fixe. Quand une merveille devient petite dans la photo, ses motifs ne sont plus à la même échelle que dans l'image de référence et le recalage abandonne.
+Le recalage ORB — la méthode qui tente de retrouver précisément les quatre coins d'une merveille — a rencontré une variante du même problème. Ses descripteurs examinent des zones de taille fixe. Quand une merveille devient petite dans la photo, ses motifs ne sont plus à la même échelle que dans l'image de référence et le recalage abandonne.
 
 Là encore, j'agrandis le recadrage ×2. Pas pour créer des détails, mais pour remettre les points caractéristiques à une taille qu'ORB connaît. Le recalage est passé de **0/8 à 8/8** sur la vue d'ensemble. Je ne déclenche ce second essai que si le premier échoue sur une petite boîte : inutile de secouer les cas qui fonctionnent déjà.
 
@@ -141,7 +147,7 @@ Là encore, j'agrandis le recadrage ×2. Pas pour créer des détails, mais pour
 
 La piste militaire s'est chargée de corriger la théorie.
 
-Sur certaines photos, elle occupait presque toute la largeur de l'image. YOLO ne la renvoyait plus comme un seul objet, mais comme plusieurs boîtes emboîtées ou posées bout à bout. J'ai d'abord soupçonné les annotations. Le problème venait en fait d'une limite géométrique du détecteur : sur son image d'entrée de 1280 pixels, une prédiction ne pouvait pas tracer une boîte de plus de 1024 pixels de côté. La piste était tout simplement trop grande pour tenir dedans.
+Sur certaines photos, elle occupait presque toute la largeur de l'image. Le détecteur YOLO ne la renvoyait plus comme un seul objet, mais comme plusieurs boîtes emboîtées ou posées bout à bout. J'ai d'abord soupçonné les annotations. Le problème venait en fait d'une limite géométrique du détecteur : sur son image d'entrée de 1280 pixels, une prédiction ne pouvait pas tracer une boîte de plus de 1024 pixels de côté. La piste était tout simplement trop grande pour tenir dedans.
 
 Le modèle ne découpait donc pas le plateau parce qu'il avait mal appris. Il faisait ce qu'il pouvait avec plusieurs boîtes, puisqu'aucune ne pouvait couvrir l'ensemble.
 
@@ -163,6 +169,20 @@ La correction a été géométrique : si le centre du laurier tombe dans le disq
 
 La distinction ne se faisait donc pas sur l'apparence, mais sur la position.
 
+Ces deux corrections fonctionnaient parce qu'un seuil séparait proprement les bons cas des mauvais. Ce luxe n'est pas toujours disponible.
+
+Sur une photo, le détecteur avait tracé deux cercles presque superposés sur la même pièce de 1. Le trésor valait 6 ; l'application annonçait 7. Il suffisait, en apparence, de fusionner les cercles trop proches. Sauf que le jeu autorise aussi de vraies piles de pièces.
+
+Sur tout le corpus, les plages de distance relative des doublons et des piles légitimes se recouvraient. La comparaison des deux images ne les séparait pas davantage.
+
+![À gauche, deux détections sur une seule pièce ; à droite, deux vraies pièces empilées avec presque le même écartement](/assets/img/7wd-doublon-vs-pile.jpg)
+
+*À 0,77 contre 0,79, le seuil magique peut prendre sa journée.*
+
+J'ai donc résisté à la tentation de « corriger » silencieusement. L'application marque la paire comme suspecte et demande une vérification. Ce drapeau a aussi sa date de péremption : le jour où plus aucun doublon ne le déclenchera sur les photos témoins, un test demandera de le retirer avant qu'il ne commence à embêter les vraies piles.
+
+Automatiser n'oblige pas à faire semblant de savoir.
+
 ## L'OCR a préparé son propre remplacement
 
 Restait l'identité des merveilles.
@@ -179,11 +199,41 @@ Avant de sortir un recalage géométrique plus lourd, j'ai essayé une TTA par r
 
 C'est le même modèle, sans nouvel entraînement : juste quatre façons de regarder la carte. La confiance est passée de **0,49 à 0,97**.
 
-Le nouveau chemin est aussi beaucoup plus rapide. Modèles déjà chargés sur le CPU, l'OCR prenait environ **20 secondes par photo**. YOLO et ResNet, rotations comprises : **1,4 seconde**.
+L'identification des merveilles est aussi beaucoup plus rapide. Modèles déjà chargés sur le CPU, la voie OCR prenait environ **20 secondes par photo**. YOLO et ResNet, rotations comprises à ce stade : **1,4 seconde**.
+
+## La treizième merveille n'en est pas une
+
+Ce premier jeu de test ne racontait pas toute l'histoire. Sur de vraies parties, le localisateur était moins sélectif : il proposait aussi des guildes, des cartes ordinaires, le plateau militaire, le livret de règles, un sachet de pièces et même un mouchoir.
+
+![Exemples d'objets que le classifieur de merveilles était forcé de ranger parmi les douze merveilles](/assets/img/7wd-wonder-other-class.jpg)
+
+*Douze noms de merveilles pour répondre à ça. Forcément, ResNet improvisait.*
+
+Le classifieur ne connaissait que les douze merveilles du jeu. Il n'avait aucune réponse « rien de tout ça » et devait donc choisir la moins mauvaise. La Guilde des Bâtisseurs devenait ainsi Piraeus avec une confiance de **0,9938** — et huit points fantômes partaient chez le mauvais joueur.
+
+J'ai évidemment pensé à relever le seuil de confiance. Un second entraînement, construit avec la même recette mais un autre tirage aléatoire, a calmé cette idée : devant une table vide, il choisissait une merveille avec une confiance de **1,0000**. Sur le plateau militaire, les deux modèles dépassaient **0,97**. Hors de ce qu'il a appris, le score de confiance n'est pas un détecteur de mensonge.
+
+J'ai donc ajouté une treizième classe : **« autre »**, entraînée avec des intrus récoltés sur de vraies photos. Sur des images gardées hors entraînement, le nouveau modèle en a rejeté **63 sur 64**. Sur les vraies merveilles du même lot, il en a reconnu **90 sur 94**, contre **89 sur 94** pour le modèle à douze classes. Il avait appris à rejeter les intrus sans sacrifier les merveilles au passage.
+
+Il n'avait pas appris une treizième merveille. Il avait enfin appris à répondre qu'il n'en voyait aucune.
+
+## Une image plus claire n'est pas un reflet
+
+Il restait deux merveilles que le classifieur lisait mal. Toutes les deux étaient noyées dans un reflet. Mon premier réflexe a été d'ajouter davantage de variations de luminosité.
+
+En mesurant les images, le diagnostic a changé. Une carte sombre gardait des contrastes normaux. Le reflet, lui, ajoutait un voile et écrasait les détails.
+
+Mon augmentation multipliait tous les pixels par le même nombre. Elle savait assombrir ou éclaircir une image, mais conservait son contraste relatif. Elle ne pouvait donc jamais fabriquer le défaut qu'elle était censée couvrir.
+
+![Cinq versions d'une même merveille : assombrir ou éclaircir conserve le contraste relatif, tandis qu'un voile synthétique reproduit le reflet qui gêne réellement le modèle](/assets/img/7wd-wonder-glare-augmentation.jpg)
+
+Avec un terme additif, j'ai enfin obtenu une image synthétique qui ressemblait au vrai reflet. Ça ne garantissait pas que le prochain modèle réussirait. Au moins, il verrait enfin le bon problème.
+
+Le modèle avait vu des images plus claires. Il n'avait jamais vu une image voilée. Ce n'est pas la même chose.
 
 ## Trois avis valent mieux qu'un. En principe.
 
-L'identité était réglée. Restait à savoir si la merveille avait réellement été construite.
+Le problème des reflets était au moins correctement posé. Restait une autre question, indépendante : la merveille avait-elle réellement été construite ?
 
 Dans le jeu, une carte est alors glissée sous la merveille. Une fois celle-ci redressée dans son orientation de référence, la carte dépasse toujours à droite. Je pouvais donc découper une fine bande juste après ce bord et demander à un petit classifieur : « carte ou table ? »
 
@@ -217,11 +267,53 @@ J'avais donc bricolé une sorte de *Minority Report* pour merveilles en carton. 
 
 Sur les cas vérifiés jusqu'ici, l'ORB seul obtenait **82/83**. Le vote arrive à **83/83**. Ça corrige tous les échecs connus ; ça ne transforme pas trois systèmes imparfaits en vérité mathématique. Le prochain cas tordu aura toujours le droit de déposer une réclamation.
 
+## Le sens d'une carte ne méritait pas son propre modèle
+
+Le vote réglait les cas connus, mais le recalage ORB prenait environ **1,3 seconde par merveille** sur le téléphone. En travaillant sur une piste destinée à le remplacer un jour, j'ai essayé un détecteur qui rend directement une boîte orientée.
+
+Il donne bien l'inclinaison de la carte, mais son angle vit sur 180°, pas sur 360°. Une carte à l'endroit et la même après un demi-tour forment exactement le même rectangle. Pour afficher son nom, ce n'est pas grave. Pour trouver son bord droit, ça change tout.
+
+Ma première solution a été d'ajouter un petit modèle « à l'endroit ou à l'envers ». Sur 545 cartes vérifiées, il s'est trompé **23 fois**. Seulement 4,2 %, mais une erreur silencieuse : le pipeline allait inspecter le mauvais côté.
+
+La TTA retrouvait le nom d'une carte retournée. Elle ne garantissait pas que la rotation gagnante indiquait son bord droit.
+
+J'ai donc intégré le sens dans la réponse : chaque merveille possède désormais deux classes, une par orientation. **24 classes, plus « autre »**. Sur les images gardées hors entraînement, le résultat est passé à **205/205**.
+
+Le détecteur orienté n'a pas encore remplacé ORB dans le vote. En revanche, ce détour a fait disparaître le modèle haut/bas, sa relecture à 180° et la TTA à quatre rotations du pipeline d'identification.
+
+Je n'ai pas rendu le petit modèle plus fiable. Je l'ai supprimé.
+
+## Le modèle n'a pas le droit de reconnaître la table
+
+Le score de **83/83** mesurait le vote de bout en bout sur les cas connus. Sur un autre jeu de test, je devais maintenant choisir la version du classifieur qui lit réellement la bande dépassant sous une merveille.
+
+J'avais bien sept parties dont le score complet avait été saisi. À côté, onze autres vraies parties avaient été annotées uniquement au niveau des merveilles. Certaines n'avaient pas de photo d'ensemble exploitable pour juger le score de bout en bout, mais leurs images suffisaient pour répondre à une question beaucoup plus locale : cette merveille est-elle construite ou simplement posée ?
+
+J'ai gardé la partie du camping à l'écart comme juge externe. Il restait donc **124 merveilles réparties sur 17 parties** pour choisir le classifieur. C'était toujours trop peu pour jeter un tiers du corpus dans un jeu de test fixe.
+
+J'aurais pu séparer les vignettes au hasard. Ça aurait surtout permis de tricher sans le vouloir : deux images de la même partie partagent la table, la lumière, le téléphone et parfois la même merveille sous un angle voisin. Le modèle pouvait reconnaître le décor et me laisser croire qu'il avait appris la carte glissée.
+
+J'ai donc découpé les **parties**, pas les images, en six groupes. J'ai gardé le principe du *leave-one-game-out* — ne jamais mélanger une même partie entre l'entraînement et le test — mais avec une validation croisée groupée en six plis pour éviter dix-sept entraînements. Pour chaque pli, j'ai entraîné un modèle sur les cinq autres groupes, puis je lui ai fait juger uniquement les parties qu'il n'avait jamais vues. À la fin, chacune des 124 merveilles avait été testée une fois, toujours hors de sa partie d'origine.
+
+L'ancien classifieur obtenait **120/124**. Le candidat, **124/124**.
+
+Ces six modèles ne sont pas ceux qui partent dans l'application. Ils servent de juges : ils vérifient que la recette tient sur des parties qu'elle n'a jamais vues. Une fois cette recette validée, j'entraîne un septième modèle sur l'ensemble du corpus, sans garder de pli dehors. C'est lui que j'exporte et que l'application utilise sur les prochaines photos.
+
+La validation croisée répond donc à « est-ce que cette recette généralise ? ». Le dernier entraînement récupère ensuite toutes les données disponibles pour fabriquer le modèle de production.
+
+Trois des quatre cas récupérés venaient d'un réglage beaucoup moins glamour. J'entraînais jusque-là sur tout le corpus en un seul lot. Les poids du réseau n'étaient donc corrigés qu'une fois par époque : **150 mises à jour** en tout. Avec des mini-lots de 64 images, le même nombre d'époques en produit environ **1 500**. Dans l'expérience qui isolait ce seul réglage, le score est passé de **121/124 à 124/124**.
+
+Ma première explication était que les mini-lots montraient davantage de variations au modèle. Elle sonnait bien. Elle était fausse.
+
+J'ai suivi une image pendant tout l'entraînement : dans les deux cas, elle apparaissait 150 fois et recevait 150 transformations. Les mini-lots ne lui montraient donc pas plus de variantes. Ils évitaient surtout que tout le corpus partage la même transformation pendant une passe, et mettaient les poids à jour dix fois plus souvent.
+
+La validation a coûté six entraînements. Corriger mon explication, une simple ligne de comptage. Le modèle n'était pas la seule chose à tester. Mes explications aussi.
+
 ## Les photos ratées sont les plus utiles
 
 Il reste des cas durs : une merveille petite, à moitié cachée, mangée par un reflet. Le prochain gain viendra de photos de ce genre, pas d'un nouveau seuil.
 
-L'application peut justement récolter ces conditions réelles. Mais elle n'apprend pas toute seule : chaque image doit être vérifiée avant de rejoindre le prochain entraînement. Sur une photo de douze merveilles, le détecteur en a par exemple proposé treize. En marquant l'intruse comme *hard negative* — un faux positif explicite — elle devient un exemple de ce que le modèle doit apprendre à ignorer.
+La classe « autre » est née exactement comme ça : sur une photo de douze merveilles, le détecteur en avait proposé treize. J'ai marqué l'intruse ; au prochain entraînement, elle a rejoint les exemples de cette classe. L'application peut préparer l'annotation. Elle ne se corrige pas toute seule.
 
 C'est un peu comme dans le jeu vidéo *Hades*, où le but est de s'échapper des Enfers. Quand une tentative échoue, on repart du début, mais certaines ressources récoltées pendant le *run* servent à débloquer de petites améliorations permanentes. Ici, une photo vérifiée devient l'une de ces ressources.
 
