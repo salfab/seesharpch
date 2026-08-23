@@ -30,6 +30,11 @@ CONVENTION DE NOMMAGE
       coin-6.png. Carré 512x512 px, alpha réel.
       Couleurs : 1 argentée, 3 dorée, 6 cuivrée.
 
+  art/coins/coin-stack.png
+      La grappe des trois valeurs, légèrement superposées. C'est l'image affichée
+      près du compteur de pièces ; elle reprend exactement les trois frappes
+      individuelles ci-dessus, sans fond ni ombre portée intégrée.
+
   art/laurels/laurel-<valeur>.png
       Les couronnes de lauriers : laurel-1.png … laurel-7.png, livrées.
       Carré 512x512 px, fond transparent ; le chiffre est dans l'image.
@@ -60,9 +65,8 @@ CONVENTION DE NOMMAGE
       banner-purple.png est livré mais AUCUN appel ne le construit aujourd'hui :
       les six compteurs de couleur couvrent bleu/vert/jaune/brun/gris/rouge, et
       les guildes ont leur propre vignette (carte entière, recadrée sur
-      l'illustration — voir plus bas). Idem coin-3.png / coin-6.png : seule
-      coin-1.png est posée près du compteur de pièces. Ces trois-là sont en
-      réserve, pas en service.
+      l'illustration — voir plus bas). Les pièces individuelles restent les
+      sources de référence de la grappe utilisée dans la calculette.
 
 
 CE QU'ON NE MET PAS ICI
@@ -85,7 +89,7 @@ reconnaissance des guildes on-device qui les consomme.
 POIDS
 -----
 
-Les 35 fichiers finaux sont stockés en PNG RGBA avec un vrai canal alpha. Leur
+Les 36 fichiers finaux sont stockés en PNG RGBA avec un vrai canal alpha. Leur
 palette visuelle est volontairement resserrée à ce qui reste perceptible à la
 taille d'usage (40–48 px). Chaque fichier reste sous 30 Ko.
 
