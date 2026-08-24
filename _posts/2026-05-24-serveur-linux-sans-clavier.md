@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "J'ai installé mon serveur Linux sans sortir le clavier"
-date: 2026-08-23 09:00:00 +0200
+date: 2026-05-24 09:00:00 +0200
 tags: [project, infrastructure, linux, self-hosting, automation, ai]
 header_image: /assets/img/mappyhour-linux-zero-touch-hero.png
 unlisted: true
@@ -19,7 +19,11 @@ Quatre jours plus tard, Mitch était posé au milieu de mon salon avec une clé 
 
 Il n'y a que les imbéciles qui ne changent pas d'avis.
 
-La pile Windows fonctionnait. Mais la fin du support de Windows 10 venait de rappeler une évidence : même quand le matériel ne bouge pas, l'OS finit par avoir une date de péremption. {Très vite, j'ai dû remplacer le disque SSD de Mitch pour stocker les caches massifs de précalcul des atlas d'ensoleillement nécessaires à l'app. L'occasion a fait le larron, et c'est comme ça que j'ai installé linux pour la première fois de ma vie}
+La pile Windows fonctionnait. Mais la fin du support de Windows 10 venait de rappeler une évidence : même quand le matériel ne bouge pas, l'OS finit par avoir une date de péremption.
+
+Au même moment, les caches de précalcul des atlas d'ensoleillement de MappyHour avaient fini par remplir le SSD. Puisqu'il fallait de toute façon remplacer le disque, autant profiter de l'occasion pour retirer aussi Windows et WSL2.
+
+C'est comme ça que je me suis retrouvé à installer Linux pour la première fois de ma vie.
 
 Je m'attendais à passer un week-end devant un écran noir à apprendre des commandes obscures. En pratique, j'ai branché une clé que j'avais préparée avec Claude, démarré le NUC et attendu.
 
