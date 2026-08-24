@@ -15,19 +15,19 @@ Le 18 mai, [j'écrivais à propos de Mitch](/blog/preview/c3d8f014/self-hosting-
 
 > La migration vers Linux aurait coûté du temps, et WSL2 suffit pour Docker. Certains combats ne méritent pas d'être gagnés.
 
-Quatre jours plus tard, Mitch était posé au milieu de mon salon avec une clé USB dans le ventre, prêt à remplacer Windows et WSL2 par Ubuntu Server.
+Quatre jours plus tard, Mitch était posé au milieu de mon salon avec une clé USB dans le ventre, prêt à remplacer Windows et WSL2 par Ubuntu.
 
-J'assume très bien la cohérence de cette ligne éditoriale.
+Il n'y a que les imbéciles qui ne changent pas d'avis.
 
-La pile Windows fonctionnait. Mais la fin du support de Windows 10 venait de rappeler une évidence : même quand le matériel ne bouge pas, l'OS finit par avoir une date de péremption. Et sous Mitch, j'avais empilé Windows, WSL2, Linux, Docker, puis l'application. Ça faisait beaucoup de couches pour arriver à Linux.
+La pile Windows fonctionnait. Mais la fin du support de Windows 10 venait de rappeler une évidence : même quand le matériel ne bouge pas, l'OS finit par avoir une date de péremption. {Très vite, j'ai dû remplacer le disque SSD de Mitch pour stocker les caches massifs de précalcul des atlas d'ensoleillement nécessaires à l'app. L'occasion a fait le larron, et c'est comme ça que j'ai installé linux pour la première fois de ma vie}
 
-Je m'attendais à passer un week-end devant un écran noir à apprendre des commandes obscures. En pratique, j'ai branché une clé, démarré le NUC et attendu.
+Je m'attendais à passer un week-end devant un écran noir à apprendre des commandes obscures. En pratique, j'ai branché une clé que j'avais préparée avec Claude, démarré le NUC et attendu.
 
 Je n'avais même pas sorti le clavier.
 
 ## Une clé USB à la place d'un clavier
 
-Mitch est normalement rangé dans un meuble, à une trentaine de kilomètres de chez moi. Il n'a ni écran, ni clavier, ni souris. C'est parfait pour un serveur, un peu moins pour installer un système d'exploitation.
+Mitch est rangé dans un meuble, à côté de la TV. Dans une autre vie, il me servait de Media Center. Aujourd'hui, ni écran, ni clavier, ni souris. C'est parfait pour un serveur, un peu moins pour installer un système d'exploitation.
 
 Je ne voulais surtout pas suivre une checklist du genre : choisir la langue, configurer le clavier, saisir le mot de passe Wi-Fi, créer un utilisateur, copier une clé SSH, installer Docker, cloner le dépôt, démarrer les containers, configurer les tunnels, puis découvrir trois mois plus tard que j'avais oublié l'étape 17.
 
