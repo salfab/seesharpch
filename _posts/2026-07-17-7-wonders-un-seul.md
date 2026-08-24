@@ -12,9 +12,11 @@ L'« IA », c'est devenu le buzzword de la saison 2025-2026. On le colle sur tou
 
 C'était le moment de démystifier — pas en lisant, en construisant.
 
-Votre mission, Jim, si vous l'acceptez : compter les points d'une partie de 7 Wonders Duel à partir d'une ou deux photos. Sans calculatrice, sans calcul mental et, si possible, avant que la bière tiédisse.
+Votre mission, Jim, si vous l'acceptez : compter les points d'une partie de 7 Wonders Duel à partir d'une ou deux photos. Sans calculatrice, sans calcul mental et, si possible, avant que la bière ne tiédisse.
 
-Mais coller un autocollant « boosté à l'IA » sur le projet aurait été un peu facile. J'ai commencé avec des règles écrites à la main. Ensuite, j'ai regardé où elles cassaient. Et seulement là, j'ai sorti un modèle.
+Mais coller un autocollant « boosté à l'IA » sur le projet juste comme argument marketing, ça aurait été trop facile. Avant d'utiliser une scie sauteuse, c'est toujours bien d'essayer une scie à main. 
+
+Donc j'ai commencé avec des règles écrites à la main, avec OpenCV et des algorithmes de computer vision, en n'utilisant aucune IA. Ensuite, j'ai regardé où ça cassait. Et seulement là, j'ai regardé si je pouvais utiliser un modèle entraîné pour résoudre le problème qui se présentait.
 
 ## Premier essai : faire sans IA
 
@@ -22,27 +24,32 @@ La vision par ordinateur classique, c'est rassurant. On écrit soi-même les rè
 
 Un cercle assez rond et de la bonne taille ? Probablement une pièce. Une bande colorée en haut d'une carte ? On peut tenter d'en déduire sa couleur. Pas de dataset, pas d'entraînement et, quand ça se trompe, on comprend généralement pourquoi.
 
-Voilà ce qu'il faut lire sur une fin de partie : des merveilles, des cartes glissées à moitié dessous, des jetons, des pièces et plusieurs piles de cartes dont on ne voit parfois presque plus que le haut.
+Voilà ce qu'il faut lire sur une fin de partie : des merveilles, des cartes glissées à moitié dessous, des jetons, des pièces et plusieurs piles de cartes dont on ne voit souvent qu'une partie.
 
+{la photo ci dessous doit être tournée à 180°, mais les boîtes dessinées par dessus juste plus bas aura ses textes à l'envers : on peut tout remettre droit sur les deux photos ? quitte à régénérer la version annotée ?}
 ![Une fin de partie complète de 7 Wonders Duel sur une table en bois](/assets/img/7wd-vue-originale.jpg)
 
 Sur ma table, avec une bonne lumière, ça marchait très bien. Je repérais les cartes, je lisais leurs couleurs, je comptais les pièces. Là, tu te dis que t'as plié le game avec une POC d'une heure et qu'on peut retourner siroter des blue lagoons sur la plage.
 
 ![La même photo, avec les détections du programme dessinées par-dessus](/assets/img/7wd-vue-annotee.jpg)
 
+L'air de rien, on a quand même pas mal de trucs en jeu sur un premier sans IA :  {expliquer mieux mais court :  Hough pour détecter des cercles, de la détection de formes par colorimétrie pour les bannières, du câlage de templates avec ORB pour détecter les lauriers, les jetons verts, les guildes et les merveilles, de l'analyse de colorimétrie pour les pièces} 
+
 Puis j'ai posé le jeu sur une serviette de plage, dehors, au soleil couchant.
 
 ![La même reconnaissance sur une serviette de plage, avec beaucoup de fausses détections](/assets/img/7wd-serviette.jpg)
 
-Des pièces apparaissaient dans l'herbe. Des jetons devenaient des pièces. Un bout de plateau obtenait une promotion surprise au rang de guilde.
+Des pièces apparaissaient dans l'herbe. {je crois que j'ai dû perdre les images où des cercles hough apparaissaient dans l'herbe} Des jetons devenaient des pièces. Un bout de plateau était détecté comme une guilde.
 
-Le programme faisait pourtant exactement ce que je lui avais demandé. Le problème, c'est que la vraie vie ne ressemble pas toujours à ma table de test.
+Le programme faisait pourtant exactement ce que je lui avais demandé. Le problème, c'est que la vraie vie ne ressemble pas toujours à une salle immaculée de laboratoire.
 
-Je pouvais ajouter une règle pour la plage, une autre pour une table sombre, puis une troisième pour les photos prises de biais. La recette idéale pour améliorer un cas et en casser deux autres.
+À ce stade, on comprend bien qu'on peut ajouter une règle pour la plage, une autre pour une table sombre, puis une troisième pour les photos prises de biais, mais la recette idéale pour améliorer un cas finit toujours par en casser deux autres.
 
+{tout à coup ici on commence à parler d'entrainement ??? on a dû faire un gros saut !}
 J'ai donc commencé à tester les modifications sur des parties complètes gardées hors de l'entraînement pendant chaque évaluation. Ce n'est pas un benchmark académique. C'est juste ce qui m'évite de choisir une idée parce qu'elle « a l'air meilleure » sur le cas qui l'a déclenchée. Une fois la recette validée, le modèle final peut ensuite récupérer toutes les données disponibles.
 
-## Pourquoi le même chiffre disparaît sur la photo complète
+{là on commence carrément à parler de modèles et de ses défaillance : on n'a aucune transition, on ne sait pas ce qu'on prend comme modèle, on a fait un énorme saut logique sans transition. il va falloir regarder dans les historiques du  fichier comment on en arrivait là}
+## Un coup tu m'vois, un coup tu m'vois pas
 
 Un résultat me paraissait franchement incohérent.
 
