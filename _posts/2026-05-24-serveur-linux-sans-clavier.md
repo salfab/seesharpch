@@ -33,7 +33,7 @@ Je n'avais même pas sorti le clavier.
 
 Mitch est rangé dans un meuble, à côté de la TV. Dans une autre vie, il me servait de Media Center. Aujourd'hui, ni écran, ni clavier, ni souris. C'est parfait pour un serveur, un peu moins pour installer un système d'exploitation.
 
-Je ne voulais surtout pas suivre une checklist du genre : choisir la langue, configurer le clavier, saisir le mot de passe Wi-Fi, créer un utilisateur, copier une clé SSH, installer Docker, cloner le dépôt, démarrer les containers, configurer les tunnels, puis découvrir trois mois plus tard que j'avais oublié l'étape 17.
+Je ne voulais surtout pas suivre une checklist du genre : choisir la langue, configurer le clavier, saisir le mot de passe Wi-Fi, créer un utilisateur, copier une clé SSH, installer Docker, cloner le dépôt, démarrer les containers, configurer les tunnels, installer et configurer tailscale, puis découvrir trois mois plus tard que j'avais oublié l'étape 17.
 
 L'idée était plus simple : mettre toutes ces décisions dans l'image bootable.
 
@@ -50,11 +50,11 @@ Il restait quatre gestes :
 
 ![Une clé USB lance l'installation d'un NUC qui devient accessible à distance après un gros quart d'heure](/assets/img/mappyhour-linux-zero-touch-flow.png)
 
-Le dernier point était important. Pas de câble Ethernet provisoire, pas de clavier « juste pour le mot de passe », pas de commande copiée depuis un autre ordinateur. Après le démarrage sur la clé, Mitch devait se débrouiller tout seul jusqu'à ce qu'il réapparaisse sur le réseau.
+Le dernier point, ne plus rien toucher, était important. Pas de câble Ethernet provisoire, pas de clavier « juste pour le mot de passe », pas de commande copiée depuis un autre ordinateur. Après le démarrage sur la clé, Mitch devait se débrouiller tout seul jusqu'à ce qu'il réapparaisse sur le réseau, et de pouvoir reprendre le flambeau en ssh.
 
-## Le serveur était déjà cuit
+## Le serveur était déjà tout cuit dans la clé
 
-Une clé Ubuntu classique contient un installateur. La mienne contenait aussi les réponses.
+Une clé Ubuntu classique contient un installateur. La mienne contenait aussi la configuration spécifique dont j'avais besoin.
 
 Le Wi-Fi est configuré avant que l'installation commence vraiment. Ubuntu sait quel disque utiliser et quels paquets installer. Au premier démarrage, quelques services mettent en route Tailscale, le tunnel Cloudflare, Docker, MappyHour et la télémétrie. Un contrôle final vérifie que les éléments importants répondent réellement.
 
@@ -70,17 +70,20 @@ La commande de contrôle a fini par afficher **13 PASS, 0 FAIL**.
 
 À ce moment-là, je n'avais pas seulement un Linux qui démarrait. J'avais déjà une session d'administration à distance, prête à l'emploi, sur une machine qui hébergeait de nouveau l'application.
 
-Le premier build de la clé prend une dizaine de minutes. L'installation complète en prend environ dix-sept. Ce n'est pas instantané, mais ce sont des minutes pendant lesquelles personne n'a besoin de cliquer sur « suivant ».
+Le premier build de la clé prend une dizaine de minutes. L'installation complète en prend environ dix-sept. Ce n'est pas instantané, mais ce sont des minutes pendant lesquelles personne n'a besoin de taper des commandes - particulièrement appréciable quand c'est ta première installation de Linux.
 
 ## Un quart d'heure plus tard : SSH
 
 SSH est le moment où le NUC cesse d'être un objet dans mon salon.
 
-Avant, il faut pouvoir l'allumer, voir ce qu'il fait et éventuellement intervenir. Après, il peut retourner dans son meuble. Tout se passe depuis mon ordinateur : vérifier un service, lire un log, relancer un container ou déployer une nouvelle version.
+Avant, il faut pouvoir l'allumer, voir ce qu'il fait et éventuellement intervenir. Après, il peut retourner dans son meuble. Tout se passe depuis mon laptop, et plus précisément, depuis Claude: vérifier un service, lire un log, relancer un container ou déployer une nouvelle version.
 
+{j'ai l'impression que les deux paragraphes suivants sont de la répétition de ce que l'on a plus haut, non ? 
 La clé publique nécessaire est déjà intégrée à l'installation. La clé privée, elle, reste sur ma machine. Dès que Mitch rejoint le réseau privé, je peux donc m'y connecter sans créer un mot de passe temporaire ni recopier un secret au clavier.
 
 Le mot de passe Wi-Fi est bien gravé dans l'image bootable. Ce n'est pas magique, et ça transforme la clé en objet sensible : je ne la laisse pas traîner dans un tiroir ouvert et je ne publie évidemment pas son contenu. Dans ce cas précis, c'est un compromis assumé. La clé reste sous mon contrôle physique et son rôle est précisément de reconstruire cette machine sur ce réseau.
+
+----> il me semble qu'il y avait un truc qu'on faisait de super malin pour éviter les problèmes, c'était qu'il y a une certaine clef, je ne sais plus laquelle, qui était valable pendant peu de temps : c'était ssh ? tailscale ? autre chose ? je sais plus ! }
 
 L'intérêt n'est pas d'avoir éliminé les identifiants. C'est de les avoir placés une fois au bon endroit, au lieu de les ressaisir pendant chaque installation.
 
@@ -90,21 +93,21 @@ Et c'est là que Claude entre vraiment dans l'histoire.
 
 ## Claude prend le relais
 
-Administrer un serveur Linux a longtemps eu pour moi une barrière assez simple : je ne savais pas exactement quoi taper, et une ligne de commande trouvée au hasard peut faire beaucoup de dégâts avec très peu de caractères.
+Administrer un serveur Linux a longtemps eu pour moi une barrière assez simple : je ne savais pas exactement quoi taper, et très franchement, je suis plus intéressé à m'approprier les concepts que la syntaxe.
 
 Avec Claude, la relation est différente.
 
-Je peux lui demander de vérifier pourquoi un service ne démarre pas, de regarder l'espace disque, d'inspecter les logs Docker ou de déployer la dernière version. Il se connecte à Mitch en SSH depuis mon environnement de travail, exécute les contrôles, relie ce qu'il observe au code du projet et propose la correction.
+Je peux lui demander de vérifier les logs d'un certain service pour comprendre pourquoi il ne démarre pas, de regarder l'espace disque ou de déployer la dernière version. Il se connecte à Mitch en SSH depuis mon environnement de travail, exécute les contrôles, relie ce qu'il observe au code du projet et propose la correction.
 
 Je n'ai pas besoin de connaître par cœur la différence entre `journalctl`, `systemctl` et les options de `docker compose`. J'ai besoin de savoir ce que je veux obtenir, de comprendre la portée de la commande proposée et de vérifier le résultat.
 
 Ce n'est pas tout à fait la même chose que « Claude gère le serveur à ma place ».
 
-Claude ne sait pas qu'une coupure vient du routeur si je ne lui donne aucun moyen de l'observer. Il ne peut pas appuyer sur le bouton du NUC. Il ne décide pas tout seul qu'il peut effacer un disque ou modifier un tunnel de production. Et quand plusieurs solutions sont possibles, quelqu'un doit encore choisir celle qui correspond au projet plutôt que celle qui est simplement commode à écrire.
+Claude ne sait pas qu'une coupure vient du routeur si je ne lui donne aucun moyen de l'observer. Il ne décide pas tout seul qu'il peut effacer un disque ou modifier un tunnel de production. Et quand plusieurs solutions sont possibles, quelqu'un doit encore choisir celle qui correspond au projet plutôt que celle qui est simplement commode à écrire.
 
 Mais le niveau de connaissance nécessaire pour démarrer a beaucoup baissé.
 
-Avant, une erreur Linux me renvoyait vers quinze onglets, chacun supposant que j'avais lu les quatorze précédents. Maintenant, je peux partir du symptôme concret : « le site ne répond plus », « ce container redémarre », « le disque se remplit ». Claude fait le premier travail d'exploration et m'explique ce qu'il trouve dans le contexte de *mon* serveur.
+Avant, une erreur Linux me renvoyait vers quinze { peut-on remplacer la ligne suivante avec quelque chose de plus linuxien ? genre "quinze ManPages" ? (c'est très linux, ça, les manpages, non ?) onglets, chacun supposant que j'avais lu les quatorze précédents}. Maintenant, je peux partir du symptôme concret : « le site ne répond plus », « ce container redémarre », « le disque se remplit ». Claude fait le premier travail d'exploration et m'explique ce qu'il trouve dans le contexte de *mon* serveur.
 
 Je n'ai pas acquis dix ans d'expérience en administration système. J'ai simplement arrêté d'en avoir besoin pour chaque petite opération.
 
@@ -112,13 +115,14 @@ Je n'ai pas acquis dix ans d'expérience en administration système. J'ai simple
 
 La clé USB n'a pas supprimé la complexité d'une installation Linux. Elle l'a déplacée.
 
-Au lieu de la payer à chaque réinstallation, au milieu d'une suite de formulaires et de commandes manuelles, je l'ai payée une fois dans une image reproductible. Le Wi-Fi, SSH, les tunnels et les services sont préparés à l'avance, relus comme du code et rejoués de la même façon.
+Au lieu de la payer à chaque réinstallation, au milieu d'une suite de formulaires et de commandes manuelles, je l'ai payée une fois dans une image reproductible. Le Wi-Fi, SSH, les tunnels et les services sont préparés à l'avance, relus comme du code et rejoués de la même façon. La différence, c'est que c'est diablement plus pratique à itérer sur mon laptop avec Claude qu'en me grattant la tête accroupi derrière un meuble au salon.
 
+{beaucoup de redite sur les paragraphes suivants non ?
 Claude fait quelque chose de similaire pour l'administration. Il ne rend pas `systemd`, Docker ou le réseau moins complexes. Il absorbe une partie du coût pour naviguer entre eux, trouver les bonnes informations et traduire le résultat dans un langage que je peux contrôler.
 
 Ça laisse malgré tout quelques responsabilités très humaines : garder les secrets hors du dépôt, limiter les accès, disposer de sauvegardes, relire les opérations risquées et accepter qu'un serveur à trente kilomètres reste un objet physique qui peut très bien décider de ne plus s'allumer.
 
-La différence, c'est que ces responsabilités ne sont plus noyées sous le travail mécanique.
+La différence, c'est que ces responsabilités ne sont plus noyées sous le travail mécanique.}
 
 ## Le vrai changement
 
@@ -132,6 +136,6 @@ La clé est à la fois l'installateur, la recette et le point de départ de l'ad
 
 Dans mon salon, tout cela s'est résumé à brancher une clé et appuyer sur un bouton.
 
-J'avais donc raison sur un point : installer et administrer Linux à la main ne méritait peut-être pas d'être gagné.
+J'avais donc raison sur un point : installer et administrer Linux à la main n'était peut être pas un combat qui méritait d'être gagné.
 
-Il suffisait de ne plus le faire à la main.
+... À moins qu'on n'ait plus besoin de le faire à la main.
