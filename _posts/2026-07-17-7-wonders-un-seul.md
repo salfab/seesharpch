@@ -14,7 +14,7 @@ C'était le moment de démystifier — pas en lisant, en construisant.
 
 Votre mission, Jim, si vous l'acceptez : compter les points d'une partie de 7 Wonders Duel à partir d'une ou deux photos. Sans calculatrice, sans calcul mental et, si possible, avant que la bière ne tiédisse.
 
-Mais coller un autocollant « boosté à l'IA » sur le projet juste pour l'argument marketing, ça aurait été trop facile. Avant de sortir la scie sauteuse, j'ai essayé avec une scie à main.
+Mais coller un autocollant « boosté à l'IA » sur le projet juste comme argument marketing, ça aurait été trop facile. Avant d'utiliser une scie sauteuse, c'est toujours bien de savoir se servior d'une scie à main.
 
 J'ai donc commencé avec OpenCV et des règles écrites à la main. Pas de dataset, pas de modèle entraîné par mes soins. La seule entorse était RapidOCR, un lecteur de texte pré-entraîné utilisé pour le nom des merveilles. Pour tout le reste, je voulais d'abord voir jusqu'où iraient la géométrie, les couleurs et les images de référence.
 
@@ -42,13 +42,16 @@ Puis j'ai posé le jeu sur une serviette de plage, dehors, au soleil couchant.
 
 Un symbole imprimé sur une carte était promu pièce. Un jeton de progrès était compté deux fois, comme pièce et comme laurier. La seule guilde, pourtant posée bien en évidence, passait sous le radar.
 
-Le programme faisait pourtant exactement ce que je lui avais demandé. Le problème, c'est que la vraie vie ne ressemble pas toujours à ma table, avec mon téléphone et ma lumière.
+Le programme faisait pourtant exactement ce que je lui avais demandé. Le problème, c'est que la vraie vie ne ressemble pas toujours à la table de ma terrasse.
 
-Je pouvais ajouter une règle pour la plage, une autre pour une table sombre, puis une troisième pour les photos prises de biais. J'aurais surtout obtenu un excellent détecteur de mes propres photos de test.
+Je pouvais ajouter une règle pour la plage, une autre pour une table sombre, puis une troisième pour les photos prises de biais. J'aurais surtout obtenu un excellent détecteur de mes propres photos de test, mais qui serait incapable de généraliser à des cas qui n'auraient jamais été rencontrés auparavant.
 
-Je n'ai pas remplacé toute la chaîne d'un coup. J'ai commencé par son maillon le plus fragile : les pièces. Hough continuait à proposer les cercles ; une petite forêt aléatoire a d'abord appris à écarter les imposteurs. Puis un ResNet18 a remplacé la couleur du métal par un indice beaucoup plus stable, le chiffre embossé. La lecture des valeurs est passée de **71 % à 91 %**. YOLO a fini par reprendre aussi la localisation des pièces.
+Je n'ai pas remplacé toute la chaîne d'un coup. J'ai commencé par son maillon le plus fragile : les pièces. Hough continuait à proposer les cercles. Beaucoup. Beaucoup trop, et n'importe où. J'en ai profité pour étiqueter ces faux positifs comme des négatifs de pièces, et d'attribuer la dénomination des pièces à celles qui avaient été détectées à raison. Avec ça, j'avais suffisamment d'informations pour pouvoir entrainer un réseau de neurones ResNet18 pour remplacer la détection de pièces par colorimétrie. D'un coup, lorsque Hough me détectait un cercle, il m'a suffi de le passer dans ce classifieur Resnet18, et la lecture des valeurs est passée de **71 % à 91 %**.
 
-Les modèles sont entrés comme ça : un problème mesuré à la fois, sans jeter les morceaux classiques qui faisaient encore le travail.
+Et quand des photos sur un tapis Berbère ont commencé à me saturer toute l'image avec des cercles Hough, parce qu'il confondait les longs poins du tapis avec la courbe d'un contour de pièces, c'est le moment où j'ai dû trouver un autre moyen de me proposer des candidats de pièces, et c'est comme ça que je me suis penché sur le modèle YOLO pour reprendre la localisation des pièces.
+
+{s'assurer que c'est bien formulé, et soigner l'écriture : 
+Les modèles sont entrés comme ça : un problème mesuré à la fois, sans jeter les morceaux classiques qui faisaient encore le travail, mais petit à petit, tantôt l'éclairage, tantôt la perspective de la photo, j'en suis venu à remplacer, un à un, presque tous les mécanismes que j'avais implémenté à la main par pure algorithmique et géométrie: identification des lautiers de points de victoire, identité des merveilles, localisation des cartes aux bannières de différentes couleurs, avec seulement deux types de modèles, j'ai pu remplacer toute une panoplie de techniques de computer vision de manière à les rendre plus résilientes aux conditions hostiles de la photographie.}
 
 ## Un coup tu m'vois, un coup tu m'vois pas
 
