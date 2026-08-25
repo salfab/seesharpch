@@ -115,6 +115,10 @@
   "empreinte": "3b9679d4ac6d6d0e",
   "octets": 11141984
  },
+ "models/pawn_ends_brut.onnx": {
+  "empreinte": "07979deb3ee676b6",
+  "octets": 11098915
+ },
  "models/token_embed.onnx": {
   "empreinte": "6a5b2c777e740864",
   "octets": 44778270
