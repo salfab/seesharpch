@@ -1,60 +1,234 @@
 {
- "models/banner_class.onnx": "38fcaa7a6dccd5b9",
- "models/banner_yolo.onnx": "fad91b9ec128ec8a",
- "models/coin_denom.onnx": "4d40e67f248ad4b2",
- "models/coin_filter_cnn.onnx": "43ceaf5f481e83b8",
- "models/coin_yolo.onnx": "de772b034eced50d",
- "models/guild-band-refs/builders-guild.png": "fc650c09a21ba394",
- "models/guild-band-refs/magistrates-guild.png": "ad4aa7edd0c71928",
- "models/guild-band-refs/merchants-guild.png": "0440c3c5037d1717",
- "models/guild-band-refs/moneylenders-guild.png": "d4b6967879b969f1",
- "models/guild-band-refs/scientists-guild.png": "96b5c9a5de9f119e",
- "models/guild-band-refs/shipowners-guild.png": "4582609e7225fcde",
- "models/guild-band-refs/tacticians-guild.png": "cf52a321b693974d",
- "models/guild-refs/builders-guild.jpg": "fe0f446a37880032",
- "models/guild-refs/magistrates-guild.jpg": "2f72e7f37e04e54d",
- "models/guild-refs/merchants-guild.jpg": "1f3318c53ea1b896",
- "models/guild-refs/moneylenders-guild.jpg": "c6e7e845b79fffe1",
- "models/guild-refs/scientists-guild.jpg": "8a1ef90fe0180427",
- "models/guild-refs/shipowners-guild.jpg": "81a34df24101661a",
- "models/guild-refs/tacticians-guild.jpg": "5eb461d194eec5b2",
- "models/guild_classifier.onnx": "ddeca8a5504c3f56",
- "models/laurel_digit.onnx": "e7fcdb048ce0606b",
- "models/laurel_filter.onnx": "6aa3737ebf6a9e72",
- "models/laurel_gallery.json": "51f2b893d9364348",
- "models/laurel_yolo.onnx": "90fd144368708959",
- "models/ocr/ch_PP-OCRv4_det_infer.onnx": "d2a7720d45a54257",
- "models/ocr/ch_PP-OCRv4_rec_infer.onnx": "48fc40f24f6d2a20",
- "models/ocr/ch_ppocr_mobile_v2.0_cls_infer.onnx": "e47acedf663230f8",
- "models/ocr_charset.json": "5c550711829a1c13",
- "models/pawn_ends.onnx": "3b9679d4ac6d6d0e",
- "models/token_embed.onnx": "6a5b2c777e740864",
- "models/token_embed_index.json": "c809847a82d90b8b",
- "models/token_templates.json": "f54b759edfb7fa43",
- "models/token_yolo.onnx": "097b8bc8452100f4",
- "models/track_band.onnx": "55b0855eb26e6f64",
- "models/tuck_box.onnx": "6762d11e7e8d05bc",
- "models/tuck_classifier.onnx": "76b8b83b53a128bc",
- "models/wonder-refs/circus-maximus.jpg": "96d4912971bc17b2",
- "models/wonder-refs/piraeus.jpg": "e8fea03fcaac076a",
- "models/wonder-refs/the-appian-way.jpg": "01b737067960e557",
- "models/wonder-refs/the-colossus.jpg": "0c825df5b17bcf64",
- "models/wonder-refs/the-great-library.jpg": "a869603069238eba",
- "models/wonder-refs/the-great-lighthouse.jpg": "41b667b6c6ec7876",
- "models/wonder-refs/the-hanging-gardens.jpg": "511c29570f667c46",
- "models/wonder-refs/the-mausoleum.jpg": "a3e0156b3dece121",
- "models/wonder-refs/the-pyramids.jpg": "9eb4d00fa07a5ad7",
- "models/wonder-refs/the-sphinx.jpg": "6ca3889cec08dac6",
- "models/wonder-refs/the-statue-of-zeus.jpg": "b413a6f793d90333",
- "models/wonder-refs/the-temple-of-artemis.jpg": "94dd8ce9dde74378",
- "models/wonder_classifier.onnx": "b28afe8b4e2b094b",
- "models/wonder_classifier_seuil.json": "63bf56808af5291e",
- "models/wonder_names.json": "d013f06da86f7511",
- "models/wonder_obb.onnx": "603753a7d78d8b34",
- "models/wonder_yolo.onnx": "b868dfe1939b728c",
- "ort/ort-wasm-simd-threaded.jsep.mjs": "3ee381d20a80f51a",
- "ort/ort-wasm-simd-threaded.jsep.wasm": "78feeeb3d08f6bce",
- "ort/ort-wasm-simd-threaded.mjs": "0a1e718d99c41b22",
- "ort/ort-wasm-simd-threaded.wasm": "d1ab1b94b16a65b2",
- "opencv/opencv.js": "b873c8211421da7b"
+ "models/banner_class.onnx": {
+  "empreinte": "38fcaa7a6dccd5b9",
+  "octets": 44821503
+ },
+ "models/banner_yolo.onnx": {
+  "empreinte": "fad91b9ec128ec8a",
+  "octets": 11145118
+ },
+ "models/coin_denom.onnx": {
+  "empreinte": "4d40e67f248ad4b2",
+  "octets": 44704335
+ },
+ "models/coin_filter_cnn.onnx": {
+  "empreinte": "43ceaf5f481e83b8",
+  "octets": 44702283
+ },
+ "models/coin_yolo.onnx": {
+  "empreinte": "de772b034eced50d",
+  "octets": 11140024
+ },
+ "models/guild-band-refs/builders-guild.png": {
+  "empreinte": "fc650c09a21ba394",
+  "octets": 43148
+ },
+ "models/guild-band-refs/magistrates-guild.png": {
+  "empreinte": "ad4aa7edd0c71928",
+  "octets": 43706
+ },
+ "models/guild-band-refs/merchants-guild.png": {
+  "empreinte": "0440c3c5037d1717",
+  "octets": 43755
+ },
+ "models/guild-band-refs/moneylenders-guild.png": {
+  "empreinte": "d4b6967879b969f1",
+  "octets": 44115
+ },
+ "models/guild-band-refs/scientists-guild.png": {
+  "empreinte": "96b5c9a5de9f119e",
+  "octets": 42568
+ },
+ "models/guild-band-refs/shipowners-guild.png": {
+  "empreinte": "4582609e7225fcde",
+  "octets": 45339
+ },
+ "models/guild-band-refs/tacticians-guild.png": {
+  "empreinte": "cf52a321b693974d",
+  "octets": 44921
+ },
+ "models/guild-refs/builders-guild.jpg": {
+  "empreinte": "fe0f446a37880032",
+  "octets": 518286
+ },
+ "models/guild-refs/magistrates-guild.jpg": {
+  "empreinte": "2f72e7f37e04e54d",
+  "octets": 599487
+ },
+ "models/guild-refs/merchants-guild.jpg": {
+  "empreinte": "1f3318c53ea1b896",
+  "octets": 560700
+ },
+ "models/guild-refs/moneylenders-guild.jpg": {
+  "empreinte": "c6e7e845b79fffe1",
+  "octets": 511500
+ },
+ "models/guild-refs/scientists-guild.jpg": {
+  "empreinte": "8a1ef90fe0180427",
+  "octets": 530819
+ },
+ "models/guild-refs/shipowners-guild.jpg": {
+  "empreinte": "81a34df24101661a",
+  "octets": 554014
+ },
+ "models/guild-refs/tacticians-guild.jpg": {
+  "empreinte": "5eb461d194eec5b2",
+  "octets": 540128
+ },
+ "models/guild_classifier.onnx": {
+  "empreinte": "ddeca8a5504c3f56",
+  "octets": 44813945
+ },
+ "models/laurel_digit.onnx": {
+  "empreinte": "e7fcdb048ce0606b",
+  "octets": 44815451
+ },
+ "models/laurel_filter.onnx": {
+  "empreinte": "6aa3737ebf6a9e72",
+  "octets": 44803869
+ },
+ "models/laurel_gallery.json": {
+  "empreinte": "51f2b893d9364348",
+  "octets": 22627
+ },
+ "models/laurel_yolo.onnx": {
+  "empreinte": "90fd144368708959",
+  "octets": 11139994
+ },
+ "models/ocr/ch_PP-OCRv4_det_infer.onnx": {
+  "empreinte": "d2a7720d45a54257",
+  "octets": 4745517
+ },
+ "models/ocr/ch_PP-OCRv4_rec_infer.onnx": {
+  "empreinte": "48fc40f24f6d2a20",
+  "octets": 10857958
+ },
+ "models/ocr/ch_ppocr_mobile_v2.0_cls_infer.onnx": {
+  "empreinte": "e47acedf663230f8",
+  "octets": 585532
+ },
+ "models/ocr_charset.json": {
+  "empreinte": "5c550711829a1c13",
+  "octets": 46141
+ },
+ "models/pawn_ends.onnx": {
+  "empreinte": "3b9679d4ac6d6d0e",
+  "octets": 11141984
+ },
+ "models/token_embed.onnx": {
+  "empreinte": "6a5b2c777e740864",
+  "octets": 44778270
+ },
+ "models/token_embed_index.json": {
+  "empreinte": "c809847a82d90b8b",
+  "octets": 526700
+ },
+ "models/token_templates.json": {
+  "empreinte": "f54b759edfb7fa43",
+  "octets": 218677
+ },
+ "models/token_yolo.onnx": {
+  "empreinte": "097b8bc8452100f4",
+  "octets": 11140030
+ },
+ "models/track_band.onnx": {
+  "empreinte": "55b0855eb26e6f64",
+  "octets": 11141172
+ },
+ "models/tuck_box.onnx": {
+  "empreinte": "6762d11e7e8d05bc",
+  "octets": 44803743
+ },
+ "models/tuck_classifier.onnx": {
+  "empreinte": "76b8b83b53a128bc",
+  "octets": 44804463
+ },
+ "models/wonder-refs/circus-maximus.jpg": {
+  "empreinte": "96d4912971bc17b2",
+  "octets": 179372
+ },
+ "models/wonder-refs/piraeus.jpg": {
+  "empreinte": "e8fea03fcaac076a",
+  "octets": 195870
+ },
+ "models/wonder-refs/the-appian-way.jpg": {
+  "empreinte": "01b737067960e557",
+  "octets": 218925
+ },
+ "models/wonder-refs/the-colossus.jpg": {
+  "empreinte": "0c825df5b17bcf64",
+  "octets": 182985
+ },
+ "models/wonder-refs/the-great-library.jpg": {
+  "empreinte": "a869603069238eba",
+  "octets": 182700
+ },
+ "models/wonder-refs/the-great-lighthouse.jpg": {
+  "empreinte": "41b667b6c6ec7876",
+  "octets": 203817
+ },
+ "models/wonder-refs/the-hanging-gardens.jpg": {
+  "empreinte": "511c29570f667c46",
+  "octets": 202494
+ },
+ "models/wonder-refs/the-mausoleum.jpg": {
+  "empreinte": "a3e0156b3dece121",
+  "octets": 200573
+ },
+ "models/wonder-refs/the-pyramids.jpg": {
+  "empreinte": "9eb4d00fa07a5ad7",
+  "octets": 163668
+ },
+ "models/wonder-refs/the-sphinx.jpg": {
+  "empreinte": "6ca3889cec08dac6",
+  "octets": 171462
+ },
+ "models/wonder-refs/the-statue-of-zeus.jpg": {
+  "empreinte": "b413a6f793d90333",
+  "octets": 235392
+ },
+ "models/wonder-refs/the-temple-of-artemis.jpg": {
+  "empreinte": "94dd8ce9dde74378",
+  "octets": 180833
+ },
+ "models/wonder_classifier.onnx": {
+  "empreinte": "b28afe8b4e2b094b",
+  "octets": 44852503
+ },
+ "models/wonder_classifier_seuil.json": {
+  "empreinte": "63bf56808af5291e",
+  "octets": 3272
+ },
+ "models/wonder_names.json": {
+  "empreinte": "d013f06da86f7511",
+  "octets": 8318
+ },
+ "models/wonder_obb.onnx": {
+  "empreinte": "603753a7d78d8b34",
+  "octets": 10947427
+ },
+ "models/wonder_yolo.onnx": {
+  "empreinte": "b868dfe1939b728c",
+  "octets": 11149198
+ },
+ "ort/ort-wasm-simd-threaded.jsep.mjs": {
+  "empreinte": "3ee381d20a80f51a",
+  "octets": 46614
+ },
+ "ort/ort-wasm-simd-threaded.jsep.wasm": {
+  "empreinte": "78feeeb3d08f6bce",
+  "octets": 26827543
+ },
+ "ort/ort-wasm-simd-threaded.mjs": {
+  "empreinte": "0a1e718d99c41b22",
+  "octets": 24180
+ },
+ "ort/ort-wasm-simd-threaded.wasm": {
+  "empreinte": "d1ab1b94b16a65b2",
+  "octets": 13479978
+ },
+ "opencv/opencv.js": {
+  "empreinte": "b873c8211421da7b",
+  "octets": 13298869
+ }
 }

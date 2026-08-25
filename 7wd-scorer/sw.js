@@ -67,7 +67,13 @@
  * app do NOT need a bump (index.html is no-cache server-side and network-first
  * here, and the assets it references are content-hashed).
  */
-const SHELL_CACHE = "swd-shell-v1";
+// v2 POUR PURGER 552 Mo DE POIDS MORT (25.08). Jusqu'au 24.08 les modeles tombaient en
+// network-first, et network-first RANGE tout ce qu'il telecharge : le cache du shell contenait donc
+// une copie complete des 512 Mo de modeles, que plus rien ne relira jamais (ils vivent maintenant
+// dans swd-heavy-v1, sous leur empreinte). Le diagnostic du telephone de Fabio le chiffrait :
+// 1173 Mo stockes pour 552 Mo utiles. Renommer le cache suffit — `activate` efface tout ce qui
+// n'est pas dans CACHES_A_GARDER, et le shell ne pese que ~300 Ko d'assets haches a reprendre.
+const SHELL_CACHE = "swd-shell-v2";
 /** Les poids lourds (modeles, wasm ORT, opencv.js) — cache SEPARE du shell : il
  *  doit survivre aux deploiements, sinon chaque tag reteleverse 552 Mo, ce qui
  *  est precisement la boucle qu'on vient de payer toute une nuit. */
@@ -200,7 +206,15 @@ async function servirPoidsLourd(request) {
 
   const chemin = new URL(request.url).pathname.slice(BASE.length);
   const table = await empreintes();
-  const empreinte = table === null ? undefined : table[chemin];
+  const entree = table === null ? undefined : table[chemin];
+  // Le manifeste porte `{empreinte, octets}` depuis le 25.08 (les tailles servent la barre de
+  // progression du prechargement). On accepte encore la forme plate : un service worker et un
+  // manifeste ne se deploient pas a la milliseconde pres, et une forme inattendue doit degrader
+  // vers le repli lent, jamais produire une cle bancale.
+  const empreinte =
+    typeof entree === "string" ? entree
+      : typeof entree?.empreinte === "string" ? entree.empreinte
+      : undefined;
   if (empreinte === undefined) {
     return revalideDepuisLeCache(request, cache);
   }
