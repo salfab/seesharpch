@@ -14,7 +14,7 @@ C'était le moment de démystifier — pas en lisant, en construisant.
 
 Votre mission, Jim, si vous l'acceptez : compter les points d'une partie de 7 Wonders Duel à partir d'une ou deux photos. Sans calculatrice, sans calcul mental et, si possible, avant que la bière ne tiédisse.
 
-Mais coller un autocollant « boosté à l'IA » sur le projet juste comme argument marketing, ça aurait été trop facile. Avant d'utiliser une scie sauteuse, c'est toujours bien de savoir se servior d'une scie à main.
+Mais coller un autocollant « boosté à l'IA » sur le projet juste comme argument marketing, ça aurait été trop facile. Avant d'utiliser une scie sauteuse, c'est toujours bien de savoir se servir d'une scie à main.
 
 J'ai donc commencé avec OpenCV et des règles écrites à la main. Pas de dataset, pas de modèle entraîné par mes soins. La seule entorse était RapidOCR, un lecteur de texte pré-entraîné utilisé pour le nom des merveilles. Pour tout le reste, je voulais d'abord voir jusqu'où iraient la géométrie, les couleurs et les images de référence.
 
@@ -32,7 +32,25 @@ Sur ma table, avec une bonne lumière, les premiers résultats étaient franchem
 
 ![La même photo, avec les détections du programme dessinées par-dessus](/assets/img/7wd-vue-annotee.jpg)
 
-Sous le capot, c'était déjà une petite brocante d'algorithmes. Hough proposait les objets ronds. La colorimétrie triait les bannières et tentait de lire le métal des pièces. Des gabarits et des corrélations comparaient les chiffres des lauriers, les symboles des jetons et les guildes à leurs références. ORB recalait les illustrations des merveilles pour retrouver leur position et leur angle.
+## Une image de référence, et c'était parti
+
+Le vrai coup d'accélérateur des premières heures n'est pas venu d'un modèle entraîné. Il est venu des images de référence.
+
+Pour essayer de reconnaître un nouvel objet, il me fallait une image propre de cet objet. C'est tout. Pas des centaines de photos à annoter, pas d'entraînement à lancer. Une référence suffisait pour tester l'idée en quelques minutes.
+
+La version la plus directe s'appelle l'**appariement de gabarits**, ou *template matching*. Je comparais la zone photographiée à une référence — parfois les pixels, parfois la silhouette — et je gardais celle qui obtenait le meilleur score.
+
+Comme ça marchait, j'ai essayé d'en mettre partout. Évidemment.
+
+J'ai même essayé cet appariement sur les faces des pièces, les chiffres des lauriers et les symboles des guildes. Pour les merveilles, une carte photographiée de biais se superposait mal à son scan. J'ai donc utilisé une technique de recalage d'images basée sur ORB.
+
+ORB ne compare pas tous les pixels. Il repère plutôt des points caractéristiques dans le scan et dans la photo — un coin, un petit motif, une rupture de texture — puis cherche ceux qui correspondent. S'il en trouve assez, il peut retrouver la position, l'angle et la perspective de la carte.
+
+L'idée de départ restait la même : une image de référence, aucun entraînement. Sur mes premières photos, ça répondait assez souvent pour me donner envie d'insister. Les merveilles, surtout, offraient à ORB assez de détails pour retrouver leur contour environ neuf fois sur dix, avec une précision assez bluffante.
+
+C'est cette réussite qui m'a convaincu que la POC avait des jambes. Pour le reste, la facture arriverait un peu plus tard.
+
+À côté de ça, la transformée de Hough cherchait les cercles et la colorimétrie triait les bannières ou tentait de lire le métal des pièces. Sous le capot, c'était déjà une petite brocante d'algorithmes.
 
 Chaque outil avait une question étroite. Aucun ne prétendait comprendre la partie.
 
@@ -44,56 +62,69 @@ Un symbole imprimé sur une carte était promu pièce. Un jeton de progrès éta
 
 Le programme faisait pourtant exactement ce que je lui avais demandé. Le problème, c'est que la vraie vie ne ressemble pas toujours à la table de ma terrasse.
 
-Je pouvais ajouter une règle pour la plage, une autre pour une table sombre, puis une troisième pour les photos prises de biais. J'aurais surtout obtenu un excellent détecteur de mes propres photos de test, mais qui serait incapable de généraliser à des cas qui n'auraient jamais été rencontrés auparavant.
+Je pouvais ajouter une règle pour la plage, une autre pour une table sombre, puis une troisième pour les photos prises de biais. J'aurais surtout obtenu un excellent détecteur de mes propres photos de test, incapable de généraliser aux cas que je n'avais pas encore rencontrés.
 
-Je n'ai pas remplacé toute la chaîne d'un coup. J'ai commencé par son maillon le plus fragile : les pièces. Hough continuait à proposer les cercles. Beaucoup. Beaucoup trop, et n'importe où. J'en ai profité pour étiqueter ces faux positifs comme des négatifs de pièces, et d'attribuer la dénomination des pièces à celles qui avaient été détectées à raison. Avec ça, j'avais suffisamment d'informations pour pouvoir entrainer un réseau de neurones ResNet18 pour remplacer la détection de pièces par colorimétrie. D'un coup, lorsque Hough me détectait un cercle, il m'a suffi de le passer dans ce classifieur Resnet18, et la lecture des valeurs est passée de **71 % à 91 %**.
+## Trouver une pièce n'est pas lire sa valeur
 
-Et quand des photos sur un tapis Berbère ont commencé à me saturer toute l'image avec des cercles Hough, parce qu'il confondait les longs poins du tapis avec la courbe d'un contour de pièces, c'est le moment où j'ai dû trouver un autre moyen de me proposer des candidats de pièces, et c'est comme ça que je me suis penché sur le modèle YOLO pour reprendre la localisation des pièces.
+Je n'ai pas remplacé toute la chaîne d'un coup. Sur les pièces, la première version répondait déjà à deux questions distinctes.
 
-{s'assurer que c'est bien formulé, et soigner l'écriture : 
-Les modèles sont entrés comme ça : un problème mesuré à la fois, sans jeter les morceaux classiques qui faisaient encore le travail, mais petit à petit, tantôt l'éclairage, tantôt la perspective de la photo, j'en suis venu à remplacer, un à un, presque tous les mécanismes que j'avais implémenté à la main par pure algorithmique et géométrie: identification des lautiers de points de victoire, identité des merveilles, localisation des cartes aux bannières de différentes couleurs, avec seulement deux types de modèles, j'ai pu remplacer toute une panoplie de techniques de computer vision de manière à les rendre plus résilientes aux conditions hostiles de la photographie.}
+**Où sont-elles ?** Hough parcourait la photo et proposait tous les cercles qui avaient l'air d'une pièce. **Combien valent-elles ?** Mes règles regardaient ensuite la couleur du métal pour choisir entre 1, 3 et 6.
+
+Il y avait déjà un problème dans la première réponse : parmi les cercles proposés se glissaient des symboles de cartes, des plis de tissu et d'autres imposteurs. Le premier modèle n'a donc pas remplacé Hough. C'était une petite forêt aléatoire — un modèle composé d'arbres de décision — qui apprenait à trier ses trouvailles à partir de leur couleur, de leur texture et de leur taille. Sur une photo extérieure particulièrement chargée, les faux positifs sont passés de **22 à 1**.
+
+La valeur, elle, restait lue par colorimétrie. Sous une lumière chaude, une pièce argentée pouvait prendre des airs de pièce dorée. Cette lecture plafonnait à **71 %**.
+
+J'avais **111 vignettes de pièces**, issues de cinq parties. Beaucoup trop peu pour apprendre à un réseau à voir en partant de zéro. C'est là que le *transfer learning* devient pratique.
+
+L'analogie qui marche pour moi, c'est l'arrivée d'un nouveau collègue. Pour mémoriser son nom, ton cerveau n'a pas besoin de réapprendre ce qu'est un nez, une bouche ou une paire d'yeux. Il sait déjà reconnaître un visage. Il lui reste juste à coller un nom dessus.
+
+ResNet18 partait avec le même avantage. Préentraîné sur ImageNet, son « œil » savait déjà extraire des contours, des courbes et des textures. Je n'ai réentraîné que la fin du réseau pour lui apprendre trois nouveaux noms : « pièce de 1 », « pièce de 3 » et « pièce de 6 ».
+
+C'est un **classifieur** : on lui donne une vignette qui contient déjà une pièce et il lit sa valeur. Il ne cherche rien dans la photo complète. La précision est passée à **91 %**.
+
+Ça réglait la seconde moitié du problème. La première était toujours confiée à Hough.
+
+Puis une partie photographiée sur un tapis berbère a saturé l'image de cercles. La texture du tapis donnait à Hough beaucoup trop de candidats. ResNet pouvait très bien lire une pièce ; encore fallait-il qu'on lui en donne une.
+
+Cette fois, c'est la localisation que j'ai remplacée. J'ai entraîné YOLO à partir de photos complètes sur lesquelles les pièces étaient entourées. YOLO est un **détecteur** : il reçoit toute la scène et renvoie les boîtes où il pense avoir trouvé une pièce. Il répond à « où ? ». ResNet reçoit ensuite chaque boîte découpée et répond à « quoi ? ».
+
+Sur les pièces, le schéma était maintenant simple : YOLO les trouvait, ResNet lisait leur valeur. Les règles classiques n'avaient pas toutes disparu. Elles avaient cédé deux maillons précis, là où elles ne tenaient plus.
 
 ## Un coup tu m'vois, un coup tu m'vois pas
 
-Un résultat me paraissait franchement incohérent.
+Cette architecture en deux étages allait aussi servir à lire les petits détails imprimés sur les cartes. Mais en l'appliquant aux chiffres, quelque chose ne collait pas.
 
-Sur des photos rapprochées, les lecteurs de chiffres fonctionnaient bien. Sur les photos d'ensemble, les mêmes chiffres devenaient presque illisibles. Pourtant, la photo du téléphone était nette. En zoomant dedans, moi, je voyais parfaitement le numéro.
+Sur des photos rapprochées, le modèle lisait bien les chiffres. Sur les photos d'ensemble, les mêmes chiffres devenaient presque illisibles une fois toute la scène ramenée à la taille attendue par le modèle. Pourtant, la photo du téléphone était nette. En zoomant dedans, moi, je voyais parfaitement le numéro.
 
 Le chiffre n'avait pas changé. Alors pourquoi le modèle y arrivait-il dans un cas et pas dans l'autre ?
 
-Parce que le modèle ne recevait pas directement les 12 ou 48 mégapixels de la photo. L'image était ramenée à une taille fixe. Sur une vue d'ensemble, toute la table devait rentrer dans ce cadre. La carte devenait minuscule et son chiffre finissait sur une poignée de pixels.
+Parce qu'il ne recevait pas directement les 12 ou 48 mégapixels de la photo. Pour localiser les objets, toute la table devait d'abord rentrer dans un cadre de taille fixe. Dans la première version, la vignette à lire venait de cette image déjà réduite. La carte était devenue minuscule et son chiffre finissait sur une poignée de pixels.
 
 Sur un gros plan, le même chiffre conservait beaucoup plus de détails. Il n'y avait donc pas le même nombre de pixels à analyser, même si les deux images paraissaient parfaitement nettes sur le téléphone.
 
 ![La photo complète est réduite pour la détection, puis la zone utile est redécoupée dans l'image originale afin de retrouver les détails](/assets/img/7-wonders-resolution-pipeline.png)
 
-J'ai donc coupé le travail en deux. Un premier étage cherche **où** se trouve l'objet sur une version réduite de la scène. Au début, c'était Hough ou une règle géométrique ; plus tard, ce sera souvent YOLO. Ensuite, l'application retourne dans la photo originale et redécoupe cette zone en pleine résolution. Le second étage doit seulement décider **ce que** contient la vignette, avec un gabarit ou un classifieur selon le cas.
+J'ai donc fait travailler les deux étages à des résolutions différentes. Le détecteur cherche les objets sur une copie réduite de la photo complète. Une fois leurs coordonnées connues, l'application retourne dans le fichier original et y redécoupe chaque zone. Le classifieur reçoit ainsi un vrai zoom, avec les détails que la réduction avait fait disparaître.
 
-Ça retrouve les détails sacrifiés pendant le redimensionnement. Ça ne dit pas encore comment les lire.
+## Quand une image de référence ne suffit plus
 
-## Des calques à ResNet
+Revenir à la photo originale remettait les pixels à disposition. Ça ne les rendait pas forcément distinctifs.
 
-Récupérer les bons pixels ne voulait pas encore dire qu'il fallait entraîner un réseau. J'ai commencé par la méthode la plus simple : comparer chaque vignette à une image de référence.
-
-Pour les chiffres des lauriers, je transformais le chiffre en silhouette, puis je cherchais le gabarit de 1 à 7 qui se superposait le mieux. Ce n'était pas parfait, mais ça fonctionnait immédiatement. Et comme le lecteur proposait déjà une valeur, je pouvais corriger ses annotations au lieu de tout saisir depuis zéro.
-
-L'exemple le plus brutal est venu un peu plus tard avec les guildes, les cartes violettes. Dans une vraie partie, elles sont empilées et on ne voit souvent que leur bandeau supérieur. J'ai découpé ce bandeau et je l'ai comparé aux références.
+Les guildes en ont donné la mesure la plus brutale. Dans une vraie partie, ces cartes violettes sont empilées et on ne voit souvent que leur bandeau supérieur. J'ai découpé ce bandeau et je l'ai comparé aux références.
 
 Résultat : **18 %** de bonnes réponses.
 
-Les images étaient assez nettes. Elles se ressemblaient simplement trop : une grande zone violette identique partout, avec un petit symbole qui change dans un coin. En comparant tous les pixels, le violet écrasait le seul détail utile.
+ORB avait beaucoup de matière sur l'illustration d'une merveille. Ici, la grande zone violette était identique partout et seul un petit symbole changeait dans un coin. En comparant tous les pixels, le violet écrasait le seul détail utile.
 
-J'aurais pu isoler le symbole, corriger la rotation, gérer la perspective et inventer encore trois seuils. J'ai préféré réutiliser la mécanique introduite pour les pièces et entraîner un classifieur sur les vignettes déjà cadrées.
+Le même déséquilibre revenait sur les lauriers : presque toute la couronne était commune aux sept valeurs. Le chiffre qui portait la réponse pesait très peu face à tout ce qui était identique.
 
-Avec le *transfer learning*, je ne partais pas de zéro. Le ResNet18 avait déjà appris à reconnaître des bords, des formes et des textures sur plus d'un million d'images. Je lui apprenais seulement à associer ce vocabulaire visuel aux différentes guildes.
+J'aurais pu isoler le symbole, corriger la rotation, gérer la perspective et inventer encore trois seuils. J'ai préféré reprendre la recette des pièces et adapter un autre ResNet18 préentraîné aux vignettes de guildes déjà cadrées.
 
 Sur les mêmes cas, le score est passé de **18 % à 91 %**.
 
-À 18 contre 91, le débat était terminé.
+Restait le lecteur des lauriers. L'ancien comparait la silhouette du chiffre aux gabarits de 1 à 7. Il avait déjà préannoté les vignettes ; il ne restait qu'à relire et corriger ses propositions avant d'entraîner un classifieur dédié. Sur un même jeu de test de 49 lauriers, la précision est passée de **67,3 % à 95,9 %**.
 
-Une fois ce classifieur en place, je l'ai essayé sur les lauriers. Le vieux matcher avait déjà préparé les annotations ; il ne restait qu'à relire et corriger ses propositions. Sur les mêmes 49 images, la précision est passée de **67,3 % à 95,9 %**.
-
-Le template matching n'avait donc pas été une mauvaise idée. Il avait permis de démarrer sans dataset, de vérifier que le principe tenait debout et de préannoter la suite. Une fois les données disponibles, le classifieur faisait mieux et permettait de traiter plusieurs objets de la même manière : trouver la zone, reprendre les pixels dans la photo originale, puis décider.
+À 67,3 contre 95,9, le classifieur est devenu le lecteur principal. Le template matching avait tout de même rempli son rôle : démarrer sans dataset et préparer les données de son remplaçant. Je pouvais maintenant réutiliser la même architecture sur plusieurs objets, au lieu de maintenir un lecteur différent pour chacun.
 
 ## Mes jolies cartes ne ressemblaient à aucune partie
 
@@ -195,7 +226,7 @@ Il n'avait pas appris une nouvelle merveille. Il avait enfin appris à répondre
 
 Reconnaître une merveille ne suffit pas. Pour savoir si elle a été construite, il faut repérer la carte glissée dessous. Une fois la merveille remise à l'endroit, cette carte dépasse sur son bord droit.
 
-Ma première solution utilisait ORB pour recaler la photo sur le scan de référence et retrouver les quatre coins exacts. Quand il répondait, le contour était excellent : **527 contours vérifiés, 527 corrects**. Mais il lui arrivait aussi de ne rien rendre, et chaque tentative coûtait environ **1,3 seconde par merveille** sur le téléphone.
+C'est là que le recalage ORB du début servait encore : à partir du scan de référence, il retrouvait les quatre coins exacts de la merveille. Quand il répondait, le contour était excellent : **527 contours vérifiés, 527 corrects**. Mais il lui arrivait aussi de ne rien rendre, et chaque tentative coûtait environ **1,3 seconde par merveille** sur le téléphone.
 
 ![Ancien pipeline : plusieurs merveilles sont bien identifiées, mais le recalage ORB ne produit aucun contour exploitable](/assets/img/7wd-vote-orb-echec.jpg)
 
