@@ -68,7 +68,7 @@ Je pouvais ajouter une règle pour la plage, une autre pour une table sombre, pu
 
 À ce stade, sans IA, les merveilles étaient relativement bien détectées, les couleurs des bannières semblaient être plutôt bien identifiables. Mais ce qui me donnait plus de fil à retordre, c'était de détecter les pièces.
 
-{"C:\Users\fabio.salvalai\OneDrive - Swisscaution\Pictures\where is the money lebowski.jpg"}
+{"\assets\img\where is the money lebowski.jpg"}
 
 **Où sont-elles ?** Hough parcourait la photo et proposait tous les cercles qui avaient l'air d'une pièce. **Combien valent-elles ?** Mes règles regardaient ensuite la couleur du métal pour choisir entre 1, 3 et 6.
 
