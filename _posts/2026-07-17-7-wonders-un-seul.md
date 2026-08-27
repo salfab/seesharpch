@@ -66,36 +66,39 @@ Je pouvais ajouter une règle pour la plage, une autre pour une table sombre, pu
 
 ## Trouver et reconnaître des pièces
 
-À ce stade, sans IA, les merveilles étaient relativement bien détectées, les couleurs des bannières semblaient être plutôt bien identifiables. Mais ce qui me donnait plus de fil à retordre, c'était de détecter les pièces.
+À ce stade, les merveilles étaient à peu près sous contrôle et les bannières se laissaient trier par couleur. Les pièces, elles, me donnaient encore du fil à retordre.
 
-{"\assets\img\where is the money lebowski.jpg"}
+![Le Dude, trempé et empoigné, sous la légende « Where is the money, Lebowski? »](/assets/img/7wd-where-is-the-money-lebowski.jpg)
 
-**Où sont-elles ?** Hough parcourait la photo et proposait tous les cercles qui avaient l'air d'une pièce. **Combien valent-elles ?** Mes règles regardaient ensuite la couleur du métal pour choisir entre 1, 3 et 6.
+*Au moins, la première question était posée.*
 
-Il y avait déjà un gros problème avec la première question : parmi les cercles proposés par Hough se glissaient des symboles de cartes, des plis de tissu et d'autres imposteurs.
+Le problème en cachait en fait deux. **Où sont-elles ?** Hough parcourait la photo et proposait tous les cercles qui avaient l'air d'une pièce. **Combien valent-elles ?** Mes règles regardaient ensuite la couleur du métal pour choisir entre 1, 3 et 6.
 
-À ce stade, j'avais encore assez peu de photos, et donc entraîner un modèle de détection, type YOLO pour remplacer la détection de cercles fournis par Hough semblait illusoire. À la place, j'ai construit une petite forêt aléatoire {ajouter un lien vers la description wikipedia des forêts aléatoires} — un modèle composé d'arbres de décision — qui apprenait à trier les trouvailles de Hough à partir de leur couleur, de leur texture et de leur taille, histoire de faire le ménage.
+Hough ratissait large. Parmi ses cercles se glissaient des symboles de cartes, des plis de tissu et d'autres imposteurs.
 
-Le principe de cette forêt était tout simple : {décrire ce que la forêt faisait}
+Je n'avais pas encore assez de photos complètes annotées pour entraîner un détecteur comme YOLO. En revanche, Hough avait déjà produit des centaines de cercles que je pouvais étiqueter « pièce » ou « intrus ». C'était suffisant pour entraîner un filtre beaucoup plus léger : une petite [forêt d'arbres décisionnels](https://fr.wikipedia.org/wiki/For%C3%AAt_d%27arbres_d%C3%A9cisionnels).
 
-Sur une photo extérieure particulièrement chargée, les faux positifs sont passés de **22 à 1**. Pas parfait, mais ça écartait quand même beaucoup de faux positifs qui n'étaient pas des pièces, simplement parce que le cercle fournit par Hough ne ressemblait pas à une pièce selon ma forêt de décisions.
+Chaque arbre posait une suite de petites questions apprises : le bord ressemble-t-il à du métal ? Le disque est-il texturé ? Sa taille est-elle cohérente avec les autres cercles ? Leurs votes donnaient une probabilité que le candidat soit une vraie pièce. Sous 20 %, je l'écartais.
 
-La valeur, elle, restait lue par colorimétrie. Sous une lumière chaude, une pièce argentée pouvait prendre des airs de pièce dorée. Cette lecture plafonnait à **71 %**.
+La forêt ne trouvait pas de nouvelles pièces et ne lisait pas encore leur valeur. Elle faisait seulement le tri dans ce que Hough lui donnait. Sur une photo extérieure particulièrement chargée, les faux positifs sont passés de **22 à 1**.
 
-{dans le paragraphe suivant : je ne comprends pas ce que veut dire "en partant de zéro" Qui fait ça, comment ça se fait, comment ça s'appelle ?. et le transfer learning, c'est quoi ? resnet ? }
-J'avais **111 vignettes de pièces**, issues de cinq parties. Beaucoup trop peu pour apprendre à un réseau à voir en partant de zéro. C'est là que le *transfer learning* devient pratique.
+Ça avançait sur le « où ». Pour le « combien », je dépendais toujours de la colorimétrie. Sous une lumière chaude, une pièce argentée pouvait prendre des airs de pièce dorée. Cette lecture plafonnait à **71 %**.
+
+J'ai d'abord essayé le chemin le plus direct : un petit réseau dont tous les paramètres partaient au hasard. C'est cela, entraîner un modèle *from scratch*. Avec mes **111 vignettes de pièces**, issues de cinq parties, il devait apprendre en même temps les bases de la vision et la différence entre 1, 3 et 6. Il a obtenu **47 %** de bonnes réponses. Moins bien que ma règle sur la couleur.
+
+Le *transfer learning* prend le problème dans l'autre sens. Ce n'est pas un type de réseau, mais une manière de l'entraîner : on reprend un réseau qui a déjà appris à voir sur un grand corpus d'images, puis on l'adapte à une nouvelle tâche.
 
 L'analogie qui marche pour moi, c'est l'arrivée d'un nouveau collègue. Pour mémoriser son nom, ton cerveau n'a pas besoin de réapprendre ce qu'est un nez, une bouche ou une paire d'yeux. Il sait déjà reconnaître un visage. Il lui reste juste à coller un nom dessus.
 
-ResNet18 partait avec le même avantage. Préentraîné sur ImageNet, son « œil » savait déjà extraire des contours, des courbes et des textures. Je n'ai réentraîné que la fin du réseau pour lui apprendre trois nouveaux noms : « pièce de 1 », « pièce de 3 » et « pièce de 6 ».
+Dans mon cas, le réseau s'appelait ResNet18. ResNet18, c'est l'architecture ; le *transfer learning*, la manière dont je l'ai réutilisée. Préentraîné sur ImageNet, son « œil » savait déjà extraire des contours, des courbes et des textures. J'ai gardé cette base et réentraîné la fin du réseau pour lui donner trois nouvelles réponses : « pièce de 1 », « pièce de 3 » et « pièce de 6 ».
 
-C'est un **classifieur** : on lui donne une vignette qui contient déjà une pièce et il lit sa valeur. Il ne cherche rien dans la photo complète. La précision est passée à **91 %**.
+C'est un **classifieur** : on lui donne une vignette qui contient déjà une pièce et il lit sa valeur. Il ne cherche rien dans la photo complète. Son taux de bonnes réponses est monté à **91 %**.
 
 Ça réglait la seconde moitié du problème. La première était toujours confiée à Hough.
 
 Puis une partie photographiée sur un tapis berbère a saturé l'image de cercles. La texture du tapis donnait à Hough beaucoup trop de candidats. ResNet pouvait très bien lire une pièce ; encore fallait-il qu'on lui en donne une.
 
-Cette fois, c'est la localisation que j'ai remplacée. J'ai entraîné YOLO à partir de photos complètes sur lesquelles les pièces étaient entourées. YOLO est un **détecteur** : il reçoit toute la scène et renvoie les boîtes où il pense avoir trouvé une pièce. Il répond à « où ? ». ResNet reçoit ensuite chaque boîte découpée et répond à « quoi ? ».
+Entre-temps, j'avais accumulé assez de photos complètes annotées pour remplacer enfin la localisation. J'ai entraîné YOLO sur des scènes où chaque pièce était entourée. YOLO est un **détecteur** : il reçoit toute la photo et renvoie les boîtes où il pense avoir trouvé une pièce. Il répond à « où ? ». ResNet reçoit ensuite chaque boîte découpée et répond à « quoi ? ».
 
 Sur les pièces, le schéma était maintenant simple : YOLO les trouvait, ResNet lisait leur valeur. Les règles classiques n'avaient pas toutes disparu. Elles avaient cédé deux maillons précis, là où elles ne tenaient plus.
 
