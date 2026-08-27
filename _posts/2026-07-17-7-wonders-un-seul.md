@@ -44,13 +44,13 @@ Comme ça marchait, j'ai essayé d'en mettre partout. Évidemment.
 
 J'ai même essayé cet appariement sur les faces des pièces, les chiffres des lauriers et les symboles des guildes. Pour les merveilles, une carte photographiée de biais se superposait mal à son scan. J'ai donc utilisé une technique de recalage d'images basée sur ORB.
 
-ORB ne compare pas tous les pixels. Il repère plutôt des points caractéristiques dans le scan et dans la photo — un coin, un petit motif, une rupture de texture — puis cherche ceux qui correspondent. S'il en trouve assez, il peut retrouver la position, l'angle et la perspective de la carte.
+Le principe de ORB, c'est de repérer des points caractéristiques sur l'image — un coin, un petit motif, une rupture de texture — puis de chercher sur l'image de référence ceux qui correspondent. S'il en trouve assez, il peut retrouver la position, l'angle et la perspective de la carte.
 
 L'idée de départ restait la même : une image de référence, aucun entraînement. Sur mes premières photos, ça répondait assez souvent pour me donner envie d'insister. Les merveilles, surtout, offraient à ORB assez de détails pour retrouver leur contour environ neuf fois sur dix, avec une précision assez bluffante.
 
-C'est cette réussite qui m'a convaincu que la POC avait des jambes. Pour le reste, la facture arriverait un peu plus tard.
+C'est cette réussite qui m'a convaincu que le POC tenait la route. Pour le reste, la facture arriverait un peu plus tard.
 
-À côté de ça, la transformée de Hough cherchait les cercles et la colorimétrie triait les bannières ou tentait de lire le métal des pièces. Sous le capot, c'était déjà une petite brocante d'algorithmes.
+À côté de ça, la transformée de Hough cherchait les cercles et la colorimétrie triait les bannières ou tentait de lire la couleur des pièces. Sous le capot, c'était déjà une petite brocante d'algorithmes.
 
 Chaque outil avait une question étroite. Aucun ne prétendait comprendre la partie.
 
@@ -64,16 +64,25 @@ Le programme faisait pourtant exactement ce que je lui avais demandé. Le probl�
 
 Je pouvais ajouter une règle pour la plage, une autre pour une table sombre, puis une troisième pour les photos prises de biais. J'aurais surtout obtenu un excellent détecteur de mes propres photos de test, incapable de généraliser aux cas que je n'avais pas encore rencontrés.
 
-## Trouver une pièce n'est pas lire sa valeur
+## Trouver et reconnaître des pièces
 
-Je n'ai pas remplacé toute la chaîne d'un coup. Sur les pièces, la première version répondait déjà à deux questions distinctes.
+À ce stade, sans IA, les merveilles étaient relativement bien détectées, les couleurs des bannières semblaient être plutôt bien identifiables. Mais ce qui me donnait plus de fil à retordre, c'était de détecter les pièces.
+
+{"C:\Users\fabio.salvalai\OneDrive - Swisscaution\Pictures\where is the money lebowski.jpg"}
 
 **Où sont-elles ?** Hough parcourait la photo et proposait tous les cercles qui avaient l'air d'une pièce. **Combien valent-elles ?** Mes règles regardaient ensuite la couleur du métal pour choisir entre 1, 3 et 6.
 
-Il y avait déjà un problème dans la première réponse : parmi les cercles proposés se glissaient des symboles de cartes, des plis de tissu et d'autres imposteurs. Le premier modèle n'a donc pas remplacé Hough. C'était une petite forêt aléatoire — un modèle composé d'arbres de décision — qui apprenait à trier ses trouvailles à partir de leur couleur, de leur texture et de leur taille. Sur une photo extérieure particulièrement chargée, les faux positifs sont passés de **22 à 1**.
+Il y avait déjà un gros problème avec la première question : parmi les cercles proposés par Hough se glissaient des symboles de cartes, des plis de tissu et d'autres imposteurs.
+
+À ce stade, j'avais encore assez peu de photos, et donc entraîner un modèle de détection, type YOLO pour remplacer la détection de cercles fournis par Hough semblait illusoire. À la place, j'ai construit une petite forêt aléatoire {ajouter un lien vers la description wikipedia des forêts aléatoires} — un modèle composé d'arbres de décision — qui apprenait à trier les trouvailles de Hough à partir de leur couleur, de leur texture et de leur taille, histoire de faire le ménage.
+
+Le principe de cette forêt était tout simple : {décrire ce que la forêt faisait}
+
+Sur une photo extérieure particulièrement chargée, les faux positifs sont passés de **22 à 1**. Pas parfait, mais ça écartait quand même beaucoup de faux positifs qui n'étaient pas des pièces, simplement parce que le cercle fournit par Hough ne ressemblait pas à une pièce selon ma forêt de décisions.
 
 La valeur, elle, restait lue par colorimétrie. Sous une lumière chaude, une pièce argentée pouvait prendre des airs de pièce dorée. Cette lecture plafonnait à **71 %**.
 
+{dans le paragraphe suivant : je ne comprends pas ce que veut dire "en partant de zéro" Qui fait ça, comment ça se fait, comment ça s'appelle ?. et le transfer learning, c'est quoi ? resnet ? }
 J'avais **111 vignettes de pièces**, issues de cinq parties. Beaucoup trop peu pour apprendre à un réseau à voir en partant de zéro. C'est là que le *transfer learning* devient pratique.
 
 L'analogie qui marche pour moi, c'est l'arrivée d'un nouveau collègue. Pour mémoriser son nom, ton cerveau n'a pas besoin de réapprendre ce qu'est un nez, une bouche ou une paire d'yeux. Il sait déjà reconnaître un visage. Il lui reste juste à coller un nom dessus.
