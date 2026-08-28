@@ -215,10 +215,6 @@
   "empreinte": "603753a7d78d8b34",
   "octets": 10947427
  },
- "models/wonder_yolo.onnx": {
-  "empreinte": "b868dfe1939b728c",
-  "octets": 11149198
- },
  "ort/ort-wasm-simd-threaded.jsep.mjs": {
   "empreinte": "3ee381d20a80f51a",
   "octets": 46614
