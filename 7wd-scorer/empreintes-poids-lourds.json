@@ -95,21 +95,9 @@
   "empreinte": "90fd144368708959",
   "octets": 11139994
  },
- "models/ocr/ch_PP-OCRv4_det_infer.onnx": {
-  "empreinte": "d2a7720d45a54257",
-  "octets": 4745517
- },
- "models/ocr/ch_PP-OCRv4_rec_infer.onnx": {
-  "empreinte": "48fc40f24f6d2a20",
-  "octets": 10857958
- },
  "models/ocr/ch_ppocr_mobile_v2.0_cls_infer.onnx": {
   "empreinte": "e47acedf663230f8",
   "octets": 585532
- },
- "models/ocr_charset.json": {
-  "empreinte": "5c550711829a1c13",
-  "octets": 46141
  },
  "models/pawn_ends.onnx": {
   "empreinte": "3b9679d4ac6d6d0e",
@@ -206,10 +194,6 @@
  "models/wonder_classifier_seuil.json": {
   "empreinte": "63bf56808af5291e",
   "octets": 3272
- },
- "models/wonder_names.json": {
-  "empreinte": "d013f06da86f7511",
-  "octets": 8318
  },
  "models/wonder_obb.onnx": {
   "empreinte": "603753a7d78d8b34",
