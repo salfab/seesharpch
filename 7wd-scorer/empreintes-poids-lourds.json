@@ -95,10 +95,6 @@
   "empreinte": "90fd144368708959",
   "octets": 11139994
  },
- "models/ocr/ch_ppocr_mobile_v2.0_cls_infer.onnx": {
-  "empreinte": "e47acedf663230f8",
-  "octets": 585532
- },
  "models/pawn_ends.onnx": {
   "empreinte": "3b9679d4ac6d6d0e",
   "octets": 11141984
