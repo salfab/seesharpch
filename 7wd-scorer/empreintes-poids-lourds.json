@@ -1,7 +1,7 @@
 {
  "models/banner_class.onnx": {
-  "empreinte": "38fcaa7a6dccd5b9",
-  "octets": 44821503
+  "empreinte": "a88cb50e40eae33e",
+  "octets": 44821559
  },
  "models/banner_yolo.onnx": {
   "empreinte": "fad91b9ec128ec8a",
