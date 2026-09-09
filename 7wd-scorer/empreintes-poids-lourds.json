@@ -4,8 +4,8 @@
   "octets": 44821559
  },
  "models/banner_yolo.onnx": {
-  "empreinte": "fad91b9ec128ec8a",
-  "octets": 11145118
+  "empreinte": "0f5e2b8ffdce01b6",
+  "octets": 11145148
  },
  "models/coin_denom.onnx": {
   "empreinte": "4d40e67f248ad4b2",
