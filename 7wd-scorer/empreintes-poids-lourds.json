@@ -8,8 +8,8 @@
   "octets": 11145148
  },
  "models/banner_yolo_seuil.json": {
-  "empreinte": "ead187a119ac3f90",
-  "octets": 3187
+  "empreinte": "262f45798488738d",
+  "octets": 4935
  },
  "models/coin_denom.onnx": {
   "empreinte": "4d40e67f248ad4b2",
