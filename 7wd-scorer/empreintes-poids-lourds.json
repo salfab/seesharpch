@@ -7,6 +7,10 @@
   "empreinte": "0f5e2b8ffdce01b6",
   "octets": 11145148
  },
+ "models/banner_yolo_seuil.json": {
+  "empreinte": "ead187a119ac3f90",
+  "octets": 3187
+ },
  "models/coin_denom.onnx": {
   "empreinte": "4d40e67f248ad4b2",
   "octets": 44704335

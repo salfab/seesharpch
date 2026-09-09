@@ -1,0 +1,47 @@
+{
+ "seuil": 0.5,
+ "classes": [
+  "brown",
+  "grey",
+  "blue",
+  "green",
+  "yellow",
+  "red",
+  "purple"
+ ],
+ "conf_bakee_nms": 0.01,
+ "empreinte_modele": "ae3ffcc414432f9b",
+ "mesure_le": "2026-09-09",
+ "protocole": {
+  "juge": "tools/juger_banner_yolo_holdout.py",
+  "holdout": "2026-08-29_calculette",
+  "population": "68 bannieres sur 2 photos, aucune vue a l'entrainement (verifie : la session est exclue du dataset ENTIER, train comme val — cf. tools/_run_banner_v5_delave.ps1)",
+  "seuil_applique_a_la_mesure": 0.5
+ },
+ "mesure": {
+  "recall": "68/68 (100 %)",
+  "couleur_juste": "68/68",
+  "faux_positifs": 3,
+  "predecesseur": {
+   "empreinte_modele": "8a26545360ef50aa",
+   "recall": "64/68 (94,1 %)",
+   "couleur_juste": "64/64",
+   "faux_positifs": 7,
+   "note": "⚠ SES PROPRES CHIFFRES DE FICHE (67/68, 1 FP) NE SE REPRODUISENT PLUS. Meme binaire, meme GT de 68 boites, mais le 04.09 la deduplication a ete DEPLACEE de `detect_card_banners` vers `banner_filter.confirmer` (commit 8a05d9b0) : le juge ne voit plus la meme liste. Une fiche scelle un binaire, elle ne fige pas le code autour — relancer le juge avant de citer une fiche ancienne."
+  },
+  "cas_du_chantier": {
+   "quoi": "3 bannieres rouges DELAVEES de 2026-08-29_ensemble-large (saturation -57 % a luminance egale)",
+   "predecesseur": "0/3 — brown@0,27 grey@0,33 grey@0,33, toutes SOUS le seuil",
+   "promu": "3/3 — red@0,98 red@0,98 red@0,96, toutes franches"
+  },
+  "harnais_metier": {
+   "perimetre": "test_game_outcome_20260725 + _20260722 + test_gt_defauts_ouverts + test_overview",
+   "predecesseur": "65 passes, 2 ECHECS (Rosie : 4 bleues pour 3, 7 rouges pour 6)",
+   "promu": "67 passes, 0 echec — les deux verrous de Rosie, ouverts depuis le 29.07, se referment",
+   "cause": "le predecesseur comptait une carte BRUNE comme rouge (verdict de Fabio sur planche, cf. commit 2945ff3e) ; la fausse rouge coutait un PV par la guilde des tacticiens"
+  }
+ },
+ "reserve": "LE SEUIL N'A TOUJOURS PAS ETE RECALIBRE. 0,50 est herite du predecesseur ; il est ici seulement VERIFIE — le promu domine a ce seuil sur toutes les metriques du holdout ET sur le harnais metier. Une calibration par plis reste a faire, mais son enjeu a fondu : les 3 rouges delavees qui la motivaient sortent maintenant a 0,96-0,98.",
+ "conf_bakee_note": "L'ONNX est exporte avec un NMS a conf 0,01, la ou le predecesseur avait le defaut ultralytics de 0,25. Sans effet fonctionnel : detect_card_banners filtre a `seuil` (0,50), au-dessus des deux. Mais un futur abaissement du seuil sous 0,25 aurait ete silencieusement tronque par l'ancien export — c'est le piege deja documente dans track_band.py.",
+ "recette": "tools/_run_banner_v5_delave.ps1 (commit b011c131) pour l'ENTRAINEMENT, puis une passe d'export SEPAREE pour le binaire promu : `train_yolo_xpu.py --export-only --depuis-metier --prefix v5delave --onnx-out ../../data/_banner_yolo_v5_METIER.onnx`. ⚠ Le .ps1 seul exporte depuis best.pt et rend beacc618c2067f63, PAS ce binaire-ci. Epoque retenue : 160 (juge metier, score +80, 68/68, 0 faux, sentinelles 3/3, temoin 192/192, IoU 0,905). Detail complet : models/RECETTES.json, entree banner_yolo.onnx."
+}
