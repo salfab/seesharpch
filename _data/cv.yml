@@ -34,15 +34,26 @@ skills:
     - Multithreading / Async
 
 experience:
-  - title: Full Stack Engineer React / .NET
+  - title: Full Stack Engineer React / .NET / Python
     company: SwissCaution
     type: Full-time
     start: Oct 2022
     end: Present
     location: Nyon, Switzerland
-    description: >-
-      Development of the company's public and internal platforms
-      in React.js, TypeScript, Python and C# / .NET.
+    description: |-
+      Senior Full-Stack Engineer with cross-cutting technical ownership of SwissCaution's rental-guarantee platform.
+
+      - Build and evolve customer-facing products and internal applications across React/TypeScript, .NET and Python/FastAPI.
+
+      - Design and contribute to an event-driven microservice architecture, using RabbitMQ and service-specific data projections to keep domains loosely coupled and independently evolvable.
+
+      - Work across the delivery stack with Kubernetes, Helm and GitLab CI/CD, within a strong continuous delivery culture focused on short, reliable feedback loops.
+
+      - Design business-process orchestration using BPMN / SpiffWorkflow, integrating workflows with existing services and messaging infrastructure.
+
+      - Contribute to the team's use of AI-assisted engineering and developer tooling, including Claude Code agents, MCP tooling and release automation, while using LLMs to accelerate learning and exploration across unfamiliar technical domains.
+
+      I work across product, architecture and delivery, contributing to shared engineering practices while remaining hands-on from frontend UX through APIs to production.
 
   - title: Software Engineer
     company: Vaudoise Assurances

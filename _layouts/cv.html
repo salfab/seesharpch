@@ -487,7 +487,7 @@
             {{ job.company }}{% if job.location %} · <span class="job-location">{{ job.location }}</span>{% endif %}
           </div>
           {% if job.description %}
-          <p class="job-desc">{{ job.description }}</p>
+          <p class="job-desc">{{ job.description | newline_to_br }}</p>
           {% endif %}
         </div>
         {% endfor %}
