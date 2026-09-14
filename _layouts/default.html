@@ -560,6 +560,15 @@
       margin-top: 0.4rem;
       max-width: 60ch;
     }
+    .job-desc p { margin: 0 0 0.75rem; }
+    .job-desc p:last-child { margin-bottom: 0; }
+    .job-desc ul {
+      margin: 0 0 0.75rem 1.25rem;
+      padding: 0;
+      list-style: disc;
+    }
+    .job-desc li { padding-left: 0.25rem; margin-bottom: 0.35rem; }
+    .job-desc li:last-child { margin-bottom: 0; }
 
     /* Education / Certs / Languages */
     .edu-item, .cert-item { margin-bottom: 0.75rem; }
@@ -770,7 +779,7 @@
               {{ job.company }}{% if job.location %} · <span class="job-location">{{ job.location }}</span>{% endif %}
             </div>
             {% if job.description %}
-            <p class="job-desc">{{ job.description }}</p>
+            <div class="job-desc">{{ job.description | markdownify }}</div>
             {% endif %}
           </div>
           {% endfor %}
