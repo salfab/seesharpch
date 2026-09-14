@@ -1,0 +1,6 @@
+{% for edu in site.data.cv.education %}
+<div class="edu-item">
+  <div class="edu-name">{{ edu.school }}</div>
+  <div class="edu-detail">{{ edu.degree }} · {{ edu.start }}–{{ edu.end }}</div>
+</div>
+{% endfor %}

@@ -273,24 +273,7 @@
       margin-top: 0.5rem;
       max-width: 60ch;
     }
-    .job-desc p {
-      margin: 0 0 0.75rem;
-    }
-    .job-desc p:last-child {
-      margin-bottom: 0;
-    }
-    .job-desc ul {
-      margin: 0 0 0.75rem 1.25rem;
-      padding: 0;
-      list-style: disc;
-    }
-    .job-desc li {
-      padding-left: 0.25rem;
-      margin-bottom: 0.35rem;
-    }
-    .job-desc li:last-child {
-      margin-bottom: 0;
-    }
+    {% include cv-description.css %}
 
     /* ── Education / Certs ──────────────────────── */
     .edu-item, .cert-item {
@@ -479,18 +462,7 @@
     <section class="cv-section">
       <div class="cv-container">
         <div class="section-title">Skills</div>
-        <div class="skills-grid">
-          {% for group in site.data.cv.skills %}
-          <div class="skill-group">
-            <h3>{{ group[0] }}</h3>
-            <ul>
-              {% for skill in group[1] %}
-              <li>{{ skill }}</li>
-              {% endfor %}
-            </ul>
-          </div>
-          {% endfor %}
-        </div>
+        {% include cv-skills.html %}
       </div>
     </section>
 
@@ -498,20 +470,7 @@
     <section class="cv-section">
       <div class="cv-container">
         <div class="section-title">Experience</div>
-        {% for job in site.data.cv.experience %}
-        <div class="job">
-          <div class="job-header">
-            <span class="job-title">{{ job.title }}</span>
-            <span class="job-dates">{{ job.start }} — {{ job.end }}</span>
-          </div>
-          <div class="job-company">
-            {{ job.company }}{% if job.location %} · <span class="job-location">{{ job.location }}</span>{% endif %}
-          </div>
-          {% if job.description %}
-          <div class="job-desc">{{ job.description | markdownify }}</div>
-          {% endif %}
-        </div>
-        {% endfor %}
+        {% include cv-experience.html %}
       </div>
     </section>
 
@@ -519,12 +478,7 @@
     <section class="cv-section">
       <div class="cv-container">
         <div class="section-title">Education</div>
-        {% for edu in site.data.cv.education %}
-        <div class="edu-item">
-          <div class="edu-name">{{ edu.school }}</div>
-          <div class="edu-detail">{{ edu.degree }} · {{ edu.start }}–{{ edu.end }}</div>
-        </div>
-        {% endfor %}
+        {% include cv-education.html %}
       </div>
     </section>
 
@@ -532,12 +486,7 @@
     <section class="cv-section">
       <div class="cv-container">
         <div class="section-title">Certifications</div>
-        {% for cert in site.data.cv.certifications %}
-        <div class="cert-item">
-          <div class="cert-name">{{ cert.name }}</div>
-          <div class="cert-detail">{{ cert.issuer }}{% if cert.date %} · {{ cert.date }}{% endif %}</div>
-        </div>
-        {% endfor %}
+        {% include cv-certifications.html %}
       </div>
     </section>
 
@@ -545,14 +494,7 @@
     <section class="cv-section">
       <div class="cv-container">
         <div class="section-title">Languages</div>
-        <div class="lang-list">
-          {% for lang in site.data.cv.languages %}
-          <div>
-            <div class="lang-name">{{ lang.name }}</div>
-            <div class="lang-level">{{ lang.level }}</div>
-          </div>
-          {% endfor %}
-        </div>
+        {% include cv-languages.html %}
       </div>
     </section>
   </main>

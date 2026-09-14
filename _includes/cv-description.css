@@ -1,0 +1,9 @@
+.job-desc p { margin: 0 0 0.75rem; }
+.job-desc p:last-child { margin-bottom: 0; }
+.job-desc ul {
+  margin: 0 0 0.75rem 1.25rem;
+  padding: 0;
+  list-style: disc;
+}
+.job-desc li { padding-left: 0.25rem; margin-bottom: 0.35rem; }
+.job-desc li:last-child { margin-bottom: 0; }

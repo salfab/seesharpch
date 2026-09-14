@@ -1,0 +1,8 @@
+<div class="lang-list">
+  {% for lang in site.data.cv.languages %}
+  <div>
+    <div class="lang-name">{{ lang.name }}</div>
+    <div class="lang-level">{{ lang.level }}</div>
+  </div>
+  {% endfor %}
+</div>

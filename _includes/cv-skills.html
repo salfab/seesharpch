@@ -1,0 +1,12 @@
+<div class="skills-grid">
+  {% for group in site.data.cv.skills %}
+  <div class="skill-group">
+    <h3>{{ group[0] }}</h3>
+    <ul>
+      {% for skill in group[1] %}
+      <li>{{ skill }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endfor %}
+</div>

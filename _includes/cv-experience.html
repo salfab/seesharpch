@@ -1,0 +1,14 @@
+{% for job in site.data.cv.experience %}
+<div class="job">
+  <div class="job-header">
+    <span class="job-title">{{ job.title }}</span>
+    <span class="job-dates">{{ job.start }} — {{ job.end }}</span>
+  </div>
+  <div class="job-company">
+    {{ job.company }}{% if job.location %} · <span class="job-location">{{ job.location }}</span>{% endif %}
+  </div>
+  {% if job.description %}
+  <div class="job-desc">{{ job.description | markdownify }}</div>
+  {% endif %}
+</div>
+{% endfor %}

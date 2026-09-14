@@ -1,0 +1,6 @@
+{% for cert in site.data.cv.certifications %}
+<div class="cert-item">
+  <div class="cert-name">{{ cert.name }}</div>
+  <div class="cert-detail">{{ cert.issuer }}{% if cert.date %} · {{ cert.date }}{% endif %}</div>
+</div>
+{% endfor %}
