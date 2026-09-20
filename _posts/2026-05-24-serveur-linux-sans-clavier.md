@@ -11,7 +11,7 @@ sitemap: false
 
 ![Un mini-PC alimenté par une clé USB, avec son installation automatisée qui se déroule au-dessus](/assets/img/mappyhour-linux-zero-touch-hero.png)
 
-Le 18 mai, [j'écrivais à propos de Mitch](/blog/preview/c3d8f014/self-hosting-nuc-zero-euro), le NUC qui héberge MappyHour :
+Le 18 mai, [j'écrivais à propos de Mitch](/self-hosting-nuc-zero-euro), le NUC qui héberge MappyHour :
 
 > La migration vers Linux aurait coûté du temps, et WSL2 suffit pour Docker. Certains combats ne méritent pas d'être gagnés.
 

@@ -1,119 +1,92 @@
 ---
 layout: post
-title: "Héberger une app Next.js en prod sur un NUC pour 1.25 CHF/mois"
+title: "Mon hébergeur s'appelle Mitch. C'est un NUC."
 date: 2026-05-18 09:00:00 +0200
 tags: [project, infrastructure, deployment, docker, tailscale, cloudflare]
 header_image: /assets/img/self-hosting-nuc-zero-euro.png
-unlisted: true
-permalink: /blog/preview/c3d8f014/self-hosting-nuc-zero-euro
-sitemap: false
+permalink: /self-hosting-nuc-zero-euro
 ---
 
-J'ai une app Next.js qui tourne en production depuis quelques mois sur un NUC Intel posé dans un coin de bureau. Pas de VPS, pas d'AWS, pas de Vercel. Un NUC, une connexion internet de bureau, un domaine à 15 CHF l'an. Coût récurrent : 1.25 CHF/mois.
+Pour héberger MappyHour, j'avais déjà une machine : un petit NUC Intel équipé d'un Core i3-5010U, qui répond au nom de Mitch. Il avait Windows, une connexion internet et assez de ressources pour faire tourner l'application. Avant de louer un serveur ailleurs, j'avais envie de voir jusqu'où celui-là pouvait aller.
 
-Ce n'est pas un article sur pourquoi c'est une bonne idée en général — souvent ce ne l'est pas. C'est un article sur ce que j'ai appris en le faisant : les problèmes inattendus, les solutions qui n'ont pas l'air d'exister, et quelques chiffres qui m'ont surpris.
+MappyHour aide à trouver des endroits au soleil. L'application est écrite en Next.js, mais elle ne sert pas seulement quelques pages : elle consulte aussi des données d'ensoleillement précalculées, environ **33 Go** à ce stade du projet. Il me fallait donc une machine capable de faire tourner l'app et de garder ces fichiers à portée de main.
 
-## Le stack et les contraintes de départ
+Le matériel était là. Restait à rendre l'app accessible depuis internet et à pouvoir la mettre à jour sans aller m'asseoir devant le serveur à chaque fois.
 
-**La machine** : un NUC Intel sous Windows 11 Pro, 118 Go de SSD. Derrière NAT — une box internet banale, pas d'IP publique fixe, aucun port-forwarding possible. L'app elle-même est un container Docker qui a besoin d'un gros bind-mount (~33 Go de données précalculées).
+## Windows était déjà là
 
-**Pourquoi pas Docker Desktop** : Docker Desktop est gratuit pour les projets personnels mais son licensing devient ambigu dès qu'il y a une organisation derrière. Docker Engine directement dans Ubuntu WSL2 évite la question. C'est la même chose sans GUI, sans les 500 Mo d'overhead de l'app Desktop, et sans la conversation de licensing.
+Mitch tournait sous Windows 10. Pour héberger une app dans un container Linux, ce n'était pas le choix le plus naturel. Mais Windows était déjà installé et, franchement, j'avais la flemme de tout refaire avant même de voir l'app tourner.
 
-**Pourquoi Windows** : la machine avait Windows, la migration vers Linux aurait coûté du temps, et WSL2 suffit pour Docker. Certains combats ne méritent pas d'être gagnés.
+J'ai donc installé Ubuntu dans WSL2, l'environnement qui permet de faire tourner Linux sous Windows, puis Docker Engine dans cet Ubuntu. Le moteur Docker me suffisait : sur une machine administrée à distance, je n'avais pas besoin de l'interface de Docker Desktop.
 
-## La VM qui disparaît toutes les cinquante secondes
+L'app tournait dans un container, avec un accès au dossier contenant les données précalculées. La migration vers Linux aurait coûté du temps, et WSL2 suffit pour Docker. Certains combats ne méritent pas d'être gagnés.
 
-Premier problème sérieux : l'app tombait de façon intermittente. Pas un crash — le container continuait à tourner. Mais les requêtes échouaient en 502, et `docker ps` dans WSL mettait plusieurs secondes à répondre, parfois timeout.
+L'intégration a quand même demandé quelques ajustements. WSL pouvait s'arrêter alors que je pensais avoir laissé un serveur tourner ; nettoyer des fichiers dans Linux ne rendait pas forcément l'espace au SSD côté Windows. J'ai réglé ces problèmes, mais ils rappelaient que j'avais ajouté un environnement Linux à un PC Windows, avec les contraintes des deux.
 
-`dmesg` dans WSL révèle l'explication :
+Pour commencer, ça faisait le travail. Et j'avais un problème plus immédiat : personne ne pouvait encore venir voir l'app.
 
-```
-Operation canceled @p9io.cpp:258 (AcceptAsync)
-Received SIGTERM from PID 1 (systemd-shutdow)
-```
+## Un serveur derrière un routeur
 
-WSL2 fait tourner Linux dans une VM Hyper-V légère. Cette VM a un **idle timeout** : quand Windows estime qu'il n'y a plus d'activité utilisateur côté WSL, il éteint la VM. Silencieusement, sans warning, environ 50 secondes après le dernier accès. Le container continue à exister conceptuellement — mais le runtime est mort.
+Mitch était derrière un routeur sur lequel je ne pouvais pas configurer de redirection de ports. Pas d'adresse publique fixe non plus. Le serveur savait accéder à internet, mais je n'avais pas de chemin entrant à donner aux visiteurs.
 
-La solution naïve : passer `vmIdleTimeout=-1` dans `.wslconfig`. Ça ne suffit pas.
+J'utilisais Tailscale pour accéder au NUC à distance. Il relie mes machines dans un réseau privé, ce qui me permet notamment de me connecter en SSH sans exposer ce port sur internet. Sa fonction [Funnel](https://tailscale.com/docs/features/tailscale-funnel) permet aussi de rendre un service local accessible au public, avec une adresse HTTPS en `.ts.net`.
 
-La vraie solution est un triplet de conditions cumulatives — toutes les trois sont nécessaires, aucune ne remplace les autres :
+J'ai commencé comme ça. L'app était accessible, le certificat était géré automatiquement et je n'avais rien changé sur le routeur.
 
-1. `systemd=true` dans `/etc/wsl.conf` de la distro
-2. `vmIdleTimeout=-1` dans `.wslconfig` **dans le profil Windows de l'utilisateur qui lance WSL** — pas n'importe quel profil, celui de la session qui possède la VM
-3. Une **tâche planifiée** qui lance `wsl.exe sleep infinity` au logon de cet utilisateur
+Mais je voulais donner aux visiteurs une adresse un peu plus facile à retenir : `mappyhour.ch`.
 
-Le troisième point est contre-intuitif. Windows ne regarde pas ce qui tourne *dans* la VM pour décider si elle est inactive — il regarde si une commande `wsl.exe` est en cours d'exécution *côté hôte*. Sans un processus `wsl.exe` actif dans la session Windows, le timer expire même avec `vmIdleTimeout=-1`. La tâche planifiée maintient ce processus vivant en permanence.
+Mon premier réflexe a été de faire pointer ce domaine vers l'adresse Tailscale avec un alias DNS, un CNAME. Sauf qu'un alias DNS ne change pas le nom demandé par le navigateur. Celui-ci veut toujours joindre `mappyhour.ch`, alors que Funnel ne prend en charge que les noms du domaine Tailscale. Le CNAME ne lui ajoute ni la prise en charge de mon domaine ni le certificat correspondant.
 
-## Tailscale : l'accès sans IP publique
+J'avais donc une app accessible, mais pas encore à l'adresse que je voulais.
 
-Problème suivant : comment rendre l'app accessible depuis internet sans IP publique fixe ni port-forwarding routeur.
+## Un tunnel pour les visiteurs
 
-[Tailscale Funnel](https://tailscale.com/kb/1223/funnel) résout ça proprement. Tailscale est un VPN mesh qui tourne sur la machine — il crée un tunnel sortant vers le réseau Tailscale. Funnel étend ça en exposant un port local sur une URL publique (`<machine>.<tailnet>.ts.net`), avec TLS automatique. La machine n'a pas besoin d'être joignable directement. C'est Tailscale qui reçoit le trafic et le route vers elle via le tunnel déjà établi.
+[Cloudflare Tunnel](https://developers.cloudflare.com/tunnel/) répondait à ce besoin. Un petit programme, `cloudflared`, tourne sur Mitch et établit une connexion sortante vers Cloudflare. Les visiteurs arrivent chez Cloudflare, qui gère le HTTPS de `mappyhour.ch` et transmet les requêtes à l'app par cette connexion.
 
-Ça fonctionne. L'URL est stable, le certificat est valide. Mais l'URL est moche : `mitch.tail63c42d.ts.net`.
+C'est ce qui permet au montage de fonctionner sans redirection de ports : le tunnel est ouvert par le NUC, depuis l'intérieur du réseau. Il n'a pas besoin d'attendre une connexion directe venue d'internet.
 
-## Le problème du certificat qu'on ne contrôle pas
+La création du tunnel, son association au domaine et la configuration DNS se pilotent aussi par API. Une fois le tout préparé, `cloudflared` n'a besoin que de son jeton pour se connecter. Pratique sur une machine sans écran : aucune connexion à un compte à effectuer depuis le serveur.
 
-Idée naturelle : acheter un domaine, faire un CNAME `mappyhour.ch → mitch.tail63c42d.ts.net`, prendre un certificat Let's Encrypt pour `mappyhour.ch`.
+Cloudflare prenait donc en charge les visiteurs de l'app. Tailscale restait mon accès privé pour administrer Mitch. Et il allait aussi servir aux déploiements.
 
-Ça ne marche pas. Le CNAME route le trafic vers les serveurs Tailscale, qui transmettent à la machine. Mais c'est **Tailscale** qui termine le TLS — avec son propre certificat pour `*.tail63c42d.ts.net`. Le certificat Let's Encrypt pour `mappyhour.ch` n'a nulle part où s'installer. Le navigateur voit un certificat valide pour un autre domaine, et refuse.
+## Faire venir GitHub jusqu'à Mitch
 
-Pour que `mappyhour.ch` fonctionne avec un certificat valide, il faut que **la terminaison TLS soit sous le contrôle de quelqu'un qui a un certificat pour ce domaine**. Sans IP publique, ça veut dire un intermédiaire.
+Je voulais qu'un push sur `master` suffise à mettre l'app à jour. GitHub Actions construit l'image Docker et la publie dans GHCR, le registre d'images de GitHub. Une fois cette étape réussie, il reste à demander au NUC de récupérer l'image et de redémarrer le service.
 
-## Cloudflare Tunnel : le tunnel sortant gratuit
+Le problème du routeur revenait : la machine temporaire qui exécute le workflow chez GitHub n'avait pas davantage accès à Mitch qu'un visiteur quelconque.
 
-[Cloudflare Tunnel](https://www.cloudflare.com/products/tunnel/) fait exactement ce dont j'avais besoin. `cloudflared` tourne sur la machine, crée une connexion sortante vers l'edge Cloudflare. Le DNS de `mappyhour.ch` pointe vers Cloudflare (CNAME vers `<uuid>.cfargotunnel.com`). Cloudflare termine TLS pour `mappyhour.ch` avec son propre certificat, puis route le trafic vers la machine via le tunnel.
+Puisque je passais moi-même par Tailscale pour l'administrer, le workflow pouvait faire la même chose.
 
-Aucun port ouvert. Aucune IP publique. TLS valide pour le domaine custom. Coût : 0 CHF.
+L'[action Tailscale pour GitHub](https://github.com/tailscale/github-action) inscrit le runner dans mon réseau privé pour la durée du déploiement. Un client OAuth, dont les identifiants sont conservés dans les secrets GitHub, lui permet d'obtenir son autorisation automatiquement. Le runner reçoit une identité `tag:ci`, avec les accès prévus pour le déploiement.
 
-Ce qui m'a surpris, c'est que l'intégralité du setup est scriptable via API : créer le tunnel, configurer les règles d'ingress, créer les DNS records. Le `cloudflared` sur la machine n'a besoin que d'un token pour se connecter. Aucune interaction navigateur requise côté serveur — pratique quand le serveur est headless et que la session interactive est compliquée à obtenir.
+Il peut alors se connecter à Mitch en SSH et lancer Docker Compose pour récupérer la nouvelle image et remettre l'app en route. À la fin du job, l'action déconnecte cette machine temporaire du réseau.
 
-## Le CI/CD qui n'a pas non plus d'IP publique
+Cela donne deux chemins distincts vers le même serveur :
 
-Côté symétrique du même problème : à chaque push sur `master`, GitHub Actions doit pouvoir déployer sur la machine. Build une image Docker, la pusher sur GHCR, se connecter en SSH au NUC, et lancer `docker compose pull && up -d`. Sauf que les runners GitHub Actions sont des VMs jetables hébergées chez GitHub — ils n'ont aucun moyen direct de joindre une machine derrière NAT.
-
-La solution traditionnelle pour ce cas : ouvrir un port SSH public, mettre un allowlist d'IPs source pour les runners GitHub. Impossible ici puisqu'il n'y a pas d'IP publique du tout, et l'allowlist GitHub Actions est de toute façon un sport en soi (le range d'IPs change régulièrement).
-
-La solution propre : le runner GitHub Actions rejoint **lui aussi** le tailnet. Tailscale a un mode "OAuth client" prévu pour exactement ce cas : un workflow GHA reçoit un `client_id` / `client_secret`, l'action [`tailscale/github-action`](https://github.com/tailscale/github-action) génère une auth-key éphémère au démarrage du job, le runner devient un node taggé `tag:ci` sur le tailnet pour la durée du job, et le node disparaît à la fin. Plus de SSH public, plus d'allowlist, plus de rotation de clés. La connexion SSH `runner → NUC` se fait via le tailnet comme n'importe quel autre node.
-
-```
-push master
-  ↓
-GitHub Actions runner (instance jetable)
-  ↓ Tailscale OAuth → node éphémère tag:ci sur le tailnet
-  ↓ SSH via tailnet → mitch
-  ↓ docker compose pull && up -d
-  ↓ run terminé → node ci supprimé
+```mermaid
+flowchart TD
+    V[Visiteur] -->|HTTPS : mappyhour.ch| C[Cloudflare]
+    C -->|Tunnel établi par cloudflared| A[Application sur Mitch]
+    G[GitHub Actions] -->|Rejoint le réseau privé Tailscale| S[SSH sur Mitch]
+    S -->|Docker Compose met à jour| A
 ```
 
-L'élégance est que la même primitive — un tunnel sortant Tailscale — sert deux usages opposés : la machine se rend joignable depuis internet via Funnel, et le runner CI se rend joignable depuis la machine via le tailnet. Aucun port ouvert nulle part.
+Je n'avais pas besoin d'ouvrir SSH sur internet ni de suivre les adresses IP des runners GitHub. Les clés SSH et les autorisations restaient à gérer, mais le chemin réseau était le même que celui que j'utilisais déjà depuis mon laptop.
 
-## Le disque qui grossit sans jamais rétrécir
+Une fois ça en place, Mitch pouvait rester dans son coin. Je poussais une modification, GitHub la construisait, puis la déployait sur le NUC.
 
-Après quelques semaines, le SSD de 118 Go commence à se remplir plus vite que prévu. Coupable : le fichier `.vhdx` de la distro WSL2.
+## Et la facture ?
 
-Un VHDX dynamique (le format de disque virtuel qu'utilise WSL2) alloue des blocs au fur et à mesure que le filesystem interne en a besoin. Mais quand le filesystem libère de l'espace — après un `docker system prune`, par exemple — les blocs restent alloués côté Windows. Le fichier ne rétrécit jamais spontanément.
+Le domaine me coûtait environ **15 CHF par an**, soit **1,25 CHF par mois**. Pour cet usage, Cloudflare Tunnel et le forfait personnel Tailscale ne m'ajoutaient pas d'abonnement payant. Docker Engine et l'outil de statistiques Umami tournaient sur la machine.
 
-Résultat observé : le `.vhdx` était à **28.9 Go** pour un ext4 interne qui n'utilisait que ~5 Go. Les `docker pull` successifs des derniers mois avaient gonflé le fichier, et les prunes n'avaient récupéré l'espace que dans le filesystem Linux — pas dans le conteneur Windows.
+Reste l'électricité. Les essais des NUC de cette génération, avec le même processeur que Mitch, donnent [environ 7 W au repos chez 01net](https://www.01net.com/tests/test-intel-nuc-nuc5i3ryh-le-tres-grand-avenir-des-tres-petits-pc-4696.html) et [9 W chez bit-tech](https://bit-tech.net/reviews/tech/intel-nuc-kit-nuc5i3ryk-review/6/).
 
-Fix : `diskpart` avec `compact vdisk`, lancé après `wsl --shutdown`. La cmdlet PowerShell native `Optimize-VHD` serait plus élégante, mais elle requiert Hyper-V, qui n'est pas installé par défaut sur Windows Pro. `diskpart` est builtin et fait le même travail.
+Avec le [tarif SiL 2026 nativa SIMPLE à Lausanne](https://www.lausanne.ch/dam/jcr:407bb55b-498b-41b1-a0d2-c22c3acd2695/tarifs-electricite-particuliers-et-professionnels-2026.pdf), soit environ **32 centimes par kWh**, taxes et TVA comprises, cela représente **1,60 à 2,10 CHF pour trente jours allumé au repos**. L'app le fait aussi travailler : je retiens donc un ordre de grandeur de quelques francs par mois pour un usage léger, pas une facture mesurée sur Mitch.
 
-Résultat : **22 Go récupérés en quelques minutes**. Le VHDX est passé de 28.9 Go à 6.7 Go. Sans le moindre impact sur les données ou le container après redémarrage.
+Les frais fixes du raccordement et la connexion internet étaient déjà payés ; brancher le NUC ne créait pas un abonnement supplémentaire. Le matériel était déjà acheté aussi. Le réutiliser évitait une nouvelle dépense, mais ne le rendait pas gratuit pour autant, et son éventuel remplacement resterait à ma charge.
 
-C'est le genre de problème qu'on ne voit pas venir la première fois : l'espace libre *dans* WSL dit une chose, l'espace libre *sur Windows* dit une autre.
+Pour les quelques dizaines d'utilisateurs de MappyHour, je n'avais pas besoin de louer une autre machine. J'acceptais aussi les limites de celle-ci : si Mitch, son disque ou sa connexion s'arrêtaient, le site s'arrêtait avec eux. Pas de deuxième serveur pour prendre le relais.
 
-## Les chiffres finaux
+Ce qui me plaisait dans ce montage, c'était de garder un déploiement automatisé avec une machine que j'avais déjà. Les visiteurs utilisaient `mappyhour.ch` sans avoir besoin de savoir ce qui tournait derrière.
 
-| Composant | Coût mensuel |
-|---|---|
-| NUC (machine possédée) | 0 CHF |
-| Cloudflare Tunnel | 0 CHF |
-| Tailscale (plan personal) | 0 CHF |
-| Docker Engine dans WSL2 | 0 CHF |
-| Umami analytics (self-hosted) | 0 CHF |
-| Domaine `mappyhour.ch` | ~1.25 CHF |
-| **Total** | **~1.25 CHF/mois** |
-
-Ce n'est pas une option réaliste pour une app à fort trafic ou avec des contraintes de SLA. Mais pour un side project avec quelques dizaines d'utilisateurs, un NUC est plus que suffisant — et cette expérience m'a appris plus sur le fonctionnement réel de WSL2, Hyper-V et les tunnels réseau que n'importe quelle configuration cloud où l'infrastructure est abstraite derrière une console.
-
-La prochaine fois que le VHDX gonfle, je saurai quoi faire.
+Mon hébergeur avait un prénom. Et s'il tombait en panne, je savais assez précisément qui allait devoir s'en occuper.
