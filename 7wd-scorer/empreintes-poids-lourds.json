@@ -4,12 +4,12 @@
   "octets": 44821559
  },
  "models/banner_yolo.onnx": {
-  "empreinte": "0f5e2b8ffdce01b6",
-  "octets": 11145148
+  "empreinte": "4233abf12bc15871",
+  "octets": 11145117
  },
  "models/banner_yolo_seuil.json": {
-  "empreinte": "262f45798488738d",
-  "octets": 4935
+  "empreinte": "cce2a9246b1a4310",
+  "octets": 6159
  },
  "models/coin_denom.onnx": {
   "empreinte": "4d40e67f248ad4b2",
@@ -84,8 +84,8 @@
   "octets": 44813945
  },
  "models/laurel_digit.onnx": {
-  "empreinte": "e7fcdb048ce0606b",
-  "octets": 44815451
+  "empreinte": "1d74c73006e24d5b",
+  "octets": 44814731
  },
  "models/laurel_filter.onnx": {
   "empreinte": "6aa3737ebf6a9e72",
@@ -96,8 +96,8 @@
   "octets": 22627
  },
  "models/laurel_yolo.onnx": {
-  "empreinte": "90fd144368708959",
-  "octets": 11139994
+  "empreinte": "7193bc43cfae661e",
+  "octets": 11139998
  },
  "models/pawn_ends.onnx": {
   "empreinte": "3b9679d4ac6d6d0e",
