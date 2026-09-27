@@ -23,27 +23,27 @@ La migration vers Linux aurait coûté du temps, et WSL2 suffit pour Docker. Cer
 
 L'app tournait sur Mitch. Restait à la rendre accessible depuis l'extérieur.
 
-## Un serveur derrière un routeur
+## Publier l'app, pas ouvrir la machine
 
-Mitch était derrière un routeur sur lequel je ne pouvais pas configurer de redirection de ports. Pas d'adresse publique fixe non plus. Le serveur savait accéder à internet, mais je n'avais pas de chemin entrant à donner aux visiteurs.
+Garder Windows 10 pour démarrer, d'accord. En revanche, je n'avais pas envie d'ouvrir des ports depuis internet vers cette machine. Je voulais rendre MappyHour accessible aux visiteurs, tout en gardant l'administration du NUC sur un réseau privé.
 
-J'utilisais Tailscale pour accéder au NUC à distance. Il relie mes machines dans un réseau privé, ce qui me permet notamment de me connecter en SSH sans exposer ce port sur internet. Sa fonction [Funnel](https://tailscale.com/docs/features/tailscale-funnel) permet aussi de rendre un service local accessible au public, avec une adresse HTTPS en `.ts.net`.
+Tailscale me permettait d'accéder au NUC à distance par ce réseau privé, notamment en SSH. Pour les visiteurs, sa fonction [Funnel](https://tailscale.com/docs/features/tailscale-funnel) publiait l'application à une adresse HTTPS en `.ts.net`. Les connexions passaient par un relais Tailscale, qui les transmettait au service choisi sur Mitch, sans redirection de ports sur le routeur.
 
-J'ai commencé comme ça. L'app était accessible, le certificat était géré automatiquement et je n'avais rien changé sur le routeur.
+Ça répondait au besoin : rendre le site public sans ouvrir aussi les accès d'administration. Pas question pour autant de considérer Windows comme protégé de tout. Les requêtes arrivaient toujours jusqu'à l'app, avec les risques liés à ses éventuelles failles. Le tunnel ne remplaçait ni ses mises à jour ni celles du système.
 
 Mais je voulais donner aux visiteurs une adresse un peu plus facile à retenir : `mappyhour.ch`.
 
-Mon premier réflexe a été de faire pointer ce domaine vers l'adresse Tailscale avec un alias DNS, un CNAME. Sauf qu'un alias DNS ne change pas le nom demandé par le navigateur. Celui-ci veut toujours joindre `mappyhour.ch`, alors que Funnel ne prend en charge que les noms du domaine Tailscale. Le CNAME ne lui ajoute ni la prise en charge de mon domaine ni le certificat correspondant.
+La première piste a été de faire pointer ce domaine vers l'adresse Tailscale avec un alias DNS, un CNAME. Sauf qu'un alias DNS ne change pas le nom demandé par le navigateur. Celui-ci veut toujours joindre `mappyhour.ch`, alors que Funnel ne prend en charge que les noms du domaine Tailscale. Le CNAME ne lui ajoute ni la prise en charge de mon domaine ni le certificat correspondant.
 
 J'avais donc une app accessible, mais pas encore à l'adresse que je voulais.
 
 ## Un tunnel pour les visiteurs
 
-[Cloudflare Tunnel](https://developers.cloudflare.com/tunnel/) répondait à ce besoin. Un petit programme, `cloudflared`, tourne sur Mitch et établit une connexion sortante vers Cloudflare. Les visiteurs arrivent chez Cloudflare, qui gère le HTTPS de `mappyhour.ch` et transmet les requêtes à l'app par cette connexion.
+[Cloudflare Tunnel](https://developers.cloudflare.com/tunnel/) permettait de garder ce fonctionnement avec mon propre domaine. Sur Mitch, son connecteur `cloudflared` était installé comme **service Windows**, avec un démarrage automatique. Il tournait directement sous Windows, pas dans WSL ni dans le container de l'app.
 
-C'est ce qui permet au montage de fonctionner sans redirection de ports : le tunnel est ouvert par le NUC, depuis l'intérieur du réseau. Il n'a pas besoin d'attendre une connexion directe venue d'internet.
+Ce service établissait une connexion sortante vers Cloudflare. Les visiteurs arrivaient chez Cloudflare, qui gérait le HTTPS de `mappyhour.ch` et transmettait les requêtes à l'application par le tunnel. Toujours pas de port à ouvrir sur le routeur.
 
-La création du tunnel, son association au domaine et la configuration DNS se pilotent aussi par API. Une fois le tout préparé, `cloudflared` n'a besoin que de son jeton pour se connecter. Pratique sur une machine sans écran : aucune connexion à un compte à effectuer depuis le serveur.
+La création du tunnel, son association au domaine et la configuration DNS se pilotent aussi par API. Claude a préparé cette configuration, puis installé le connecteur en service Windows via SSH. Je n'avais pas besoin d'aller ouvrir un navigateur sur le NUC pour faire ces opérations.
 
 Cloudflare prenait donc en charge les visiteurs de l'app. Tailscale restait mon accès privé pour administrer Mitch. Et il allait aussi servir aux déploiements.
 
@@ -51,7 +51,7 @@ Cloudflare prenait donc en charge les visiteurs de l'app. Tailscale restait mon 
 
 Je voulais qu'un push sur `master` suffise à mettre l'app à jour. GitHub Actions construit l'image Docker et la publie dans GHCR, le registre d'images de GitHub. Une fois cette étape réussie, il reste à demander au NUC de récupérer l'image et de redémarrer le service.
 
-Le problème du routeur revenait : la machine temporaire qui exécute le workflow chez GitHub n'avait pas davantage accès à Mitch qu'un visiteur quelconque.
+Mais rendre le site public ne donnait pas au workflow le droit d'administrer le serveur. Il lui fallait un accès SSH, et je ne voulais toujours pas ouvrir ce port sur internet pour les déploiements.
 
 Puisque je passais moi-même par Tailscale pour l'administrer, le workflow pouvait faire la même chose.
 
