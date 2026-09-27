@@ -4,9 +4,7 @@ title: "J'ai installé mon serveur Linux sans sortir le clavier"
 date: 2026-05-24 09:00:00 +0200
 tags: [project, infrastructure, linux, self-hosting, automation, ai]
 header_image: /assets/img/mappyhour-linux-zero-touch-hero.png
-unlisted: true
-permalink: /blog/preview/a17f4c92/serveur-linux-sans-clavier
-sitemap: false
+permalink: /serveur-linux-sans-clavier
 ---
 
 ![Un mini-PC alimenté par une clé USB, avec son installation automatisée qui se déroule au-dessus](/assets/img/mappyhour-linux-zero-touch-hero.png)

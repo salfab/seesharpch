@@ -17,13 +17,11 @@ Le matériel était là. Restait à rendre l'app accessible depuis internet et �
 
 Mitch tournait sous Windows 10. Pour héberger une app dans un container Linux, ce n'était pas le choix le plus naturel. Mais Windows était déjà installé et, franchement, j'avais la flemme de tout refaire avant même de voir l'app tourner.
 
-J'ai donc installé Ubuntu dans WSL2, l'environnement qui permet de faire tourner Linux sous Windows, puis Docker Engine dans cet Ubuntu. Le moteur Docker me suffisait : sur une machine administrée à distance, je n'avais pas besoin de l'interface de Docker Desktop.
+J'ai donc fait tourner l'app avec Docker dans Ubuntu, via WSL2, l'environnement Linux intégré à Windows.
 
-L'app tournait dans un container, avec un accès au dossier contenant les données précalculées. La migration vers Linux aurait coûté du temps, et WSL2 suffit pour Docker. Certains combats ne méritent pas d'être gagnés.
+La migration vers Linux aurait coûté du temps, et WSL2 suffit pour Docker. Certains combats ne méritent pas d'être gagnés.
 
-L'intégration a quand même demandé quelques ajustements. WSL pouvait s'arrêter alors que je pensais avoir laissé un serveur tourner ; nettoyer des fichiers dans Linux ne rendait pas forcément l'espace au SSD côté Windows. J'ai réglé ces problèmes, mais ils rappelaient que j'avais ajouté un environnement Linux à un PC Windows, avec les contraintes des deux.
-
-Pour commencer, ça faisait le travail. Et j'avais un problème plus immédiat : personne ne pouvait encore venir voir l'app.
+L'app tournait sur Mitch. Restait à la rendre accessible depuis l'extérieur.
 
 ## Un serveur derrière un routeur
 
