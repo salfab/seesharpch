@@ -1,15 +1,15 @@
 {
  "models/banner_class.onnx": {
-  "empreinte": "a88cb50e40eae33e",
-  "octets": 44821559
+  "empreinte": "05f65d0849821db6",
+  "octets": 44822279
  },
  "models/banner_yolo.onnx": {
-  "empreinte": "4233abf12bc15871",
+  "empreinte": "0513ffd7b97c97aa",
   "octets": 11145117
  },
  "models/banner_yolo_seuil.json": {
-  "empreinte": "cce2a9246b1a4310",
-  "octets": 6159
+  "empreinte": "1cb90b83a0d0d017",
+  "octets": 5243
  },
  "models/coin_denom.onnx": {
   "empreinte": "4d40e67f248ad4b2",

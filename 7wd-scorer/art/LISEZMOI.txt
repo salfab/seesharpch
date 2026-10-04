@@ -64,9 +64,9 @@ CONVENTION DE NOMMAGE
 
       banner-purple.png est livré mais AUCUN appel ne le construit aujourd'hui :
       les six compteurs de couleur couvrent bleu/vert/jaune/brun/gris/rouge, et
-      les guildes ont leur propre vignette (carte entière, recadrée sur
-      l'illustration — voir plus bas). Les pièces individuelles restent les
-      sources de référence de la grappe utilisée dans la calculette.
+      les guildes ont leur propre vignette (l'icône de leur bannière, recadrée
+      dans la photo de la carte — voir plus bas). Les pièces individuelles
+      restent les sources de référence de la grappe utilisée dans la calculette.
 
 
 CE QU'ON NE MET PAS ICI
@@ -79,11 +79,24 @@ Pas de duplication non plus : merveilles (models/wonder-refs/<id>.jpg) et
 guildes (models/guild-refs/<id>.jpg) sont déjà servies pour la vision et lues
 directement depuis là.
 
-La calculette montrait d'abord le bandeau seul des guildes
-(models/guild-band-refs/<id>.png) : même violet, mêmes coûts, les sept tuiles
-étaient indiscernables. Elle affiche désormais la CARTE ENTIÈRE recadrée sur son
-illustration, comme une merveille. Ces PNG de bandeau restent servis — c'est la
-reconnaissance des guildes on-device qui les consomme.
+GUILDES : L'ICÔNE DE LEUR BANNIÈRE (04.10, demande de Fabio). Partout où l'app
+montre une guilde (tuiles de la calculette, puces et liste de l'écran de revue),
+elle montre le pictogramme imprimé sur le bandeau violet de la carte : pyramide,
+carte bleue / jaune / verte / rouge, paire brune et grise, pièce de 3. C'est un
+RECADRAGE CSS de models/guild-refs/<id>.jpg (fenêtre mesurée, voir
+src/styles/GuildBannerIcon.module.css), pas un fichier de plus.
+
+Le chemin parcouru, pour ne pas le refaire :
+  1. le bandeau entier (models/guild-band-refs/<id>.png, 240x80, dont le
+     pictogramme n'occupe que la partie centrale), réduit à la largeur d'une
+     tuile et en niveaux de gris tant que la guilde n'était pas cochée : sept
+     tuiles indiscernables ;
+  2. la carte recadrée sur son illustration : sur une tuile de 47x31 px, sept
+     temples blancs tout aussi indiscernables ;
+  3. le pictogramme seul, EN COULEUR même non coché (la couleur de la carte
+     dessinée EST l'identité de cinq guildes), sur deux colonnes au téléphone.
+Les PNG de bandeau restent servis — c'est la reconnaissance des guildes
+on-device qui les consomme.
 
 
 POIDS
