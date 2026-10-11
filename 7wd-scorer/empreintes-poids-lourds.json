@@ -84,7 +84,7 @@
   "octets": 44813945
  },
  "models/laurel_digit.onnx": {
-  "empreinte": "c581f4ff361fa5cb",
+  "empreinte": "6301707918e9c9be",
   "octets": 44815451
  },
  "models/laurel_filter.onnx": {
@@ -100,11 +100,11 @@
   "octets": 11139998
  },
  "models/pawn_ends.onnx": {
-  "empreinte": "3b9679d4ac6d6d0e",
-  "octets": 11141984
+  "empreinte": "7905c37aa364c1d3",
+  "octets": 11141956
  },
  "models/pawn_ends_brut.onnx": {
-  "empreinte": "07979deb3ee676b6",
+  "empreinte": "cf647a09e3d5f8b2",
   "octets": 11098915
  },
  "models/token_embed.onnx": {
@@ -124,11 +124,11 @@
   "octets": 11140030
  },
  "models/track_band.onnx": {
-  "empreinte": "55b0855eb26e6f64",
-  "octets": 11141172
+  "empreinte": "84d3bb3dcfc29c7e",
+  "octets": 11141169
  },
  "models/track_band_brut.onnx": {
-  "empreinte": "5952617da3b18190",
+  "empreinte": "ac2d05c0b640e599",
   "octets": 11098135
  },
  "models/tuck_box.onnx": {
