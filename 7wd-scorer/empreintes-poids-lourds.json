@@ -80,8 +80,8 @@
   "octets": 540128
  },
  "models/guild_classifier.onnx": {
-  "empreinte": "ddeca8a5504c3f56",
-  "octets": 44813945
+  "empreinte": "ffea5fbd34c1bdff",
+  "octets": 44814721
  },
  "models/laurel_digit.onnx": {
   "empreinte": "6301707918e9c9be",
