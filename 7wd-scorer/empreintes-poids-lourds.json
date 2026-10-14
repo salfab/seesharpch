@@ -12,7 +12,7 @@
   "octets": 5243
  },
  "models/coin_denom.onnx": {
-  "empreinte": "4d40e67f248ad4b2",
+  "empreinte": "6cfc0d856e57c409",
   "octets": 44704335
  },
  "models/coin_filter_cnn.onnx": {
