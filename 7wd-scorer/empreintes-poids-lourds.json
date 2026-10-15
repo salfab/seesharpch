@@ -188,12 +188,12 @@
   "octets": 180833
  },
  "models/wonder_classifier.onnx": {
-  "empreinte": "b28afe8b4e2b094b",
+  "empreinte": "57fb039ce672ef75",
   "octets": 44852503
  },
  "models/wonder_classifier_seuil.json": {
-  "empreinte": "63bf56808af5291e",
-  "octets": 3272
+  "empreinte": "8aebec4751685a04",
+  "octets": 3074
  },
  "models/wonder_obb.onnx": {
   "empreinte": "603753a7d78d8b34",
