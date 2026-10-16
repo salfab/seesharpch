@@ -120,8 +120,8 @@
   "octets": 218677
  },
  "models/token_yolo.onnx": {
-  "empreinte": "097b8bc8452100f4",
-  "octets": 11140030
+  "empreinte": "5dc4498d74eae060",
+  "octets": 11139996
  },
  "models/track_band.onnx": {
   "empreinte": "84d3bb3dcfc29c7e",
@@ -196,8 +196,8 @@
   "octets": 3074
  },
  "models/wonder_obb.onnx": {
-  "empreinte": "603753a7d78d8b34",
-  "octets": 10947427
+  "empreinte": "6328c21fa4211635",
+  "octets": 10992094
  },
  "ort/ort-wasm-simd-threaded.jsep.mjs": {
   "empreinte": "3ee381d20a80f51a",
