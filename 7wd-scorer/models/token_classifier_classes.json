@@ -1,0 +1,23 @@
+{
+ "_pourquoi": "La fiche du classifieur de jetons TC1 (promu le 16.10, remplace TE) : l'ORDRE des classes est le contrat de sortie de l'ONNX, les classes de rejet disent 'pas un jeton', l'empreinte scelle l'ONNX decrit (preflight.check_token_classifier, HARD ; scripts/prepare-local-models.mjs cote telephone). Regle de Fabio du 16.08 : un modele ne se livre jamais seul.",
+ "nom_court": "TC1-11.0",
+ "classes": [
+  "agriculture",
+  "architecture",
+  "economy",
+  "law",
+  "masonry",
+  "mathematics",
+  "philosophy",
+  "strategy",
+  "theology",
+  "urbanism",
+  "autre"
+ ],
+ "rejets": [
+  "autre"
+ ],
+ "entree": "token_embed._preprocess (224 px, INTER_AREA ; bilineaire cote telephone, 0 verdict different sur 592 vignettes), moyenne des 4 rotations",
+ "empreinte_modele": "6070f43edb60ee96",
+ "source": "data/_token_classifier_TC1-11_s0.onnx (scratchpad/_tc1_train.py, graine 0, entraine sur TOUT apres les 5 plis)"
+}

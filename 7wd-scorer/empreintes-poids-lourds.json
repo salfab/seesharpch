@@ -107,13 +107,13 @@
   "empreinte": "cf647a09e3d5f8b2",
   "octets": 11098915
  },
- "models/token_embed.onnx": {
-  "empreinte": "6a5b2c777e740864",
-  "octets": 44778270
+ "models/token_classifier.onnx": {
+  "empreinte": "5fb436ba0c7fe44b",
+  "octets": 44813414
  },
- "models/token_embed_index.json": {
-  "empreinte": "c809847a82d90b8b",
-  "octets": 526700
+ "models/token_classifier_classes.json": {
+  "empreinte": "0982d34ddc458f77",
+  "octets": 918
  },
  "models/token_templates.json": {
   "empreinte": "f54b759edfb7fa43",
