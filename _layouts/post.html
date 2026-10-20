@@ -386,7 +386,7 @@
           {% endif %}
         </header>
         <div class="post-content">
-          {{ content }}
+          {{ content | replace: 'src="../assets/', 'src="/assets/' }}
         </div>
       </div>
     </article>

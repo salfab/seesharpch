@@ -1,7 +1,20 @@
+- title: 7 Wonders Duel Scoreboard
+  description: Count the final score of a 7 Wonders Duel game from a single photo — old-school computer vision (color thresholds, template matching, OpenCV), no trained model.
+  url: https://github.com/salfab/7-wonders-duel-scoreboard
+  repo: https://github.com/salfab/7-wonders-duel-scoreboard
+  tags: [Python, Computer Vision, OpenCV, Board Game]
+
 - title: mappy-hour
   description: Calculate sunshine windows for parks and terraces in Swiss cities — powered by 3D building models and terrain data.
+  url: https://mappyhour.ch
   repo: https://github.com/salfab/mappy-hour
   tags: [TypeScript, Next.js, GIS, swisstopo]
+
+- title: Possession
+  description: A semi-cooperative board game for two players — rival demons competing to corrupt the soul of Pope Alexander VI. Designed entirely from a phone using LLM-assisted game design.
+  url: https://github.com/salfab/possession
+  repo: https://github.com/salfab/possession
+  tags: [Game Design, AI, Board Game]
 
 - title: whodunit-party
   description: A party game where an investigator has to find the culprit — roleplaying fun for groups.
