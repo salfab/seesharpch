@@ -107,6 +107,10 @@
   "empreinte": "cf647a09e3d5f8b2",
   "octets": 11098915
  },
+ "models/pawn_ends_reperes_brut.onnx": {
+  "empreinte": "27069c55c0f89799",
+  "octets": 11161435
+ },
  "models/token_classifier.onnx": {
   "empreinte": "5fb436ba0c7fe44b",
   "octets": 44813414
