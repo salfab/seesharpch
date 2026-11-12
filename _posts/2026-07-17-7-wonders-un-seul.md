@@ -266,19 +266,19 @@ L'agrandissement n'avait inventé aucun détail : c'était toujours le même cro
 
 J'ai donc ajouté au dataset des copies réduites à **45–70 %** de leur taille, sans retirer les originales. Le modèle apprenait désormais le même laurier de près et de loin. Sur la vue d'ensemble la plus difficile, on est passé d'environ **30/39 à 35/39** lectures correctes.
 
-Sur certaines photos, YOLO dessinait plusieurs cadres emboîtés autour d'une seule piste militaire. Une version plus sélective du détecteur avait réduit les boîtes parasites, mais les cadres s'arrêtaient encore avant les extrémités. Pourtant, la piste était nette et occupait presque toute l'image.
+Sur certaines photos, YOLO dessinait plusieurs cadres emboîtés autour d'une seule piste militaire. {on parle ici du mécanisme de dédoublonnage ? est-ce nécessaire ? Une version plus sélective du détecteur avait réduit les boîtes parasites,} mais les cadres s'arrêtaient encore avant les extrémités. Pourtant, la piste était nette et occupait presque toute l'image.
 
 Comment un objet aussi grand pouvait-il être aussi mal encadré ?
 
-Pour le comprendre, il fallait regarder comment notre version de YOLO construit ses boîtes. Depuis un point de sa grille, elle prédit les distances jusqu'aux quatre bords de l'objet. Ces distances ont une portée maximale dans l'image donnée au réseau. Une piste qui prend presque toute la largeur peut dépasser cette portée : le détecteur peut en encadrer des morceaux, mais pas l'ensemble.
+Pour le comprendre, il faut comprendre comment notre version de YOLO construit ses boîtes. Depuis un point de sa grille, elle prédit les distances jusqu'aux quatre bords de l'objet. Ces distances ont une portée maximale dans l'image donnée {c'est quoi, la portée maximale ? par quoi elle est définie ?}au réseau, et une piste qui prend presque toute la largeur peut dépasser cette portée : dans ce cas, le détecteur peut en encadrer des morceaux, mais pas l'ensemble. L'objet est tellement grand qu'on ne le voit pas en entier.
 
-Il ne suffisait donc pas de réduire le fichier photo avant de l'envoyer : le prétraitement l'aurait de toute façon remis à l'échelle du cadre d'entrée de **1280 × 1280 pixels**. Il fallait que la photo occupe moins de place *dans ce cadre*. On la place donc plus petite, avec des marges grises autour. La piste devient assez courte dans l'entrée du réseau pour tenir dans une seule boîte.
+Dans cette situation, réduire le fichier photo avant de l'envoyer n'aide en rien : le prétraitement l'aurait de toute façon remis à l'échelle du cadre d'entrée de **1280 × 1280 pixels**. Il fallait que la photo occupe moins de place *à l'intérieur de ce cadre*. L'idée est donc de lui faire occuper moins de place dans l'image en ajoutant des marges grises autour. La piste devient donc assez courte dans l'entrée du réseau pour tenir dans une seule boîte.
 
-J'ai gardé cette version plus sélective avec le dézoom. Sur l'ancien détecteur, le même changement de cadrage faisait disparaître certaines pistes.
+{à supprimer ?: J'ai gardé cette version plus sélective avec le dézoom. Sur l'ancien détecteur, le même changement de cadrage faisait disparaître certaines pistes.}
 
-Restait à ne pas réduire toutes les photos de la même manière. Sur une vue lointaine, la piste est déjà petite ; trop dézoomer peut la faire disparaître.
+Reste que toutes les photos ne souffrent pas du même problème. Sur une vue lointaine, la piste est déjà petite ; trop dézoomer pourrait techniquement la faire disparaître.
 
-Pour choisir, je réutilise la taille des bannières déjà repérées. De grandes bannières indiquent une prise de vue proche : l'application dézoome davantage. De petites bannières signalent une vue plus lointaine : elle conserve un cadrage plus serré.
+Pour choisir, je réutilise la taille des bannières déjà repérées. De grandes bannières indiquent une prise de vue proche : l'application dézoome davantage. De petites bannières signalent une vue plus lointaine : elle conserve le cadrage d'origine.
 
 Sur le jeu de test, cette règle a fait passer les pistes tronquées de **11 sur 65 à 1 sur 65**, sans perdre un seul des **66 plateaux**.
 
