@@ -338,9 +338,9 @@ La même question se posait pour les jetons : les reconnaître mieux ne servirai
 
 L'empreinte reconnaissait **365 jetons** et acceptait **2 intrus**. Le classifieur reconnaissait **404 à 407 jetons**, pour **0 à 3 intrus acceptés** selon l'entraînement et le matériel. Le gain de lecture tenait donc aussi quand on lui demandait de faire le tri.
 
-J'ai voulu raffiner cette classe « autre » en séparant les dos de jetons, les pièces, les cartes et le décor. Ça semblait logique : pourquoi mettre dans le même sac des choses qui ne se ressemblent pas ? Avec aussi peu d'exemples par famille, le découpage faisait pourtant accepter davantage d'intrus. Ajouter des morceaux de cartes et de merveilles venus des autres lecteurs n'a pas aidé non plus. Les vrais pièges du détecteur étaient de meilleurs professeurs que mes négatifs bien choisis.
+J'ai voulu raffiner cette classe « autre » en séparant les dos de jetons, les pièces, les cartes et le décor. Ça semblait logique : pourquoi mettre dans le même sac des choses qui ne se ressemblent pas ? Avec aussi peu d'exemples par famille, le découpage faisait pourtant accepter davantage d'intrus. {ce passage est mal écrit : je ne comprends pas son intention: Ajouter des morceaux de cartes et de merveilles venus des autres lecteurs n'a pas aidé non plus. Les vrais pièges du détecteur étaient de meilleurs professeurs que mes négatifs bien choisis.
 
-Donner au modèle le droit de répondre « aucune », c'était utile. Lui montrer ce qui risquait vraiment de le tromper l'était tout autant.
+Donner au modèle le droit de répondre « aucune », c'était utile. Lui montrer ce qui risquait vraiment de le tromper l'était tout autant.}
 
 ## Un contour parfait qui n'arrive pas ne sert à rien
 
