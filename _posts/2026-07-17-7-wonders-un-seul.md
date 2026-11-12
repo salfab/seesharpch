@@ -266,19 +266,23 @@ L'agrandissement n'avait inventé aucun détail : c'était toujours le même cro
 
 J'ai donc ajouté au dataset des copies réduites à **45–70 %** de leur taille, sans retirer les originales. Le modèle apprenait désormais le même laurier de près et de loin. Sur la vue d'ensemble la plus difficile, on est passé d'environ **30/39 à 35/39** lectures correctes.
 
-La piste militaire a posé le problème inverse. Sur certaines photos, elle occupait presque toute l'image.
+Sur certaines photos, YOLO dessinait plusieurs cadres emboîtés autour d'une seule piste militaire. Une version plus sélective du détecteur avait réduit les boîtes parasites, mais les cadres s'arrêtaient encore avant les extrémités. Pourtant, la piste était nette et occupait presque toute l'image.
 
-Or YOLO ne peut pas dessiner une boîte de taille arbitraire. Depuis chaque point de sa grille, il prédit jusqu'où la boîte doit s'étendre vers les quatre bords, mais cette distance est bornée. Avec notre entrée de 1280 pixels, une boîte plafonnait à environ 1024 pixels de côté.
+Comment un objet aussi grand pouvait-il être aussi mal encadré ?
 
-Quand la piste dépassait ce plafond, aucune prédiction ne pouvait l'englober d'un seul coup. Le détecteur faisait donc ce qu'il pouvait : plusieurs boîtes, chacune sur un morceau de piste. Les pistes tronquées et les grappes de détections étaient en fait les deux symptômes du même problème.
+Pour le comprendre, il fallait regarder comment notre version de YOLO construit ses boîtes. Depuis un point de sa grille, elle prédit les distances jusqu'aux quatre bords de l'objet. Ces distances ont une portée maximale dans l'image donnée au réseau. Une piste qui prend presque toute la largeur peut dépasser cette portée : le détecteur peut en encadrer des morceaux, mais pas l'ensemble.
 
-La solution a été de placer l'image réduite dans le cadre d'entrée, avec de la marge autour. Pas pour récupérer davantage d'information : simplement pour faire rentrer la piste dans la fenêtre de taille que YOLO savait décrire.
+Il ne suffisait donc pas de réduire le fichier photo avant de l'envoyer : le prétraitement l'aurait de toute façon remis à l'échelle du cadre d'entrée de **1280 × 1280 pixels**. Il fallait que la photo occupe moins de place *dans ce cadre*. On la place donc plus petite, avec des marges grises autour. La piste devient assez courte dans l'entrée du réseau pour tenir dans une seule boîte.
 
-Mais un dézoom fixe créait aussitôt le problème opposé : les petites pistes devenaient trop petites. L'application choisit maintenant son cadrage d'après la taille des bandeaux déjà repérés dans la photo. Une vue serrée est davantage réduite ; une vue lointaine conserve plus de pixels. Sur le corpus actuel, les pistes tronquées sont passées de **11 sur 65 à 1 sur 65**, sans perdre un seul des **66 plateaux**.
+J'ai gardé cette version plus sélective avec le dézoom. Sur l'ancien détecteur, le même changement de cadrage faisait disparaître certaines pistes.
 
-La fenêtre a donc deux bords. Pour les lauriers, il fallait grossir l'objet. Pour la piste militaire, il fallait parfois lui faire de la place. La taille en pixels n'est pas un détail d'implémentation : elle fait partie de l'entrée.
+Restait à ne pas réduire toutes les photos de la même manière. Sur une vue lointaine, la piste est déjà petite ; trop dézoomer peut la faire disparaître.
 
-Les expériences de taille, de lumière et de données synthétiques racontent toutes la même chose : une augmentation n'aide que si elle sait réellement fabriquer le défaut. C'est [le sujet d'un deuxième approfondissement](/blog/preview/e2c8a517/augmentations-images).
+Pour choisir, je réutilise la taille des bannières déjà repérées. De grandes bannières indiquent une prise de vue proche : l'application dézoome davantage. De petites bannières signalent une vue plus lointaine : elle conserve un cadrage plus serré.
+
+Sur le jeu de test, cette règle a fait passer les pistes tronquées de **11 sur 65 à 1 sur 65**, sans perdre un seul des **66 plateaux**.
+
+Les essais sur l'éclairage et les données synthétiques sont détaillés dans [un deuxième approfondissement](/blog/preview/e2c8a517/augmentations-images).
 
 ## Une ligne de code peut encore gagner
 
