@@ -1,7 +1,7 @@
 - title: Clazarus
   description: Restore your Claude Code sessions after a Windows reboot — select recent sessions and reopen them as Windows Terminal tabs.
   url: https://github.com/salfab/Clazarus
-  tags: [PowerShell, Claude Code, Windows Terminal]
+  tags: [Claude Code, PowerShell, Windows Terminal]
 
 - title: mappy-hour
   description: Calculate sunshine windows for parks and terraces in Swiss cities — powered by 3D building models and terrain data.
